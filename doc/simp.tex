@@ -33,7 +33,6 @@ urlcolor=black     % only if colorlinks=true
 \newcommand{\Div}{\nabla\cdot}
 \newcommand{\trace}{\operatorname{tr}}
 
-
 \newcommand{\hbn}{\hat{\mathbf{n}}}
 
 \newcommand{\bg}{\mathbf{g}}
@@ -44,11 +43,11 @@ urlcolor=black     % only if colorlinks=true
 
 \newcommand{\bX}{\mathbf{X}}
 
+\newtheorem{lemma}{Lemma}
+
 
 
 \begin{document}
-\graphicspath{{figures/}}
-
 \title{Evolving-surface glacier flow using Stokes dynamics}
 
 \author{Ed Bueler}
@@ -135,39 +134,53 @@ Essentially this weak formulation is proven in \cite[Theorem 3.8]{JouvetRappaz20
 
 Now we describe an implicit moving-mesh scheme to simultaneously solve the Glen-Stokes equations and the surface kinematical equation.  This time-discretized, but continuous-space formulation, will require us to change variables in the integrals which define the Stokes weak form.  Once we have stated this scheme we will consider its mixed finite element solution in the next section.
 
-Consider consecutive time steps $t_{n-1}$ and $t_n$ with $\Delta t = t_n - t_{n-1} > 0$.  Suppose the model's state, namely the ice geometry, is known at time $t_{n-1}$.  Denote this input, ice-filled domain as $\Lambda = \Omega^{t_{n-1}} \subset \RR^2$.  We want to approximate the updated domain $\Omega = \Omega^{t_n} \subset \RR^2$ using the surface kinematical equation \eqref{surfacekinematical}, a modeled surface mass balance $a(x,t)$, and the Glen-Stokes equations \eqref{weak}.
+Consider consecutive time steps $t_{n-1}$ and $t_n$ with $\Delta t = t_n - t_{n-1} > 0$.  Suppose the model's state, namely the ice geometry, is known at time $t_{n-1}$.  Denote this input, ice-filled domain as $\Lambda = \Omega^{t_{n-1}} \subset \RR^2$.  We will approximate the updated domain $\Omega^n = \Omega^{t_n} \subset \RR^2$ using the surface kinematical equation \eqref{surfacekinematical}, a modeled surface mass balance $a(x,t)$, and the Glen-Stokes equations \eqref{weak}.
 
-For clarity the coordinates on region $\Lambda$ will be denoted $(r,s)$.  The update of regions corresponds to a change of coordinates $(r,s) \mapsto (x,z)$:
+The coordinates on region $\Lambda$ will be denoted $(r,s)$.  The update of regions corresponds to a change of coordinates $(r,s) \mapsto (x,z)$:
 \begin{equation}
-\Lambda \stackrel{\Delta t}{\to} \Omega: \qquad x(r,s)=r, \quad z(r,s)=s+b(r,s) \label{changecoords}
+\Lambda \stackrel{\Delta t}{\to} \Omega^n: \qquad x(r,s)=r, \quad z(r,s)=s+c(r,s) \label{changecoords}
 \end{equation}
-where $b(r,s)$ is to be determined.  Under this change of coordinates the horizontal coordinated does not change ($x=r$) and only the $z$-coordinate is nontrivially updated.  Said another way, the updated domain is defined in terms of the input domain,
+where $c(r,s)$ is to be determined.  Under this change of coordinates the horizontal coordinated does not change ($x=r$) and only the $z$-coordinate is nontrivially updated.  Said another way, the updated domain is defined in terms of the input domain,
 \begin{equation}
-\Omega = \{(x(r,s),z(r,s)) \,\big|\, (r,s) \in \Lambda\},  \label{updateddomain}
+\Omega^n = \{(x(r,s),z(r,s)) \,\big|\, (r,s) \in \Lambda\},  \label{updateddomain}
 \end{equation}
 where functions $x$ and $z$ have the forms given in \eqref{changecoords}.
 
-The continuous-space update of the ice-filled domain ($\Lambda\to\Omega$) will require changing variables in integrals over the domain.  Consider, for example, a scalar-valued $L^1$ function $\tilde f(x,z)$ defined on $\Omega$.  By the change of variables formulation we have
+The continuous-space update of the ice-filled domain ($\Lambda\to\Omega^n$) will require changing variables in integrals over the domain.  Consider, for example, a scalar-valued $L^1$ function $\tilde f(x,z)$ defined on $\Omega$.  By the change of variables formulation we have
 \begin{equation}
-\int_\Omega \tilde f(x,z)\,dx dz = \int_\Lambda \tilde f(x(r,s),z(r,s)) \, j(r,s)\,dr ds, \label{changeintegralearly}
+\int_{\Omega^n} \tilde f(x,z)\,dx dz = \int_\Lambda \tilde f(x(r,s),z(r,s)) \, j(r,s)\,dr ds, \label{changeintegralearly}
 \end{equation}
 incorporating the determinant $j(r,s)$ of the Jacobian determinant
 \begin{equation}
-J = \begin{pmatrix} \frac{\partial x}{\partial r} & \frac{\partial x}{\partial s} \\ {\large\strut} \frac{\partial z}{\partial r} & \frac{\partial z}{\partial z} \end{pmatrix} = \begin{pmatrix} 1 & 0 \\ \frac{\partial b}{\partial r} & 1+\frac{\partial b}{\partial s} \end{pmatrix} \label{jacchange}
+J = \begin{pmatrix} \frac{\partial x}{\partial r} & \frac{\partial x}{\partial s} \\ {\large\strut} \frac{\partial z}{\partial r} & \frac{\partial z}{\partial z} \end{pmatrix} = \begin{pmatrix} 1 & 0 \\ \frac{\partial c}{\partial r} & 1+\frac{\partial c}{\partial s} \end{pmatrix} \label{jacchange}
 \end{equation}
 thus
 \begin{equation}
-j(r,s) = |\det(J)| = \left|1+\frac{\partial b}{\partial s}\right|  \label{jacchangedet}
+j(r,s) = |\det(J)| = \left|1+\frac{\partial c}{\partial s}\right|  \label{jacchangedet}
 \end{equation}
-For stability we will require that the change of coordinates not change orientation, i.e.~$1+\frac{\partial b}{\partial s}>0$.  In fact, for the solution of the implicit time-step equations, namely the equations which we develop below, to be accepted by our adaptive time-stepping scheme, we will require
+For stability we will require that the change of coordinates not cause a local change orientation, i.e.~$1+\frac{\partial c}{\partial s}>0$.  In fact we will require
 \begin{equation}
-\left|\frac{\partial b}{\partial s}\right| < 1.\label{stableremap}
+\frac{\partial c}{\partial s} \ge -1.\label{differentialVI}
 \end{equation}
+
+\begin{lemma}
+Assume that the ice thickness is well defined at time $t_{n-1}$, that is, assume
+    $$I(r) = \{s\,:\,(r,s) \in \Lambda\}$$
+is a single interval for every $r$.  If inequality \eqref{differentialVI} holds then the updated ice surface elevation
+    $$h(r,t_n) = \sup_{s\in I(r)}\{z(r,s)\}$$
+satisfies \eqref{admissibility}, i.e.~$h(r,t_n)\ge b(r)$.
+\end{lemma}
+
+\begin{proof}
+FIXME? This is the fundamental theorem of calculus:
+    $$h(r,t_n) - b(r) = \int_{I(r)} 1\,ds \le \int_{I(r)} - \frac{\partial c}{\partial s}\,ds$$
+\end{proof}
+
 Returning to the integrand in \eqref{changeintegralearly}, our notation will denote a new function defined on $\Lambda$,
-    $$f(r,s) := \tilde f(x(r,s),z(r,s)) = \tilde f(r,s+b(r,s)),$$
+    $$f(r,s) := \tilde f(x(r,s),z(r,s)) = \tilde f(r,s+c(r,s)),$$
 and thus
 \begin{equation}
-\int_\Omega \tilde f(x,z)\,dx dz = \int_\Lambda f(r,s) \, j(r,s)\,dr ds. \label{changeintegral}
+\int_{\Omega^n} \tilde f(x,z)\,dx dz = \int_\Lambda f(r,s) \, j(r,s)\,dr ds. \label{changeintegral}
 \end{equation}
 Also we will need to change variables in (first) partial derivatives, so we observe
     $$\frac{\partial \tilde f}{\partial x}(x(r,s),z(r,s)) = FIXME$$
