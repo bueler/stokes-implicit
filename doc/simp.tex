@@ -58,35 +58,9 @@ urlcolor=black     % only if colorlinks=true
 \thispagestyle{empty}
 \bigskip
 
-FIXME Main points:\footnote{version \today}
-\renewcommand{\labelenumi}{\arabic{enumi}.}
-\begin{enumerate}
-\item mesh coordinates are part of the model state; we solve for them implicitly over a time step $\Delta t$
-\item initially time-stepping is by backward Euler implemented by hand; later perhaps firedrake\_ts and BDF2 or such
-\item at the start of the time step the domain in the $(s,t)$ plane occupied by ice is called $\Lambda$, and it has a mesh; these are the base domain and mesh
-\item equations are for variables $\bu=\left<u,v\right>,p,r$; all of these are functions of $(s,t) \in \Lambda$
-\item we will rewrite the weak-form integrals using change of coordinates
-    $$(s,t) \mapsto (x,z), \qquad x(s,t)=s, z(s,t)=t+r(s,t)$$
-\item ``new'' domain occupied by the ice will be the set
-    $$\Omega = \{(x(s,t),z(s,t)) \,\big|\, (s,t) \in \Lambda\}$$
-\item note that the $x$ coordinates of the mesh do not change; only vertical mesh motion
-\item the $z$ value at the ice surface solves the time-discretized surface kinematical equation re-written into $(x,\zeta$ coordinates; this is a Robin boundary condition for $r$
-\item in the interior of $\Lambda$, the difference $r(s,t)=z(s,t)-t$ solves the Laplace equation subject to boundary values as follows:
-    \begin{itemize}
-    \item Robin on surface from surface kinematical equation
-    \item zero Dirichlet on base and inflow; these mesh nodes do not move
-    \item Neuman on outflow
-    \end{itemize}
-\item numerical solver should check element orientation under change of coordinates (above); if the solver flips an element then it is bad; also check new element aspect ratio and (presumably) remesh if that is bad
-\item the initial iterate for the (SNES-based) solver is clear: $\bu,p$ come from solution of previous time step, and $r$ starts at zero
-\end{enumerate}
+\section{Model equations in strong form} \label{sec:strongform}
 
-
-\section{Evolving surface Stokes model for glacier ice}
-
-First we state the weak form of the Stokes model for ice flow, which is the conservation of momentum model, with glacier-suitable boundary conditions.    Next we describe the implicit moving-mesh scheme to solve the surface kinematical equation, which requires us to change variables in the integral defining the Stokes weak form.
-
-The Glen-Stokes model for ice is described in \cite{GreveBlatter2009,JouvetRappaz2011}.  For these notes it applies on a 2D domain $\Omega$ occupied by the ice, in variables $(x,z)$ with $z$ at angle $\alpha$ to the vertical (below).  The domain $\Omega = \Omega_t \subset \RR^2$ which must have a piecewise smooth boundary so that we may apply the boundary conditions, and in fact it will evolve, but it is otherwise general.
+Our conservation of momentum model for ice flow is the set of shear-thinning (Glen law) Stokes equations with glacier-suitable boundary conditions.\footnote{version: \today}  This model is described in \cite{GreveBlatter2009,JouvetRappaz2011}.  For these notes it applies on a 2D domain $\Omega$ occupied by the ice, in variables $(x,z)$ with $z$ at angle $\alpha$ to the vertical (below).  The domain $\Omega = \Omega_t \subset \RR^2$ which must have a piecewise smooth boundary so that we may apply the boundary conditions, and in fact it will evolve, but it is otherwise general.
 
 Allowing any Glen exponent $n\ge 1$, the strong form model equations are:
 \begin{align}
@@ -116,47 +90,105 @@ Certain glacier-suitable velocity and stress boundary conditions will be used he
 \end{align}
 The constant $C_{\text{out}} $ is adjusted so that the total applied stress is equal to its value for the input ice thickness $H_{\text{in}}$, thus $C_{\text{out}} = (H_{\text{in}}/H_{\text{out}})^2$.
 
-The above equations determine the velocity and pressure in the ice from the boundary conditions, but they do not determine how the glacier changes shape.  For this we suppose that the domain on which the equations apply is the time-dependent set
+The above equations determine the velocity and pressure in the ice from the boundary conditions, and from the geometry of the ice domain $\Omega$, but they do not determine how the glacier changes shape.  Noting that one aspect of conservation of mass is already stated above, namely the incompressibility relation in the interior of $\Omega$, to evolve the glacier geometry we will need to add the conservation of mass statement on $\partial\Omega$, namely the surface kinematical equation \eqref{surfacekinematical} below.
+
+Thus from now on we will suppose that the domain is time-dependent:
 \begin{equation}
-\Omega^t = \left\{(x,z)\,\big|\, b(x) < z < h(x,t)\right\}  \label{Omegat}
+\Omega^t = \left\{(x,z)\,\big|\, b(x) < z < h(x,t)\right\}.  \label{Omegat}
 \end{equation}
-where $z=b(x)$ is the base elevation and $z=h(x,t)$ is the ice surface elevation.  Note the key fact that
+Here $z=b(x)$ is the base elevation and $z=h(x,t)$ is the ice surface elevation.  Note the key fact that
 \begin{equation}
 h(x,t) \ge b(x).  \label{admissibility}
 \end{equation}
 
-The time-dependent surface $z=h(x,t)$ evolves according to the surface kinematical equation.  Using ice velocity $\bu=\left<u(x,z,t),w(x,z,t)\right>$ it is
+Using ice velocity $\bu=\left<u(x,z,t),w(x,z,t)\right>$, the surface kinematical equation is
 \begin{equation}
 h_t = a(x,t) - u(x,h,t) h_x + w(x,h,t) \label{surfacekinematical}
 \end{equation}
-Here $a(x,t)$ is the climatic mass balance in units of ice-equivalent $\text{m}\,\text{s}^{-1}$.  Informally, \eqref{surfacekinematical} determines the change in surface elevation $\Delta h \approx h_t\,\Delta t$ from the climatically added/removed ice $a\,\Delta t$ plus the component of the ice motion in the outward (upward) normal direction $\bn = \left<-h_x,1\right>$, so one may say $\Delta h \approx \left(a + \bn\cdot \bu|_{z=h}\right) \Delta t$.
+Here $a(x,t)$ is the climatic mass balance in units of ice-equivalent $\text{m}\,\text{s}^{-1}$.  Informally, \eqref{surfacekinematical} determines the change in surface elevation $\Delta h \approx h_t\,\Delta t$ from the climatically added/removed ice $a\,\Delta t$ plus the component of the ice motion in the outward (upward) normal direction $\bn = \left<-h_x,1\right>$, so one may say that the time-dependent surface $z=h(x,t)$ evolves by steps $\Delta h \approx \left(a + \bn\cdot \bu|_{z=h}\right) \Delta t$.
 
 
-\section{Weak form of the Stokes model} \label{sec:weakform}
+\section{Weak form of the Glen-Stokes equations} \label{sec:weakformstokes}
 
-The solution to the weak form is a pair $(\bu,p)$ with $\bu\in V_D$ and $p \in Q$, and function (Sobolev) spaces $V_D,Q$ are precisely-identified in \cite{JouvetRappaz2011}.  Test functions $\bv\in V_0$ and $q\in Q$ come from nearly the same spaces: $\bu\in V_D$ satisfies base and inflow boundary conditions \eqref{basebc} and \eqref{inflowbc}, respectively, while $\bv\in V_0$ is zero on those boundaries.
+At any time $t$ the solution to Stokes model weak form is a pair $(\bu,p)$ with $\bu\in V_D \subset W^{1,p}(\Omega^t)$ and $p \in Q=L^{p'}(\Omega^t)$.  Test functions $\bv\in V_0 \subset W^{1,p}(\Omega^t)$ and $q\in Q$ come from nearly the same spaces: $\bu\in V_D$ satisfies base and inflow boundary conditions \eqref{basebc} and \eqref{inflowbc}, respectively, while $\bv\in V_0$ is zero on those boundaries.
 
-To give an initial definition of $F$ we multiply \eqref{stokes} by $\bv\in V_0$ and \eqref{incompagain} by $q\in Q$, then add and integrate-by-parts::
+To give an initial definition of $F$ we multiply \eqref{stokes} by $\bv\in V_0$ and \eqref{incompagain} by $q\in Q$, then add and integrate-by-parts:
 \begin{equation}
-F(\bu,p;\bv,q) = -\int_{\partial\Omega} (\sigma \hbn)\cdot \bv + \int_\Omega \trace(\tau D\bv) - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \label{nonfunctwo}
+\tilde F = -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,d\ell + \int_{\Omega^t} \tau \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,dx dz \label{nonfunctwo}
 \end{equation}
-(We have denoted $\sigma=\tau-pI$ for brevity.)  Now $\bu,\bv$ appear with at most first derivatives and $p,q$ appear without derivatives.  Next recall that $\bv\in V_0$ satisfies $\bv=0$ along the base and inflow surfaces.  Thus these parts of the integral over $\partial\Omega$ in \eqref{nonfunctwo} are zero.  Conditions \eqref{topbc}, \eqref{outflowbc} now completely eliminate the unknown solution $\bu,p$ from the boundary integral.  This yields our formula for the nonlinear functional:
+where $d\ell$ is the arclength element along $\partial\Omega^t$, and denoting $\sigma=\tau-pI$ for brevity.  Note $\bu,\bv$ appear with at most first derivatives and $p,q$ appear without derivatives.
+
+By definition, $\bv\in V_0$ satisfies $\bv=0$ along the base and inflow surfaces.  Thus these parts of the integral over $\partial\Omega$ in \eqref{nonfunctwo} are zero.  Conditions \eqref{topbc}, \eqref{outflowbc} now completely eliminate the unknowns from the boundary integral, yielding a final formula for $\tilde F$:
 \begin{align}
-F(\bu,p;\bv,q) &= \int_\Omega B_n |D\bu|^{\frac{1}{n} - 1} D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q \label{defineF} \\
-    &\qquad  - \int_\Omega \rho \mathbf{g} \cdot \bv - \int_{\{\text{outflow}\}} C_{\text{out}} \rho g \cos\alpha (h-z) v  \notag
+\tilde F(\bu,p;\bv,q) &= \int_{\Omega^t} B_n |D\bu|^{\frac{1}{n} - 1} D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q \,dx dz \label{defineF} \\
+    &\qquad  - \int_{\Omega^t} \rho \mathbf{g} \cdot \bv \,dx dz - \int_{\{\text{outflow}\}} C_{\text{out}} \rho g \cos\alpha (h-z) v \,d\ell \notag
 \end{align}
-The last two integrals can be regarded as source terms; if the inflow velocity is zero and these source terms are zero then the unique solution is $\bu=0$ and $p=0$.
-
-The weak form of the Glen-Stokes model is the statement that, at the solution $\bu\in V_D$ and $p\in Q$,
+The last two integrals can be regarded as source terms; if the inflow velocity is zero and these source terms are zero then the unique solution is $\bu=0$ and $p=0$.  The weak form is the statement that $\bu\in V_D$ and $p\in Q$ satisfy
 \begin{equation}
-F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in V_0 \text{ and } q\in Q  \label{weak}
+\tilde F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in V_0 \text{ and } q\in Q  \label{weak}
 \end{equation}
-This weak formulation is proven in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain $\Omega$ and boundary data which are satisfied in the cases we consider.
+
+Essentially this weak formulation is proven in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain $\Omega$ and boundary data which are satisfied in the cases we consider.
 
 
-\section{The weak form of a backward Euler step}
+\section{Implicit time-discretization} \label{sec:implicitstep}
 
-FIXME
+Now we describe an implicit moving-mesh scheme to simultaneously solve the Glen-Stokes equations and the surface kinematical equation.  This time-discretized, but continuous-space formulation, will require us to change variables in the integrals which define the Stokes weak form.  Once we have stated this scheme we will consider its mixed finite element solution in the next section.
+
+Consider consecutive time steps $t_{n-1}$ and $t_n$ with $\Delta t = t_n - t_{n-1} > 0$.  Suppose the model's state, namely the ice geometry, is known at time $t_{n-1}$.  Denote this input, ice-filled domain as $\Lambda = \Omega^{t_{n-1}} \subset \RR^2$.  We want to approximate the updated domain $\Omega = \Omega^{t_n} \subset \RR^2$ using the surface kinematical equation \eqref{surfacekinematical}, a modeled surface mass balance $a(x,t)$, and the Glen-Stokes equations \eqref{weak}.
+
+For clarity the coordinates on region $\Lambda$ will be denoted $(r,s)$.  The update of regions corresponds to a change of coordinates $(r,s) \mapsto (x,z)$:
+\begin{equation}
+\Lambda \stackrel{\Delta t}{\to} \Omega: \qquad x(r,s)=r, \quad z(r,s)=s+b(r,s) \label{changecoords}
+\end{equation}
+where $b(r,s)$ is to be determined.  Under this change of coordinates the horizontal coordinated does not change ($x=r$) and only the $z$-coordinate is nontrivially updated.  Said another way, the updated domain is defined in terms of the input domain,
+\begin{equation}
+\Omega = \{(x(r,s),z(r,s)) \,\big|\, (r,s) \in \Lambda\},  \label{updateddomain}
+\end{equation}
+where functions $x$ and $z$ have the forms given in \eqref{changecoords}.
+
+The continuous-space update of the ice-filled domain ($\Lambda\to\Omega$) will require changing variables in integrals over the domain.  Consider, for example, a scalar-valued $L^1$ function $\tilde f(x,z)$ defined on $\Omega$.  By the change of variables formulation we have
+\begin{equation}
+\int_\Omega \tilde f(x,z)\,dx dz = \int_\Lambda \tilde f(x(r,s),z(r,s)) \, j(r,s)\,dr ds, \label{changeintegralearly}
+\end{equation}
+incorporating the determinant $j(r,s)$ of the Jacobian determinant
+\begin{equation}
+J = \begin{pmatrix} \frac{\partial x}{\partial r} & \frac{\partial x}{\partial s} \\ {\large\strut} \frac{\partial z}{\partial r} & \frac{\partial z}{\partial z} \end{pmatrix} = \begin{pmatrix} 1 & 0 \\ \frac{\partial b}{\partial r} & 1+\frac{\partial b}{\partial s} \end{pmatrix} \label{jacchange}
+\end{equation}
+thus
+\begin{equation}
+j(r,s) = |\det(J)| = \left|1+\frac{\partial b}{\partial s}\right|  \label{jacchangedet}
+\end{equation}
+For stability we will require that the change of coordinates not change orientation, i.e.~$1+\frac{\partial b}{\partial s}>0$.  In fact, for the solution of the implicit time-step equations, namely the equations which we develop below, to be accepted by our adaptive time-stepping scheme, we will require
+\begin{equation}
+\left|\frac{\partial b}{\partial s}\right| < 1.\label{stableremap}
+\end{equation}
+Returning to the integrand in \eqref{changeintegralearly}, our notation will denote a new function defined on $\Lambda$,
+    $$f(r,s) := \tilde f(x(r,s),z(r,s)) = \tilde f(r,s+b(r,s)),$$
+and thus
+\begin{equation}
+\int_\Omega \tilde f(x,z)\,dx dz = \int_\Lambda f(r,s) \, j(r,s)\,dr ds. \label{changeintegral}
+\end{equation}
+Also we will need to change variables in (first) partial derivatives, so we observe
+    $$\frac{\partial \tilde f}{\partial x}(x(r,s),z(r,s)) = FIXME$$
+
+Initially we describe the time-stepping using a backward Euler scheme, and we implement it via a (spatial) finite element scheme.  This presentation is somewhat inflexible because there are better implicit schemes than backward Euler, so one would like to avoid restricting to just one.  In fact, in later work we could state the problem as a differential algebraic equation (DAE) in function spaces and apply a higher-order scheme like a second-order backward-differentiation formula (BDF2) \cite{AscherPetzold1998}, and tools like PETSc's TS object \cite{Balayetal2020,BuelerBook} or possibly \texttt{firedrake-ts}.\footnote{\url{https://github.com/IvanYashchuk/firedrake-ts}}
+
+FIXME Main points:
+\renewcommand{\labelenumi}{\arabic{enumi}.}
+\begin{enumerate}
+\item equations are for four scalar functions $u,v,p,b$, of $(r,s) \in \Lambda$, where $\bu=\left<u,v\right>$ is the vector velocity, $p$ is the pressure, and $b$ is the vertical mesh displacement
+\item the $z$ value at the ice surface solves the time-discretized surface kinematical equation re-written into $(r,s)$ coordinates; this is a Robin boundary condition for $b$
+\item in the interior of $\Lambda$, the difference $b(r,s)=z(r,s)-s$ solves the Laplace equation subject to boundary values as follows:
+    \begin{itemize}
+    \item Robin on surface from surface kinematical equation
+    \item zero Dirichlet on base and inflow; these mesh nodes do not move
+    \item Neuman on outflow
+    \end{itemize}
+\item numerical solver should check element orientation under change of coordinates (above); if the solver flips an element then it is bad; also check new element aspect ratio and (presumably) remesh if that is bad
+\item the initial iterate for the (SNES-based) solver is clear: $\bu,p$ come from solution of previous time step, and $b$ starts at zero
+\end{enumerate}
+
 
 
 \small
