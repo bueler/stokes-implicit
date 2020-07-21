@@ -59,7 +59,7 @@ urlcolor=black     % only if colorlinks=true
 \thispagestyle{empty}
 \bigskip
 
-\section{Model equations in strong form} \label{sec:strongform}
+\section{Equations of ice flow in glaciers} \label{sec:strongform}
 
 Our conservation of momentum model for ice flow is the set of shear-thinning (Glen law) Stokes equations with glacier-suitable boundary conditions.\footnote{version: \today}  This model is described in \cite{GreveBlatter2009,JouvetRappaz2011}.  For these notes it applies on a 2D domain $\Omega$ occupied by the ice, in variables $(x,z)$ with $z$ vertical.  The domain $\Omega \subset \RR^2$ which must have a piecewise smooth boundary so that we may apply the boundary conditions, and in fact it will evolve, but it is otherwise general.
 
@@ -132,9 +132,9 @@ The last two integrals can be regarded as source terms.  In fact, if the inflow 
 An equivalent weak formulation is proven in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain $\Omega$ and boundary data which are satisfied in the cases we consider.
 
 
-\section{Implicit time-discretization} \label{sec:implicitstep}
+\section{Implicit time-discretization and the icy domain update} \label{sec:implicitstep}
 
-We propose an implicit moving-mesh scheme to simultaneously solve the Glen-Stokes equations and the surface kinematical equation.  We compute the ice strain (displacement) during a time step implicitly from the simultaneous principles of mass and momentum conservation.  In writing the weak formulation of this scheme, stated using a time-discretized, continuous-space formulation, the main task is to change variables in the integrals which define the above Stokes weak form.  The finite element solution of the resulting equations is considered in the next section.
+We propose an implicit domain-of-ice updating scheme to simultaneously solve the Glen-Stokes equations and the surface kinematical equation.  We compute the ice strain (displacement) during a time step implicitly from the simultaneous principles of mass and momentum conservation.  In writing the weak formulation of this scheme, stated using a time-discretized, continuous-space formulation, the main task is to change variables in the integrals which define the above Stokes weak form.  The finite element solution of the resulting equations is considered in the next section, wherein the domain update becomes a mesh displacement computed simultaneously with the velocity and pressure unknowns.
 
 Initially we will describe the time-stepping using a backward Euler scheme, a somewhat inflexible presentation.  Better implicit schemes exist, and in later work we could state the problem as a differential algebraic equation (DAE) and apply a higher-order scheme like a second-order backward-differentiation formula (BDF2) \cite{AscherPetzold1998}, and use tools like PETSc's TS object \cite{Balayetal2020,BuelerBook} or \texttt{firedrake-ts}.\footnote{\url{https://github.com/IvanYashchuk/firedrake-ts}}
 
@@ -157,7 +157,11 @@ I(r) = \{s\,:\,(r,s) \in \Lambda\} \subset \RR \, \text{ is a single interval}\l
 \end{equation}
 for every $r$.  In fact $I(r)$ is open, because $\Lambda$ is itself open, but this is of no importance in the following.  While statement \eqref{intervalassume} is an assumption about $\Lambda$, the current icy domain, once we have solved all the upcoming equations the same fact must also hold for $\Omega^n$, that is, so that time-stepping may proceed.  Now
     $$h(r) = \sup I(r), \qquad b(r) = \inf I(r)$$
-define the ice-surface and base elevation functions for the current domain $\Lambda$.  (One could denote $h(r)$ as $h^{n-1}(r)$, but we de-clutter this notation.)
+define the ice-surface and base elevation functions for the current domain $\Lambda$.  (One could denote $h(r)$ as $h^{n-1}(r)$, but we de-clutter this notation.)  Given \eqref{updateddomain}, the surface elevation for the new region is
+\begin{equation}
+h^n(r) = h(r) + c(r,h(r)),  \label{newsurfaceelevation}
+\end{equation}
+but note this is defined for $r$ in $\Lambda$ (i.e.~not $x$ in $\Omega^n$).  The value $c(r,h(r))$ is defined in a trace sense \cite{Evans2010}; see below for the Sobolev space which contains $c$.
 
 The change of coordinates will be differentiable within $\Lambda$.  (This is because the nontrivial part, the function $c$, will solve an elliptic PDE; see below.)  From \eqref{changecoords} the Jacobian of the change is
 \begin{equation}
@@ -174,45 +178,61 @@ where
 j(r,s) = 1+\frac{\partial c}{\partial s}, \qquad k(r,s) = j(r,s)^{-1}, \qquad \ell(r,s) = - \frac{\partial c}{\partial r}(r,s) j(r,s)^{-1}. \label{definejkl}
 \end{equation}
 
-With these formulas we can rewrite the surface kinematical equation \eqref{surfacekinematical}.  First, given \eqref{updateddomain}, the updated ice surface elevation is
-    $$h^n(r) = z(r,h(r)) = h(r) + c(r,h(r)),$$
-defined for $r$ in $\Lambda$.  The value $c(r,h(r))$ is defined in a trace sense \cite{Evans2010}; see below for the Sobolev space containing $c$.  The backward-Euler form of \eqref{surfacekinematical} will approximate the time derivative by $h_t \approx (h^n(r) - h(r))/\Delta t$, thus at the location $(r,h^n(r))$ on the boundary of $\Omega^n$, \eqref{surfacekinematical} becomes
-\begin{align}
-\frac{c(r,h(r))}{\Delta t} &= a^n(r) - u(r,h(r))\,\frac{d}{d r} h^n(r) + w(r,h(r)) \notag \\
-  &= a^n(r) - u(r,h(r))\,\left(h'(r) + \frac{\partial c}{\partial r}(r,h(r)) + h'(r) \frac{\partial c}{\partial s}(r,h(r))\right) + w(r,h(r)) \label{surfaceimplicitearly}
-\end{align}
-where $\bu(r,s)=\left<u,w\right>$ is the solution of the other equations (i.e.~the Stokes weak form; see below) as a function of $(r,s)\in\Lambda$.  Also $a^n(r) = a\left(r,h(r) + c(r,h(r)),t_n\right)$ is the mass balance computed at the updated surface location and the updated time.  Stated more simply, \eqref{surfaceimplicitearly} will be regarded as a Robin boundary condition for the unknown function $c(r,s)$ at an arbitrary surface location of $\Lambda$:
+Note that $j(r,s)$ is the Jacobian determinant.  For stability we require that the change of coordinates not cause a local flip in orientation, though degeneration is allowed.  That is, we will require $j\ge 0$ or equivalently
+\begin{equation}
+\frac{\partial c}{\partial s} \ge -1. \label{differentialVI}
+\end{equation}
+We return to the meaning of this restriction in \ref{sec:inequalities}.
+
+The backward-Euler form of the surface kinematical equation \eqref{surfacekinematical} approximates the time derivative $h_t$ by $(h^n(r) - h(r))/\Delta t$.  Let
+    $$a^n(r) = a\left(r,h(r) + c(r,h(r)),t_n\right)$$
+be the mass balance computed at the updated surface location and the updated time.  From \eqref{newsurfaceelevation}, at each location $(r,h^n(r))$ on the top boundary of $\Omega^n$ we have
+    $$\frac{dh^n}{d r} = h'(r) + \frac{\partial c}{\partial r}(r,h(r)) + h'(r) \frac{\partial c}{\partial s}(r,h(r)),$$
+thus our backward Euler approximation of \eqref{surfacekinematical} is
+\begin{equation}
+\frac{c(r,h(r))}{\Delta t} = a^n(r) - u(r,h(r))\,\left(h'(r) + \frac{\partial c}{\partial r}(r,h(r)) + h'(r) \frac{\partial c}{\partial s}(r,h(r))\right) + w(r,h(r)). \label{surfaceimplicitearly}
+\end{equation}
+Note that $\bu(r,s)=\left<u(r,s),w(r,s)\right>$ will also solve other equations (i.e.~the Stokes weak form; see below) on $\Lambda$.
+
+Equation \eqref{surfaceimplicitearly} is a Robin boundary condition for the unknown function $c(r,s)$ at each top boundary location $(r,h^n(r))$ on $\Lambda$:
 \begin{equation}
 c + \Delta t\,u \frac{\partial c}{\partial r} + \Delta t\,(1+h') u \frac{\partial c}{\partial s} = \Delta t \left(a^n + w\right). \label{surfaceimplicit}
 \end{equation}
-Note \eqref{surfaceimplicit} implies a coupling between surface elevation and mass balance during the solve, a complication which can be avoided by the (semi-explicit) approximation using the current surface elevation: $a^n \approx a(r,h(r),t_n)$.
+This condition couples surface elevation and mass balance during the solve, but this complication can be avoided by a time-splitting approximation using the current surface elevation: $a^n \approx a(r,h(r),t_n)$.
 
-As we will be rewriting the weak form \eqref{defineF} as integrals over $(r,s)\in \Lambda$, note the following expansions of the derivatives with respect to $(x,z)$.  In particular we use \eqref{changederivatives} and component notation $\bu = \left<u_0,u_2\right>$, compatible with coordinate notation $(x,z)$ on $\Omega$:
+Until now \eqref{surfaceimplicit} is a boundary condition for an unstated PDE determining the vertical displacement function $c(r,s)$ defined on the current domain $\Lambda$.  We propose that it solves the Laplace equation along with \eqref{surfaceimplicit} and other boundary conditions.  In strong form:
+\begin{align}
+\grad^2 c &= 0 &&\text{in } \Lambda \label{claplace} \\
+c + \Delta t\,u \frac{\partial c}{\partial r} + \Delta t\,(1+h') u \frac{\partial c}{\partial s} &= \Delta t \left(a^n + w\right) &&\emph{top} \notag \\
+c &= 0 &&\text{\emph{base} \& \emph{inflow}} \notag \\
+\grad c\cdot \hbn &= 0 &&\emph{outflow} \notag
+\end{align}
+That is, the surface kinematical equation is a Robin condition on the top, Dirichlet conditions apply on the base and inflow, and a Neumann condition on the outflow.  Assuming that $\Lambda$ is a well-behaved domain, and that the base and inflow together have positive measure, this Laplacian boundary problem is well-posed in the (decoupled) context where $a^n,u,w$ are given functions (with mild regularity assumptions) \cite{Evans2010}.
+
+The weak form of problem \eqref{claplace} can be stated as follows.  Suppose $c, e \in W_0^{1,2}(\Lambda)$; these are zero on the union of the base and inflow.  FIXME how to do Robin condition?
+
+
+\section{Weak form of the coupled equations} \label{sec:weakformcoupled}
+
+The change of variables defined in the last section will rewrite the weak form integrals.  For example, consider a generic scalar-valued $L^1$ function $\tilde f(x,z)$ defined on $\Omega^n$.  By the change of variables theorem we have
+\begin{equation}
+\int_{\Omega^n} \tilde f(x,z)\,dx dz = \int_\Lambda f(r,s) \, j(r,s)\,dr ds, \label{changeintegral}
+\end{equation}
+with weight $j(r,s)$ defined in \eqref{definejkl} and $f(r,s) = \tilde f(r,s+c(r,s))$.  Also note the following expansions of velocity derivatives (strain rates) with respect to $(x,z)$ which follow from \eqref{changederivatives} and \eqref{definejkl}.  Also, we use component notation $\bu = \left<u_0,u_2\right>$, compatible with coordinate notation $(x,z)$ on $\Omega$:
 \begin{align*}
-\grad_{x,z} \cdot \tilde \bu &= \frac{\partial u_0}{\partial r} + \ell \frac{\partial u_0}{\partial s} + k \frac{\partial u_2}{\partial s} \\
-D_{x,z} \tilde \bu &= \begin{pmatrix} \partial u_0/\partial r + \ell (\partial u_0/\partial s) & \frac{1}{2}\left(k (\partial u_0/\partial s) + \partial u_2/\partial r + \ell (\partial u_2/\partial s)\right) \\
-  {\large\strut} \frac{1}{2}\left(k (\partial u_0/\partial s) + \partial u_2/\partial r + \ell (\partial u_2/\partial s)\right) & k (\partial u_2/\partial s)\end{pmatrix} \\
-|D_{x,z} \tilde \bu|^2 &= \frac{1}{2}\left(\frac{\partial u_0}{\partial r} + \ell \frac{\partial u_0}{\partial s}\right)^2 + \frac{1}{2}\left(k \frac{\partial u_0}{\partial s} + \frac{\partial u_2}{\partial r} + \ell \frac{\partial u_2}{\partial s}\right)^2 + \frac{1}{2}\left(k \frac{\partial u_2}{\partial s}\right)^2 \\
+\grad \cdot \tilde \bu &= \frac{\partial u_0}{\partial r} + \ell \frac{\partial u_0}{\partial s} + k \frac{\partial u_2}{\partial s} \\
+D \tilde \bu &= \begin{pmatrix} \partial u_0/\partial r + \ell (\partial u_0/\partial s) & \gamma \\
+  {\large\strut} \gamma & k (\partial u_2/\partial s)\end{pmatrix} \\
+|D \tilde \bu|^2 &= \frac{1}{2}\left(\frac{\partial u_0}{\partial r} + \ell \frac{\partial u_0}{\partial s}\right)^2 + \gamma^2 + \frac{1}{2}\left(k \frac{\partial u_2}{\partial s}\right)^2
 \end{align*}
+where
+    $$\gamma = \frac{1}{2} \left(k \frac{\partial u_0}{\partial s} + \frac{\partial u_2}{\partial r} + \ell \frac{\partial u_2}{\partial s}\right)$$
+is a notational simplification only.
 
-The change of variables also rewrites integrals over the solution domain $\Omega^n$.  For example, consider a generic scalar-valued $L^1$ function $\tilde f(x,z)$ defined on $\Omega^n$.  By the change of variables theorem we have
-\begin{equation}
-\int_{\Omega^n} \tilde f(x,z)\,dx dz = \int_\Lambda \tilde f(x(r,s),z(r,s)) \, j(r,s)\,dr ds, \label{changeintegralearly}
-\end{equation}
-with weighting $j(r,s)$, equal to the determinant of $J$, defined above in \eqref{definejkl}.  For stability the change of coordinates must not cause a local flip in orientation,though degeneration is allowed.  That is, we will require $j\ge 0$ or equivalently
-\begin{equation}
-\frac{\partial c}{\partial s} \ge -1.\label{differentialVI}
-\end{equation}
-For integral \eqref{changeintegralearly} we again denote the function defined on $\Lambda$ by $f(r,s) = \tilde f(r,s+c(r,s))$, and thus we get a final integral change-of-variables formula
-\begin{equation}
-\int_{\Omega^n} \tilde f(x,z)\,dx dz = \int_\Lambda f(r,s) \, j(r,s)\,dr ds. \label{changeintegral}
-\end{equation}
+FIXME state the weak form using independent variables $r,s$ and integrals over $\Lambda$; equations are for four scalar functions $u,v,p,c$
 
 
-FIXME state the weak form using independent variables $r,s$ and integrals over $\Lambda$
-
-
-\section{Inequality constraints and mass accounting}
+\section{Inequality constraints and mass accounting} \label{sec:inequalities}
 
 \begin{lemma}
 Assume that the ice thickness is well defined at time $t_{n-1}$, that is, assume
@@ -226,20 +246,10 @@ FIXME? This is the fundamental theorem of calculus:
     $$h(r,t_n) - b(r) = \int_{I(r)} 1\,ds \le \int_{I(r)} - \frac{\partial c}{\partial s}\,ds$$
 \end{proof}
 
-FIXME Main points:
-\renewcommand{\labelenumi}{\arabic{enumi}.}
-\begin{enumerate}
-\item equations are for four scalar functions $u,v,p,c$, of $(r,s) \in \Lambda$, where $\bu=\left<u,v\right>$ is the vector velocity, $p$ is the pressure, and $c$ is the vertical mesh displacement
-\item the $z$ value at the ice surface solves the time-discretized surface kinematical equation re-written into $(r,s)$ coordinates; this is a Robin boundary condition for $c$
-\item in the interior of $\Lambda$, the difference $c(r,s)=z(r,s)-s$ solves the Laplace equation subject to boundary values as follows:
-    \begin{itemize}
-    \item Robin on surface from surface kinematical equation
-    \item zero Dirichlet on base and inflow; these mesh nodes do not move
-    \item Neuman on outflow
-    \end{itemize}
-\item numerical solver should check element orientation under change of coordinates (above); if the solver flips an element then it is bad; also check new element aspect ratio and (presumably) remesh if that is bad
-\item the initial iterate for the (SNES-based) solver is clear: $\bu,p$ come from solution of previous time step, and $b$ starts at zero
-\end{enumerate}
+
+\section{Finite element approximation}  \label{sec:finiteelement}
+
+FIXME: numerical solver should check element orientation under change of coordinates (above); if the solver flips an element then it is bad; also check new element aspect ratio and (presumably) remesh if that is bad; the initial iterate for the (SNES-based) solver is clear: $\bu,p$ come from solution of previous time step, and $b$ starts at zero
 
 
 
