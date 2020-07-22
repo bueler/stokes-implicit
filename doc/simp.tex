@@ -104,7 +104,7 @@ Denoting the ice velocity components as $\bu=\left<u(x,z,t),w(x,z,t)\right>$, th
 \begin{equation}
 h_t = a(x,h,t) - u(x,h,t) h_x + w(x,h,t) \label{surfacekinematical}
 \end{equation}
-Here $a(x,z,t)$ is the (modeled) climatic mass balance in (ice-equivalent) units $\text{m}\,\text{s}^{-1}$.  Informally, \eqref{surfacekinematical} changes the surface elevation $\Delta h \approx h_t\,\Delta t$ using the climatically added/removed ice $a\,\Delta t$ plus the component of the ice motion in the outward (upward) normal direction $\hbn = \left<-h_x,1\right>$.  That is, one may say that the time-dependent surface $z=h(x,t)$ evolves by steps $\Delta h \approx \left(a + \hbn\cdot \bu|_{z=h}\right) \Delta t$, but in fact we will solve \eqref{surfacekinematical} implicitly, that is, coupled with the Stokes equations \eqref{stokes}, \eqref{incompagain} and the other boundary conditions.
+Here $a(x,z,t)$ is the (modeled) climatic mass balance in (ice-equivalent) units $\text{m}\,\text{s}^{-1}$.  Informally, \eqref{surfacekinematical} changes the surface elevation $\Delta h \approx h_t\,\Delta t$ using the climatically added/removed ice $a\,\Delta t$ plus the component of the ice motion in the outward (upward) normal direction $\hbn = \left<-h_x,1\right>$.  One may say that the time-dependent surface $z=h(x,t)$ evolves by steps $\Delta h \approx \left(a + \hbn\cdot \bu|_{z=h}\right) \Delta t$, but in fact we will solve \eqref{surfacekinematical} implicitly, that is, coupled with the Stokes equations \eqref{stokes}, \eqref{incompagain} and the other boundary conditions.
 
 
 \section{Weak form of the decoupled Glen-Stokes equations} \label{sec:weakformstokes}
@@ -134,22 +134,29 @@ An equivalent weak formulation is proven in \cite[Theorem 3.8]{JouvetRappaz2011}
 
 \section{Implicit time-discretization and the icy domain update} \label{sec:implicitstep}
 
-We propose an implicit domain-of-ice updating scheme to simultaneously solve the Glen-Stokes equations and the surface kinematical equation.  We compute the ice strain (displacement) during a time step implicitly from the simultaneous principles of mass and momentum conservation.  In writing the weak formulation of this scheme, stated using a time-discretized, continuous-space formulation, the main task is to change variables in the integrals which define the above Stokes weak form.  The finite element solution of the resulting equations is considered in the next section, wherein the domain update becomes a mesh displacement computed simultaneously with the velocity and pressure unknowns.
+We propose an implicit domain-updating scheme to simultaneously solve the Glen-Stokes equations and the surface kinematical equation.  In this scheme we compute a greatly-simplified surrogate of the ice \emph{strain}, i.e.~the deformation or displacement, during the time step, implicitly from the simultaneous principles of mass and momentum conservation.  Specifically, we solve for a vertical-only displacement function which is defined within the updated icy domain.  At each time step the current domain is, essentially, the reference configuration from which we compute the updated configuration.  In writing-out the equations of this scheme, stated using a time-discretized but continuous-space weak formulation, a significant task is to change variables in the integrals which define the Stokes weak form.  In the finite element solution of the resulting equations, considered in the next section, the domain update becomes a vertical-only mesh displacement computed simultaneously with the discrete velocity and pressure fields.
 
 Initially we will describe the time-stepping using a backward Euler scheme, a somewhat inflexible presentation.  Better implicit schemes exist, and in later work we could state the problem as a differential algebraic equation (DAE) and apply a higher-order scheme like a second-order backward-differentiation formula (BDF2) \cite{AscherPetzold1998}, and use tools like PETSc's TS object \cite{Balayetal2020,BuelerBook} or \texttt{firedrake-ts}.\footnote{\url{https://github.com/IvanYashchuk/firedrake-ts}}
 
-Consider consecutive times $t_{n-1}$ and $t_n$ with step $\Delta t = t_n - t_{n-1} > 0$.  Suppose the model's state, namely the (current) ice geometry, is known at time $t_{n-1}$.  Denote this ice-filled domain as $\Lambda = \Omega^{t_{n-1}} \subset \RR^2$.  We will approximate the updated (new) domain $\Omega^n = \Omega^{t_n} \subset \RR^2$ using the surface kinematical equation \eqref{surfacekinematical}, the surface mass balance $a(x,z,t)$, and the Glen-Stokes equations \eqref{weak}.
+Let $t_{n-1}$ and $t_n$ be consecutive times with step $\Delta t = t_n - t_{n-1} > 0$.  Suppose the model's state, namely the (current) ice geometry, is known at time $t_{n-1}$.  Denote this ice-filled domain as $\Lambda = \Omega^{t_{n-1}} \subset \RR^2$.  We will approximate the updated (new) domain $\Omega^n = \Omega^{t_n} \subset \RR^2$ using the surface kinematical equation \eqref{surfacekinematical}, the surface mass balance $a(x,z,t)$, and the Glen-Stokes equations \eqref{weak}.
 
-The coordinates on the current region $\Lambda$ are denoted $(r,s)$.  We update the region via a particular change of coordinates $(r,s) \mapsto (x,z)$:
+The coordinates on the current domain $\Lambda$ are denoted $(r,s)$.  We update the region via a change of coordinates $(r,s) \mapsto (x,z)$,
 \begin{equation}
-\Lambda \stackrel{\Delta t}{\to} \Omega^n: \qquad x(r,s)=r, \quad z(r,s)=s+c(r,s). \label{changecoords}
+\Lambda \stackrel{\Delta t}{\to} \Omega^n: \qquad x(r,s)=r, \quad z(r,s)=s+c(r,s), \label{changecoords}
 \end{equation}
-Here $c(r,s)$ is a scalar function which is to be determined (below).  Note that the horizontal coordinate is not changed ($x=r$) but the $z$-coordinate is nontrivial.  The new domain $\Omega^n$ is an image of the current domain $\Lambda$,
+so the new domain $\Omega^n$ is an image of $\Lambda$:
 \begin{equation}
 \Omega^n = \{(x,z)=(r,s+c(r,s)) \,\big|\, (r,s) \in \Lambda\}.  \label{updateddomain}
 \end{equation}
+(Note that the horizontal coordinate is not changed ($x=r$) but the $z$-coordinate is nontrivial.)  Here $c(r,s)$ is a scalar function which is to be determined (below).  In fact we will solve coupled PDEs on $\Lambda$, including a problem for the scalar vertical displacement function $c(r,s)$, and the coupled solution determines $\Omega^n$ plus the ice velocity and pressure.  This is sketched in Figure \ref{fig:domainupdate}.
 
-FIXME a figure here showing $\Lambda$ on left and $\Omega^n$ on right
+\begin{figure}[h]
+
+FIXME
+
+\caption{The time $t_{n-1}$ (``current'') domain $\Lambda$ is the reference configuration for the time $t_n$ (``new'') domain $\Omega^n$.}
+\label{fig:domainupdate}
+\end{figure}
 
 The top of the icy region will be described by a surface elevation function, but this requires we acknowledge a ``shallowness'' assumption, namely that for every $x$-coordinate value there are well-defined surface and base elevation values.  That is, from now on we assume that
 \begin{equation}
