@@ -24,10 +24,8 @@ for mesh_num in [5,10,20,40]:
     x, y = SpatialCoordinate(mesh)
     f.interpolate(- 8.0 * pi * pi * cos(x * pi * 2)*cos(y * pi * 2))
 
-    # WHY NEGATIVE?  IT *IS* NEEDED FOR CONVERGENCE
-    #a = dot(grad(v), grad(u)) * dx
-    a = - dot(grad(v), grad(u)) * dx
-    L = f * v * dx
+    a = dot(grad(v), grad(u)) * dx
+    L = - f * v * dx
 
     g = Function(V)
     g.interpolate(cos(2 * pi * x) * cos(2 * pi * y))
@@ -60,9 +58,8 @@ for mesh_num in [5,10,20,40]:
     x, y = SpatialCoordinate(mesh)
     f.interpolate(- 8.0 * pi * pi * cos(x * pi * 2) * cos(y * pi * 2))
 
-    #a = dot(grad(v), grad(u)) * dx
-    a = - dot(grad(v), grad(u)) * dx
-    L = f * v * dx
+    a = dot(grad(v), grad(u)) * dx
+    L = - f * v * dx
 
     g = Function(V)
     g.interpolate(cos(2 * pi * x) * cos(2 * pi * y))
