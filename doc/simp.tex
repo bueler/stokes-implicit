@@ -158,17 +158,17 @@ FIXME
 \label{fig:domainupdate}
 \end{figure}
 
-The top of the icy region will be described by a surface elevation function, but this requires we acknowledge a ``shallowness'' assumption, namely that for every $x$-coordinate value there are well-defined surface and base elevation values.  That is, from now on we assume that
+The top of the icy region will be described by a surface elevation function.  This requires we acknowledge a ``shallowness'' assumption, namely that for every $x$-coordinate value there are well-defined surface and base elevation values.  That is, from now on we assume that
 \begin{equation}
 I(r) = \{s\,:\,(r,s) \in \Lambda\} \subset \RR \, \text{ is a single interval}\label{intervalassume}
 \end{equation}
-for every $r$.  In fact $I(r)$ is open, because $\Lambda$ is itself open, but this is of no importance in the following.  While statement \eqref{intervalassume} is an assumption about $\Lambda$, the current icy domain, once we have solved all the upcoming equations the same fact must also hold for $\Omega^n$, that is, so that time-stepping may proceed.  Now
-    $$h(r) = \sup I(r), \qquad b(r) = \inf I(r)$$
-define the ice-surface and base elevation functions for the current domain $\Lambda$.  (One could denote $h(r)$ as $h^{n-1}(r)$, but we de-clutter this notation.)  Given \eqref{updateddomain}, the surface elevation for the new region is
+for every $r$.  In fact $I(r)$ is open, because $\Lambda$ is itself open, but this is of no importance in the following.  While statement \eqref{intervalassume} is an assumption about $\Lambda$, the current icy domain, once we have solved all the upcoming equations the same must also hold for $\Omega^n$, that is, so that time-stepping may proceed.  Now let
+    $$\eta(r) = \sup I(r), \qquad b(r) = \inf I(r)$$
+define the ice-surface and base elevation functions for the current domain $\Lambda$.  Given \eqref{updateddomain}, the surface elevation for the new region is
 \begin{equation}
-h^n(r) = h(r) + c(r,h(r)),  \label{newsurfaceelevation}
+h(r) = \eta(r) + c(r,\eta(r)),  \label{newsurfaceelevation}
 \end{equation}
-but note this is defined for $r$ in $\Lambda$ (i.e.~not $x$ in $\Omega^n$).  The value $c(r,h(r))$ is defined in a trace sense \cite{Evans2010}; see below for the Sobolev space which contains $c$.
+but note this is defined for $r$ in $\Lambda$ (i.e.~not $x$ in $\Omega^n$).  The value $c(r,\eta(r))$ is defined in a trace sense \cite{Evans2010}; see below for the Sobolev space which contains $c$.
 
 The change of coordinates will be differentiable within $\Lambda$.  (This is because the nontrivial part, the function $c$, will solve an elliptic PDE; see below.)  From \eqref{changecoords} the Jacobian of the change is
 \begin{equation}
@@ -189,34 +189,34 @@ Note that $j(r,s)$ is the Jacobian determinant.  For stability we require that t
 \begin{equation}
 \frac{\partial c}{\partial s} \ge -1. \label{differentialVI}
 \end{equation}
-We return to the meaning of this restriction in \ref{sec:inequalities}.
+(We reconsider the meaning of this restriction in \ref{sec:inequalities}.)
 
-The backward-Euler form of the surface kinematical equation \eqref{surfacekinematical} approximates the time derivative $h_t$ by $(h^n(r) - h(r))/\Delta t$.  Let
-    $$a^n(r) = a\left(r,h(r) + c(r,h(r)),t_n\right)$$
-be the mass balance computed at the updated surface location and the updated time.  From \eqref{newsurfaceelevation}, at each location $(r,h^n(r))$ on the top boundary of $\Omega^n$ we have
-    $$\frac{dh^n}{d r} = h'(r) + \frac{\partial c}{\partial r}(r,h(r)) + h'(r) \frac{\partial c}{\partial s}(r,h(r)),$$
-thus our backward Euler approximation of \eqref{surfacekinematical} is
+The time derivative $h_t$ in surface kinematical equation \eqref{surfacekinematical} will be approximated by $(h^n(r) - h(r))/\Delta t$.  Let
 \begin{equation}
-\frac{c(r,h(r))}{\Delta t} = a^n(r) - u(r,h(r))\,\left(h'(r) + \frac{\partial c}{\partial r}(r,h(r)) + h'(r) \frac{\partial c}{\partial s}(r,h(r))\right) + w(r,h(r)). \label{surfaceimplicitearly}
+a^n(r) = a\left(r,\eta(r) + c(r,\eta(r)),t_n\right) \label{massbalance}
 \end{equation}
-Note that $\bu(r,s)=\left<u(r,s),w(r,s)\right>$ will also solve other equations (i.e.~the Stokes weak form; see below) on $\Lambda$.
-
-Equation \eqref{surfaceimplicitearly} is a Robin boundary condition for the unknown function $c(r,s)$ at each top boundary location $(r,h^n(r))$ on $\Lambda$:
+be the mass balance computed at the updated surface location and the updated time.  Using \eqref{newsurfaceelevation}, our $O(\Delta t)$ approximation of \eqref{surfacekinematical}, along the top surface $s=\eta(r)$ of $\Lambda$ is
 \begin{equation}
-c + \Delta t\,u \frac{\partial c}{\partial r} + \Delta t\,(1+h') u \frac{\partial c}{\partial s} = \Delta t \left(a^n + w\right). \label{surfaceimplicit}
+\frac{c(r,\eta(r))}{\Delta t} = a^n(r) - u(r,\eta(r))\,\eta'(r) + w(r,\eta(r)). \label{surfaceimplicit}
 \end{equation}
-This condition couples surface elevation and mass balance during the solve, but this complication can be avoided by a time-splitting approximation using the current surface elevation: $a^n \approx a(r,h(r),t_n)$.
+Equation \eqref{surfaceimplicit} is a boundary condition at each top location $(r,\eta(r))$ on $\Lambda$.  In fact $\bu(r,s)=\left<u(r,s),w(r,s)\right>$ will also solve the Stokes equations (see below) on $\Lambda$, so condition \eqref{surfaceimplicit} couples the determination of the domain $\Omega^n$ with velocity and pressure.  Condition \eqref{surfaceimplicit} also couples surface elevation and mass balance during the solve, but a simplification is to use the time-splitting approximation $a^n \approx a(r,\eta(r),t_n)$ instead of \eqref{massbalance}.
 
-Until now \eqref{surfaceimplicit} is a boundary condition for an unstated PDE determining the vertical displacement function $c(r,s)$ defined on the current domain $\Lambda$.  We propose that it solves the Laplace equation along with \eqref{surfaceimplicit} and other boundary conditions.  In strong form:
+We propose that the vertical displacement function $c(r,s)$, defined on the current domain $\Lambda$, solves a PDE problem, part of which is the boundary condition \eqref{surfaceimplicit}.  In strong form, $c$ will solve the Laplace equation with these boundary conditions:
 \begin{align}
-\grad^2 c &= 0 &&\text{in } \Lambda \label{claplace} \\
-c + \Delta t\,u \frac{\partial c}{\partial r} + \Delta t\,(1+h') u \frac{\partial c}{\partial s} &= \Delta t \left(a^n + w\right) &&\emph{top} \notag \\
-c &= 0 &&\text{\emph{base} \& \emph{inflow}} \notag \\
+        \grad^2 c &= 0 &&\text{in } \Lambda \label{claplace} \\
+                c &= \Delta t\,\left(a^n - u \eta' + w\right) &&\emph{top} \notag \\
+                c &= 0 &&\text{\emph{base} \& \emph{inflow}} \notag \\
 \grad c\cdot \hbn &= 0 &&\emph{outflow} \notag
 \end{align}
-That is, the surface kinematical equation is a Robin condition on the top, Dirichlet conditions apply on the base and inflow, and a Neumann condition on the outflow.  Assuming that $\Lambda$ is a well-behaved domain, and that the base and inflow together have positive measure, this Laplacian boundary problem is well-posed in the (decoupled) context where $a^n,u,w$ are given functions (with mild regularity assumptions) \cite{Evans2010}.
+Dirichlet conditions apply on most of the boundary, but a Neumann condition applies on the outflow (if present).  Assuming that $\Lambda$ is a well-behaved domain, this boundary-value problem is known to be well-posed in the \emph{decoupled} context where $a^n,u,w$ are given functions (with mild regularity assumptions) \cite{Evans2010}, but we intend to solve it in the coupled context where the Dirichlet condition on the top actually relates unknowns $c,u,w$.
 
-The weak form of problem \eqref{claplace} can be stated as follows.  Suppose $c, e \in W_0^{1,2}(\Lambda)$; these are zero on the union of the base and inflow.  FIXME how to do Robin condition?
+The weak form of problem \eqref{claplace} can be stated as follows.  Suppose $c, e \in W_0^{1,2}(\Lambda)$; these are zero on the union of the base and inflow.  FIXME
+
+FIXME a fully-implicit version of \eqref{surfaceimplicit} would be
+\begin{equation}
+\frac{c(r,\eta(r))}{\Delta t} = a^n(r) - u(r,\eta(r))\,\frac{d}{dr}(h(r)) + w(r,\eta(r)). \label{surfaceimplicitfully}
+\end{equation}
+unfortunately this is more difficult because it involves an ``oblique derivative'' condition on \eqref{claplace}; but it can be tried out fairly easily with firedrakes \texttt{EquationBC}
 
 
 \section{Weak form of the coupled equations} \label{sec:weakformcoupled}
@@ -236,7 +236,7 @@ where
     $$\gamma = \frac{1}{2} \left(k \frac{\partial u_0}{\partial s} + \frac{\partial u_2}{\partial r} + \ell \frac{\partial u_2}{\partial s}\right)$$
 is a notational simplification only.
 
-FIXME state the weak form using independent variables $r,s$ and integrals over $\Lambda$; equations are for four scalar functions $u,v,p,c$
+FIXME state the weak form using independent variables $r,s$ and integrals over $\Lambda$; equations are for solution functions $\bu,p,c$ with test functions $\bv,q,e$
 
 
 \section{Inequality constraints and mass accounting} \label{sec:inequalities}
@@ -244,13 +244,13 @@ FIXME state the weak form using independent variables $r,s$ and integrals over $
 \begin{lemma}
 Assume that the ice thickness is well defined at time $t_{n-1}$, that is, assume
 \eqref{intervalassume}.  If inequality \eqref{differentialVI} holds then the updated ice surface elevation
-    $$h(r,t_n) = \sup_{s\in I(r)}\{z(r,s)\}$$
-satisfies \eqref{admissibility}, i.e.~$h(r,t_n)\ge b(r)$.
+    $$h(r) = \sup_{s\in I(r)}\{z(r,s)\}$$
+satisfies \eqref{admissibility}, i.e.~$h(r)\ge b(r)$.
 \end{lemma}
 
 \begin{proof}
 FIXME? This is the fundamental theorem of calculus:
-    $$h(r,t_n) - b(r) = \int_{I(r)} 1\,ds \le \int_{I(r)} - \frac{\partial c}{\partial s}\,ds$$
+    $$h(r) - b(r) = \int_{I(r)} 1\,ds \le \int_{I(r)} - \frac{\partial c}{\partial s}\,ds$$
 \end{proof}
 
 
