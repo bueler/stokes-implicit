@@ -115,14 +115,14 @@ For the weak form we seek a solution $\bu\in V_D \subset W^{1,p}(\Omega^t)$ and 
 
 To give an initial definition of the nonlinear functional which defines the weak form, we multiply \eqref{stokes} by $\bv\in V_0$ and \eqref{incompagain} by $q\in Q$, then add and integrate-by-parts:
 \begin{equation}
-\tilde F = -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds + \int_{\Omega^t} \tau \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,dx dz \label{nonfunctwo}
+\tilde F = -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,dS + \int_{\Omega^t} \tau \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,dx dz \label{nonfunctwo}
 \end{equation}
-where $ds$ is the arclength element along $\partial\Omega^t$, and denoting $\sigma=\tau-pI$ for brevity.  Note that $\bu,\bv$ appear with at most first derivatives and $p,q$ appear without derivatives.
+where $dS$ is the arclength element along $\partial\Omega^t$, and denoting $\sigma=\tau-pI$ for brevity.  Note that $\bu,\bv$ appear with at most first derivatives and $p,q$ appear without derivatives.
 
 By definition, $\bv\in V_0$ satisfies $\bv=\bzero$ along the base and inflow surfaces.  Thus these parts of the integral over $\partial\Omega$ in \eqref{nonfunctwo} are zero.  The stress-free condition \eqref{topbc} on the top surface and the outflow condition \eqref{outflowbc} on the outflow boundary denoted $\partial_O \Omega^t$, now completely eliminate the unknowns from the boundary integral, yielding a final formula for $\tilde F$:
 \begin{align}
-\tilde F &= \int_{\Omega^t} B_n |D\bu|^{\frac{1}{n} - 1} D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q \,dx dz \label{defineF} \\
-    &\qquad  - \int_{\Omega^t} \rho \mathbf{g} \cdot \bv \,dx dz + \int_{\partial_O \Omega^t} \rho (H_{\text{out}}-z) \bg \cdot \bv \,ds \notag
+\tilde F &= \int_{\Omega^t} B_n |D\bu|^{\frac{1}{n} - 1} D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q \,dx dz \label{definetildeF} \\
+    &\qquad  - \int_{\Omega^t} \rho \mathbf{g} \cdot \bv \,dx dz + \int_{\partial_O \Omega^t} \rho (H_{\text{out}}-z) \bg \cdot \bv \,dS \notag
 \end{align}
 The last two integrals can be regarded as source terms.  In fact, if the inflow velocity is zero and these source terms are also zero, for instance because gravity is turned off ($\bg=\bzero$), then the unique solution is $\bu=\bzero$ and $p=0$.  The weak form is the statement that $\bu\in V_D$ and $p\in Q$ satisfy
 \begin{equation}
@@ -210,7 +210,11 @@ We propose that the vertical displacement function $c(r,s)$, defined on the curr
 \end{align}
 Dirichlet conditions apply on most of the boundary, but a Neumann condition applies on the outflow (if present).  Assuming that $\Lambda$ is a well-behaved domain, this boundary-value problem is known to be well-posed in the \emph{decoupled} context where $a^n,u,w$ are given functions (with mild regularity assumptions) \cite{Evans2010}, but we intend to solve it in the coupled context where the Dirichlet condition on the top actually relates unknowns $c,u,w$.
 
-The weak form of problem \eqref{claplace} can be stated as follows.  Suppose $c, e \in W_0^{1,2}(\Lambda)$; these are zero on the union of the base and inflow.  FIXME
+The weak form of problem \eqref{claplace} can be stated as follows.  Noting that the outflow has a natural condition, we define the Laplacian bilinear form
+\begin{equation}
+a(c;e) = \int_\Lambda \frac{\partial c}{\partial r} \frac{\partial e}{\partial r} + \frac{\partial c}{\partial s} \frac{\partial e}{\partial s}\,dr ds  \label{asurface}
+\end{equation}
+and say that $c$ solves the (decoupled) weak form of \eqref{claplace} if $c \in W_D^{1,2}(\Lambda)$ and $e \in W_0^{1,2}(\Lambda)$ solves $a(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.  Note $c$ satisfies the nonhomogeneous Dirichlet conditions on the top [FIXME: HOW GIVEN \texttt{EquationBC}?], while $e$ is zero on the top, and both are zero on the base and inflow.
 
 FIXME a fully-implicit version of \eqref{surfaceimplicit} would be
 \begin{equation}
@@ -237,6 +241,25 @@ where
 is a notational simplification only.
 
 FIXME state the weak form using independent variables $r,s$ and integrals over $\Lambda$; equations are for solution functions $\bu,p,c$ with test functions $\bv,q,e$
+
+From weak forms \eqref{definetildeF} and \eqref{asurface}, the proposed [DRAFT] weak form is
+\begin{align}
+F(\bu,p,c;\bv,q,e) &= \int_\Lambda B_n |D\bu|^{\frac{1}{n} - 1} D\bu\,:\,D\bv\, j\,dr ds [FIXME] \label{defineF} \\
+    &\quad  - \int_\Lambda p \left(j \frac{\partial v_0}{\partial r} - \frac{\partial c}{\partial r} \frac{\partial v_0}{\partial s} + \frac{\partial v_2}{\partial s}\right) \,dr ds \notag \\
+    &\quad - \int_\Lambda q \left(j \frac{\partial u_0}{\partial r} - \frac{\partial c}{\partial r} \frac{\partial u_0}{\partial s} + \frac{\partial u_2}{\partial s}\right)\,dr ds \notag \\
+    &\quad  - \int_\Lambda \rho \mathbf{g} \cdot \bv \, j\,dr ds \notag \\
+    &\quad + \int_{\partial_O \Lambda} \rho (H_{\text{out}}-s-c) \bg \cdot \bv \,dS \notag \\
+    &\quad + \int_\Lambda \frac{\partial c}{\partial r} \frac{\partial e}{\partial r} + \frac{\partial c}{\partial s} \frac{\partial e}{\partial s}\,dr ds \notag
+\end{align}
+FIXME in above: $|D\bu|$ and $D\bu:D\bv$ need expansion; how to regularize that term; how to write weak form for $c$ when we are actually going to use \texttt{EquationBC}?
+
+The solution of the weak form is a list of three functions, $\bu = \left<u_0,u_2\right> \in V_D$, $p\in L^{p'}(\Lambda)$, and $c\in W^{1,2}_D(\Lambda)$, such that
+\begin{equation}
+F(\bu,p,c;\bv,q,e) = 0 \text{ for all } \bv = \left<v_0,v_2\right> \in V_0, \, q\in L^{p'}(\Lambda), \text{ and } e \in W^{1,2}_0(\Lambda).
+\end{equation}
+All trial and test functions are functions of $r$ and $s$ in $\Lambda$.
+
+FIXME result is following block structure
 
 
 \section{Inequality constraints and mass accounting} \label{sec:inequalities}
