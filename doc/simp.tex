@@ -61,7 +61,7 @@ urlcolor=black     % only if colorlinks=true
 
 \section{Equations of ice flow in glaciers} \label{sec:strongform}
 
-Our conservation of momentum model for ice flow is the set of shear-thinning (Glen law) Stokes equations with glacier-suitable boundary conditions.\footnote{version: \today}  This model is described in \cite{GreveBlatter2009,JouvetRappaz2011}.  For these notes it applies on a 2D domain $\Omega$ occupied by the ice, in variables $(x,z)$ with $z$ vertical.  The domain $\Omega \subset \RR^2$ which must have a piecewise smooth boundary so that we may apply the boundary conditions, and in fact it will evolve, but it is otherwise general.
+The standard description of ice flow in glaciers is the shear-thinning (Glen law) Stokes model \cite{GreveBlatter2009,JouvetRappaz2011}.\footnote{version: \today}  We will apply this model on a time-dependent 2D domain, the region occupied by the ice, using time $t>0$ and spatial variables $(x,z)$, with $z$ vertical.  The evolving domain $\Omega^t \subset \RR^2$ must have a piecewise smooth boundary so that we may apply the boundary conditions, but it is otherwise general.
 
 Allowing any Glen exponent $n\ge 1$, the strong form model equations are:
 \begin{align}
@@ -69,86 +69,100 @@ Allowing any Glen exponent $n\ge 1$, the strong form model equations are:
 \nabla \cdot \bu &= 0 &&\text{\emph{incompressibility}} \label{incompressible} \\
 \tau &= B_n |D\bu|^{(1/n) - 1} D\bu  &&\text{\emph{viscosity-form flow law}} \label{viscflowlaw}
 \end{align}
-Here we have velocity $\bu$, pressure $p$, ice density $\rho$ (constant), deviatoric stress tensor $\tau$, and strain rate tensor $D\bu$.  The acceleration of gravity is $\bg = \left<g\sin\alpha,-g\cos\alpha\right>$ where $g>0$ and $\alpha$ is an optional angle allowed for (e.g.) exact solutions.
+The fields are velocity $\bu$, pressure $p$, deviatoric stress tensor $\tau$, and strain rate tensor $D\bu$.  We take the ice density $\rho$ and the acceleration of gravity $\bg = \left<g\sin\alpha,-g\cos\alpha\right>$, where $g>0$ and $\alpha$ is an optional angle allowed for (e.g.) exact solutions, to be constant.
 
-Regarding tensors, recall $D\bu$ is the symmetric part of $\grad \bu$, i.e.~$(D\bu)_{ij} = \frac{1}{2} \left(\grad\bu + \grad\bu^\top\right)$, and the tensor norm is $|D\bu|^2 = \frac{1}{2} \trace\left((D\bu)^2\right) = \frac{1}{2} (D\bu)_{ij} (D\bu)_{ij}$.  Since $D\bu$ is symmetric and has trace zero by \eqref{incompressible}, the same holds for $\tau$.  The full (Cauchy) stress tensor $\sigma$ is the deviatoric part $\tau$ minus the pressure, $\sigma = \tau - p\,I$, so equation \eqref{forcebalance} states $-\Div \sigma = \rho \bg$.  For linear Stokes equations we would replace \eqref{viscflowlaw} by $\tau = 2\nu D\bu$, thus we say here that $\nu=(1/2)B_n |D\bu|^{(1/n) - 1}$ is the \emph{effective viscosity}.  Note $B_n = (A_n)^{-1/n}$ is the $n$-dependent \emph{ice hardness} in units $\text{Pa}\,\text{s}^{1/n}$.
+Regarding tensors and notation, first recall that $D\bu$ is the symmetric part of $\grad \bu$, i.e.~$(D\bu)_{ij} = \frac{1}{2} \left(\grad\bu + \grad\bu^\top\right)$.  The tensor norm in \eqref{viscflowlaw} satisfies $|D\bu|^2 = \frac{1}{2} \trace\left((D\bu)^2\right) = \frac{1}{2} (D\bu)_{ij} (D\bu)_{ij}$.  The full (Cauchy) stress tensor $\sigma$ is the deviatoric part $\tau$ minus the pressure, i.e.~$\sigma = \tau - p\,I$, and so equation \eqref{forcebalance} says $-\Div \sigma = \rho \bg$.  For the linear Stokes equations, i.e.~the $n=1$ case, one would traditionally write \eqref{viscflowlaw} as $\tau = 2\nu D\bu$ \cite{Elmanetal2014}, thus one says in glaciology that $\nu=(1/2)B_n |D\bu|^{(1/n) - 1}$ is the \emph{effective viscosity}, a quantity which generally varies nonlinearly with the solution of the equations.  Also $B_n$ is the $n$-dependent \emph{ice hardness} in units $\text{Pa}\,\text{s}^{1/n}$; it is sometimes written $B_n = (A_n)^{-1/n}$ in terms of the \emph{ice softness} $A_n$.  Finally, because $D\bu$ is symmetric, and because it has trace zero by \eqref{incompressible}, i.e.~$\trace(D\bu)=\nabla \cdot \bu = 0$, by equation \eqref{viscflowlaw} the same two properties hold for $\tau$.
 
-From \eqref{viscflowlaw} we can eliminate $\tau$ from equation \eqref{forcebalance}, thereby rewriting the system in terms of velocity and pressure only:
+Using \eqref{viscflowlaw} we can eliminate $\tau$ from equation \eqref{forcebalance}, thereby rewriting the system in terms of velocity and pressure only:
 \begin{align}
 - \nabla \cdot \left(B_n |D\bu|^{(1/n) - 1} D\bu\right) + \nabla p &= \rho \mathbf{g} \label{stokes} \\
 \Div \bu &= 0 \label{incompagain}
 \end{align}
-This system is the Glen-Stokes model, and a solution is a velocity-pressure pair $(\bu,p)$.
+This system is the Glen-Stokes model.  A solution is a velocity-pressure pair $(\bu,p)$, from which one may derive the strain rates $D\bu$ and thus the stresses $\tau$ and/or $\sigma = \tau - p\,I$.
 
-Certain glacier-suitable velocity and stress boundary conditions will be used here.  We assume that the base, top, inflow, and outflow boundaries can all be identified.  Note that the inflow and outflow boundaries may be empty but we assume that the base and top are nonempty.  On the base, for this first version of the model, we require no slip:
+Certain glacier-suitable velocity and stress boundary conditions will be used here.  We assume that the base, top, inflow, and outflow boundaries of the glacier, i.e.~of $\Omega^t$ at each time, can all be identified, but in fact only the base and top surfaces (curves in the 2D case) are assumed to have positive measure.   On the base we require no slip:\footnote{It is expected that we will allow sliding laws for the ice base  \cite{JouvetRappaz2011} at some later time.}
 \begin{align}
 \bu &= \bzero  &&\text{\emph{base}} \label{basebc} \\
 \intertext{On the top we set a condition of zero applied stress, i.e.~$\sigma\hbn=0$ where $\hbn$ is the outward normal:}
 \left(B_n |D\bu|^{\frac{1}{n} - 1} D\bu - pI\right) \hbn &= \bzero  &&\text{\emph{top}} \label{topbc} \\
-\intertext{One the inflow boundary we require a prescribed inflow velocity:}
+\intertext{On the inflow boundary we prescribe a velocity which should satisfy $\bu_{\text{in}}\cdot \hbn < 0$, where $\hbn$ is the outward unit normal of $\Omega^t$:}
 \bu &= \bu_{\text{in}}  &&\text{\emph{inflow}} \label{inflowbc} \\
-\intertext{On the outflow boundary we set a nonzero hydrostatic normal stress determined by the ice thickness $H_{\text{out}}$ at the outflow, which must be known:}
+\intertext{On the outflow boundary we set a nonzero hydrostatic normal stress determined by the thickness $H_{\text{out}}$ of the ice outside of $\Omega^t$:}
 \left(B_n |D\bu|^{\frac{1}{n} - 1} D\bu - pI\right) \hbn &= -\rho \bg (H_{\text{out}}-z) &&\text{\emph{outflow}} \label{outflowbc}
 \end{align}
-If $\alpha=0$ and the boundary is vertical then this boundary condition corresponds to zero traction tangent to the boundary and hydrostatic pressure applied normally.
+If there is no ice outside $\Omega^t$ then $H_{\text{out}}=0$.  If $\alpha=0$ and the boundary is vertical then the outflow boundary condition corresponds to zero traction tangent to the boundary and hydrostatic pressure applied normally.
 
-The above equations determine the velocity and pressure in the ice from the boundary conditions, and from the geometry of the ice domain $\Omega$, but they do not determine how the glacier changes shape.  One aspect of conservation of mass is already stated above, namely the incompressibility relation in the interior of $\Omega$, but to evolve the glacier geometry we will need to add the conservation of mass statement on $\partial\Omega$, namely the surface kinematical equation.  To present this equation we suppose that the domain is time-dependent:
+By the well-posedness of the above model \cite{JouvetRappaz2011}, if at any time $t$ the ice geometry $\Omega^t$ is known then the solution to the Glen-Stokes model \eqref{stokes}--\eqref{outflowbc} is a unique pair of functions $(\bu,p)$.  That is, in a Stokes model the slowness of the fluid ($\text{Re}=0$) implies that the boundary stresses and body force determine its velocity and pressure fields without any ``memory'' of prior states; there is no influence from inertia.
+
+The above equations determine the velocity and pressure within the ice from the boundary conditions, and from the geometry of the ice domain $\Omega^t$, but they do not describe the process by which the glacier changes shape.  This process, namely the \emph{surface kinematical equation}, states conservation of mass on the boundary $\partial\Omega^t$ of the icy domain.  (One form of conservation of mass is already stated above, namely the incompressibility relation in the interior of $\Omega^t$.)  To present this equation we suppose the following time-dependent form for the domain:
 \begin{equation}
 \Omega^t = \left\{(x,z)\,\big|\, b(x) < z < h(x,t)\right\}.  \label{Omegat}
 \end{equation}
-Here $z=b(x)$ is the base elevation and $z=h(x,t)$ is the ice surface elevation, and note the key fact that
+Here $z=b(x)$ is the base elevation, assumed time-independent for simplicity, and $z=h(x,t)$ is the ice surface elevation, and note the key fact that
 \begin{equation}
 h(x,t) \ge b(x).  \label{admissibility}
 \end{equation}
-Denoting the ice velocity components as $\bu=\left<u(x,z,t),w(x,z,t)\right>$, the surface kinematical equation is
+
+Thus the top of the icy region is described by a surface elevation function $h(x,t)$.  We acknowledge that this represents a kind of ``shallowness'' assumption, namely that for every $x$-coordinate value there are well-defined surface and base elevation values.  That is, from now on we are assuming, in agreement with almost all ice sheet and glacier modeling literature, that
+\begin{equation}
+I(x,t) = \{z\,:\,(x,z) \in \Omega^t\} \subset \RR \, \text{ is always a single interval}.\label{intervalassume}
+\end{equation}
+In fact $I(x,t)$ is open, because $\Omega^t$ is itself open (but this is of no importance in the following).  Note that expressions
+    $$h(x,t) = \sup I(x,t), \qquad b(x) = \inf I(x,t)$$
+define the ice-surface and base elevation functions.
+
+Denoting the velocity components as $\bu=\left<u(x,z,t),w(x,z,t)\right>$, the surface kinematical equation is
 \begin{equation}
 h_t = a(x,h,t) - u(x,h,t) h_x + w(x,h,t) \label{surfacekinematical}
 \end{equation}
-Here $a(x,z,t)$ is the (modeled) climatic mass balance in (ice-equivalent) units $\text{m}\,\text{s}^{-1}$.  Informally, \eqref{surfacekinematical} changes the surface elevation $\Delta h \approx h_t\,\Delta t$ using the climatically added/removed ice $a\,\Delta t$ plus the component of the ice motion in the outward (upward) normal direction $\hbn = \left<-h_x,1\right>$.  One may say that the time-dependent surface $z=h(x,t)$ evolves by steps $\Delta h \approx \left(a + \hbn\cdot \bu|_{z=h}\right) \Delta t$, but in fact we will solve \eqref{surfacekinematical} implicitly, that is, coupled with the Stokes equations \eqref{stokes}, \eqref{incompagain} and the other boundary conditions.
+Here $a(x,z,t)$ is the (modeled) climatic mass balance in (ice-equivalent) units $\text{m}\,\text{s}^{-1}$.\footnote{Modeling melting or freeze-on at the ice base would add a basal kinematic equation \cite{Aschwandenetal2012}.}
 
+Informally, \eqref{surfacekinematical} describes how the top surface elevation is updated, $\Delta h \approx h_t\,\Delta t$, by using the climatically added or removed ice $a\,\Delta t$, plus the component of the ice motion in the outward (upward) normal direction $\hbn = \left<-h_x,1\right>$.  In fact, models often evolve the time-dependent surface $z=h(x,t)$ by explicit steps $\Delta h \approx \left(a + \hbn\cdot \bu|_{z=h}\right) \Delta t$.  However, we will solve \eqref{surfacekinematical} implicitly, that is, coupled with the Stokes equations \eqref{stokes}, \eqref{incompagain}, and with the other boundary conditions.
 
-\section{Weak form of the decoupled Glen-Stokes equations} \label{sec:weakformstokes}
+As is standard in the literature, one may write a weak form for the above variable-viscosity momentum-balance equations \eqref{stokes}--\eqref{outflowbc}, but decoupled from the mass conservation boundary equation \eqref{surfacekinematical}.  We state this decoupled weak form in order to set notation and have a familiar starting point, before describing the coupled, implicit geometry evolution in the next section.
 
-At any time $t$, by well-posedness \cite{JouvetRappaz2011}, if the ice geometry $\Omega^t$ is known then the solution to Glen-Stokes model \eqref{stokes}, \eqref{incompagain} is a unique pair of functions $(\bu,p)$.  That is, in a Stokes model the slowness of the fluid ($\text{Re}=0$) implies that the boundary stresses and body force determine its velocity and pressure fields without any ``memory'' of prior states; there is no influence from inertia.  For this situation, as is standard in the literature, one may write a weak form for the variable-viscosity momentum-balance equations, decoupled from the mass conservation boundary equation \eqref{surfacekinematical}.  We state this decoupled weak form so as to set notation and have a familiar starting point, before describing the coupled, implicit geometry evolution in the next section.
+Let $p=1+1/n$, $p'=(1-p^{-1})^{-1}=p/(p-1)$, and fix $t>0$.  We will seek a weak-form solution from the following spaces:
+\begin{align*}
+\bu \in V_D &= \left\{\bv \in W^{1,p}(\Omega^t)\,:\,\bv\big|_{\text{base}}=\bzero \text{ and } \bv\big|_{\text{inflow}} = \bu_{\texttt{in}}\right\}, \quad p \in Q =L^{p'}(\Omega^t).
+\end{align*}
+Test functions $\bv$ and $q$ come from nearly the same spaces, with $\bv\big|_{\text{base}} =0$ and $\big|_{\text{inflow}} = 0$, namely $\bv \in V_0 \subset W^{1,p}(\Omega^t)$, and $q \in Q$ itself.
 
-For the weak form we seek a solution $\bu\in V_D \subset W^{1,p}(\Omega^t)$ and $p \in Q=L^{p'}(\Omega^t)$.  Test functions $\bv\in V_0 \subset W^{1,p}(\Omega^t)$ and $q\in Q$ come from nearly the same spaces: $\bu\in V_D$ satisfies base and inflow boundary conditions \eqref{basebc} and \eqref{inflowbc}, respectively, while $\bv\in V_0$ is zero on those boundaries.  FIXME: clarify function spaces
-
-To give an initial definition of the nonlinear functional which defines the weak form, we multiply \eqref{stokes} by $\bv\in V_0$ and \eqref{incompagain} by $q\in Q$, then add and integrate-by-parts:
+To derive the nonlinear functional which defines the weak form, we first multiply \eqref{stokes} by $\bv\in V_0$ and \eqref{incompagain} by $q\in Q$, then add and integrate-by-parts:
 \begin{equation}
 \tilde F = -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,dS + \int_{\Omega^t} \tau \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,dx dz \label{nonfunctwo}
 \end{equation}
-where $dS$ is the arclength element along $\partial\Omega^t$, and denoting $\sigma=\tau-pI$ for brevity.  Note that $\bu,\bv$ appear with at most first derivatives and $p,q$ appear without derivatives.
-
-By definition, $\bv\in V_0$ satisfies $\bv=\bzero$ along the base and inflow surfaces.  Thus these parts of the integral over $\partial\Omega$ in \eqref{nonfunctwo} are zero.  The stress-free condition \eqref{topbc} on the top surface and the outflow condition \eqref{outflowbc} on the outflow boundary denoted $\partial_O \Omega^t$, now completely eliminate the unknowns from the boundary integral, yielding a final formula for $\tilde F$:
+where $dS$ is the arclength element along $\partial\Omega^t$, and using the stress tensor notation for brevity.  Note that $\bu,\bv$ appear with at most first derivatives and $p,q$ appear without derivatives.  Next, because $\bv\in V_0$ satisfies $\bv=\bzero$ along the base and inflow surfaces, these parts of the integral over $\partial\Omega^t$ in \eqref{nonfunctwo} are zero.  The stress-free condition \eqref{topbc} on the top surface and the outflow condition \eqref{outflowbc} on the outflow boundary, which we denote $\partial_O \Omega^t$, now eliminate the unknowns from the boundary integral.  Thus we have the following formula for $\tilde F$:
 \begin{align}
 \tilde F &= \int_{\Omega^t} B_n |D\bu|^{\frac{1}{n} - 1} D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q \,dx dz \label{definetildeF} \\
     &\qquad  - \int_{\Omega^t} \rho \mathbf{g} \cdot \bv \,dx dz + \int_{\partial_O \Omega^t} \rho (H_{\text{out}}-z) \bg \cdot \bv \,dS \notag
 \end{align}
-The last two integrals can be regarded as source terms.  In fact, if the inflow velocity is zero and these source terms are also zero, for instance because gravity is turned off ($\bg=\bzero$), then the unique solution is $\bu=\bzero$ and $p=0$.  The weak form is the statement that $\bu\in V_D$ and $p\in Q$ satisfy
+We say $\bu\in V_D$ and $p\in Q$ solve the weak formulation if
 \begin{equation}
-\tilde F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in V_0 \text{ and } q\in Q  \label{weak}
+\tilde F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in V_0 \text{ and } q\in Q.  \label{weak}
 \end{equation}
+An equivalent formulation is proven in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain $\Omega$ and the boundary data.
 
-An equivalent weak formulation is proven in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain $\Omega$ and boundary data which are satisfied in the cases we consider.
+The last two integrals in \eqref{definetildeF} can be regarded as source terms.  In fact, if the inflow velocity is zero and these source terms are also zero, for instance because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weak} is $\bu=\bzero$ and $p=0$.
 
 
 \section{Implicit time-discretization and the icy domain update} \label{sec:implicitstep}
 
-We propose an implicit domain-updating scheme to simultaneously solve the Glen-Stokes equations and the surface kinematical equation.  In this scheme we compute a greatly-simplified surrogate of the ice \emph{strain}, i.e.~the deformation or displacement, during the time step, implicitly from the simultaneous principles of mass and momentum conservation.  Specifically, we solve for a vertical-only displacement function which is defined within the updated icy domain.  At each time step the current domain is, essentially, the reference configuration from which we compute the updated configuration.  In writing-out the equations of this scheme, stated using a time-discretized but continuous-space weak formulation, a significant task is to change variables in the integrals which define the Stokes weak form.  In the finite element solution of the resulting equations, considered in the next section, the domain update becomes a vertical-only mesh displacement computed simultaneously with the discrete velocity and pressure fields.
+The main purpose of this paper is to propose an implicit domain-updating scheme to simultaneously solve the Glen-Stokes equations and the surface kinematical equation.  In this scheme we compute a greatly-simplified surrogate of the ice \emph{strain} (i.e.~deformation), namely a vertical-only displacement, defined over the time step and within the icy domain.  This displacement field is found simultaneously with the velocity and pressure by using the combined principles of mass and momentum conservation.  At each time step the current domain is, essentially, the reference configuration from which we compute the updated configuration \cite{GreveBlatter2009}.  Note that this scheme is stated using a time-discretized but continuous-space weak formulation.  In writing-out the equations of this scheme a significant task is to change variables in the integrals which define the Glen-Stokes weak form.  The corresponding finite element equations, considered in the next section, turn the domain update into a vertical-only \emph{mesh} displacement computed simultaneously with the discrete velocity and pressure fields.
 
-Initially we will describe the time-stepping using a backward Euler scheme, a somewhat inflexible presentation.  Better implicit schemes exist, and in later work we could state the problem as a differential algebraic equation (DAE) and apply a higher-order scheme like a second-order backward-differentiation formula (BDF2) \cite{AscherPetzold1998}, and use tools like PETSc's TS object \cite{Balayetal2020,BuelerBook} or \texttt{firedrake-ts}.\footnote{\url{https://github.com/IvanYashchuk/firedrake-ts}}
+We will describe the time-stepping using a backward Euler scheme.  Of course, better implicit schemes exist, and so in later work we will restate the problem as a differential algebraic equation (DAE) and apply suitable higher-order schemes.  Specifically, we will consider the second-order backward-differentiation formula (BDF2) \cite{AscherPetzold1998} and solver tools based on PETSc's \cite{Balayetal2020,BuelerBook} time-stepping TS object.
+% possibly \texttt{firedrake-ts}; https://github.com/IvanYashchuk/firedrake-ts
 
-Let $t_{n-1}$ and $t_n$ be consecutive times with step $\Delta t = t_n - t_{n-1} > 0$.  Suppose the model's state, namely the (current) ice geometry, is known at time $t_{n-1}$.  Denote this ice-filled domain as $\Lambda = \Omega^{t_{n-1}} \subset \RR^2$.  We will approximate the updated (new) domain $\Omega^n = \Omega^{t_n} \subset \RR^2$ using the surface kinematical equation \eqref{surfacekinematical}, the surface mass balance $a(x,z,t)$, and the Glen-Stokes equations \eqref{weak}.
+Let $t_{n-1}$ and $t_n$ be consecutive times with step $\Delta t = t_n - t_{n-1} > 0$.  Suppose the model's state, namely the (current) ice geometry, is known at time $t_{n-1}$.  Denote this ice-filled domain as $\Lambda = \Omega^{t_{n-1}} \subset \RR^2$.  We will approximate the updated (new) domain $\Omega^n = \Omega^{t_n} \subset \RR^2$ using the weak form \eqref{weak} of the Glen-Stokes equations, a weak form of the surface kinematical equation \eqref{surfacekinematical} (see below), and input data for the surface mass balance $a(x,z,t)$.  Note that assumption \eqref{intervalassume} needs to hold for $\Lambda$, but, once we have solved all the upcoming equations, it must also hold for $\Omega^n$ so that time-stepping may proceed.
 
-The coordinates on the current domain $\Lambda$ are denoted $(r,s)$.  We update the region via a change of coordinates $(r,s) \mapsto (x,z)$,
+The coordinates on the current domain $\Lambda$ are denoted $(r,s)$.  We update the region by computing a change of coordinates $(r,s) \mapsto (x,z)$,
 \begin{equation}
-\Lambda \stackrel{\Delta t}{\to} \Omega^n: \qquad x(r,s)=r, \quad z(r,s)=s+c(r,s), \label{changecoords}
+x(r,s)=r, \quad z(r,s)=s+c(r,s), \label{changecoords}
 \end{equation}
 so the new domain $\Omega^n$ is an image of $\Lambda$:
 \begin{equation}
 \Omega^n = \{(x,z)=(r,s+c(r,s)) \,\big|\, (r,s) \in \Lambda\}.  \label{updateddomain}
 \end{equation}
-(Note that the horizontal coordinate is not changed ($x=r$) but the $z$-coordinate is nontrivial.)  Here $c(r,s)$ is a scalar function which is to be determined (below).  In fact we will solve coupled PDEs on $\Lambda$, including a problem for the scalar vertical displacement function $c(r,s)$, and the coupled solution determines $\Omega^n$ plus the ice velocity and pressure.  This is sketched in Figure \ref{fig:domainupdate}.
+(Note that the horizontal coordinate is not changed ($x=r$) but the $z$-coordinate is nontrivial.)  Here $c(r,s)$ is a scalar function which will be computed by solving coupled PDEs on $\Lambda$, thus the coupled solution determines $\Omega^n$ plus the ice velocity and pressure.  This $\Lambda \stackrel{\Delta t}{\to} \Omega^n$ domain update is sketched in Figure \ref{fig:domainupdate}.
 
 \begin{figure}[h]
 
@@ -158,17 +172,13 @@ FIXME
 \label{fig:domainupdate}
 \end{figure}
 
-The top of the icy region will be described by a surface elevation function.  This requires we acknowledge a ``shallowness'' assumption, namely that for every $x$-coordinate value there are well-defined surface and base elevation values.  That is, from now on we assume that
+Let $\eta(r)$ denote the surface elevation of $\Lambda$.  Given \eqref{updateddomain}, the surface elevation for the new region is
 \begin{equation}
-I(r) = \{s\,:\,(r,s) \in \Lambda\} \subset \RR \, \text{ is a single interval}\label{intervalassume}
+h(r) = \eta(r) + c(r,\eta(r)).  \label{newsurfaceelevation}
 \end{equation}
-for every $r$.  In fact $I(r)$ is open, because $\Lambda$ is itself open, but this is of no importance in the following.  While statement \eqref{intervalassume} is an assumption about $\Lambda$, the current icy domain, once we have solved all the upcoming equations the same must also hold for $\Omega^n$, that is, so that time-stepping may proceed.  Now let
-    $$\eta(r) = \sup I(r), \qquad b(r) = \inf I(r)$$
-define the ice-surface and base elevation functions for the current domain $\Lambda$.  Given \eqref{updateddomain}, the surface elevation for the new region is
-\begin{equation}
-h(r) = \eta(r) + c(r,\eta(r)),  \label{newsurfaceelevation}
-\end{equation}
-but note this is defined for $r$ in $\Lambda$ (i.e.~not $x$ in $\Omega^n$).  The value $c(r,\eta(r))$ is defined in a trace sense \cite{Evans2010}; see below for the Sobolev space which contains $c$.
+Note this is defined for $r$ in $\Lambda$ (i.e.~not $x$ in $\Omega^n$).  The value $c(r,\eta(r))$ is defined in a trace sense \cite{Evans2010}; see below for the Sobolev space which contains $c$.
+
+FIXME: EDIT SWEEP UP TO HERE
 
 The change of coordinates will be differentiable within $\Lambda$.  (This is because the nontrivial part, the function $c$, will solve an elliptic PDE; see below.)  From \eqref{changecoords} the Jacobian of the change is
 \begin{equation}
