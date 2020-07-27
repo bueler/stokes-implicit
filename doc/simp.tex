@@ -233,7 +233,7 @@ We propose that the vertical displacement function $c(r,s)$, defined on the curr
 \end{align}
 Note that Dirichlet conditions apply on most of the boundary, but a Neumann condition applies on the outflow (if it is present).  As stated, this problem also couples with the determination of the mass balance $a^n$ during the solve, but a simplification is to use the time-splitting approximation $a^n \approx a(r,\eta(r),t_n)$ instead of \eqref{massbalance}.
 
-We impose the Dirichlet boundary condition along the top surface $\partial_{\text{top}} \Lambda$ weakly.  First let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}(\Lambda)$ functions which are zero on the base and inflow.  Noting that the outflow has a natural condition, we define the bilinear form
+We impose the Dirichlet boundary condition along the top surface $\partial_{\text{top}} \Lambda$ weakly.  In the decoupled case we can state the weak form of problem \eqref{claplace}.  First let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}(\Lambda)$ functions which are zero on the base and inflow.  Noting that the outflow has a natural condition, and assuming that functions $u,w$ are defined on $\overline\Lambda$, we define the bilinear form
 \begin{equation}
 a(c;e) = \int_\Lambda \grad c \cdot \grad e \,dr ds + \int_{\partial_{\text{top}} \Lambda} \left(c - \Delta t\,\begin{Bmatrix} a^n - u \eta' + w \\ a^n - u h' + w \end{Bmatrix}\right) e\,d\sigma \label{surfaceweakform}
 \end{equation}
@@ -262,18 +262,18 @@ is a notational simplification only.
 
 FIXME state the weak form using independent variables $r,s$ and integrals over $\Lambda$; equations are for solution functions $\bu,p,c$ with test functions $\bv,q,e$
 
-From weak forms \eqref{definetildeF} and \eqref{asurface}, the proposed [DRAFT] weak form is
+From weak forms \eqref{definetildeF} and \eqref{surfaceweakform}, the proposed [DRAFT] weak form is
 \begin{align}
 F(\bu,p,c;\bv,q,e) &= \int_\Lambda B_n |D\bu|^{\frac{1}{n} - 1} D\bu\,:\,D\bv\, j\,dr ds [FIXME] \label{defineF} \\
     &\quad  - \int_\Lambda p \left(j \frac{\partial v_0}{\partial r} - \frac{\partial c}{\partial r} \frac{\partial v_0}{\partial s} + \frac{\partial v_2}{\partial s}\right) \,dr ds \notag \\
     &\quad - \int_\Lambda q \left(j \frac{\partial u_0}{\partial r} - \frac{\partial c}{\partial r} \frac{\partial u_0}{\partial s} + \frac{\partial u_2}{\partial s}\right)\,dr ds \notag \\
     &\quad  - \int_\Lambda \rho \mathbf{g} \cdot \bv \, j\,dr ds \notag \\
     &\quad + \int_{\partial_O \Lambda} \rho (H_{\text{out}}-s-c) \bg \cdot \bv \,dS \notag \\
-    &\quad + \int_\Lambda \frac{\partial c}{\partial r} \frac{\partial e}{\partial r} + \frac{\partial c}{\partial s} \frac{\partial e}{\partial s}\,dr ds \notag
+    &\quad + FIXME: a(c;e) \notag
 \end{align}
-FIXME in above: $|D\bu|$ and $D\bu:D\bv$ need expansion; how to regularize that term; how to write weak form for $c$ when we are actually going to use \texttt{EquationBC}?
+FIXME in above: $|D\bu|$ and $D\bu:D\bv$ need expansion; how to regularize that term?
 
-The solution of the weak form is a list of three functions, $\bu = \left<u_0,u_2\right> \in V_D$, $p\in L^{p'}(\Lambda)$, and $c\in W^{1,2}_D(\Lambda)$, such that
+The solution of the weak form is a list of three functions, $\bu = \left<u_0,u_2\right> \in V_D$, $p\in L^{p'}(\Lambda)$, and $c\in W^{1,2}_0(\Lambda)$, such that
 \begin{equation}
 F(\bu,p,c;\bv,q,e) = 0 \text{ for all } \bv = \left<v_0,v_2\right> \in V_0, \, q\in L^{p'}(\Lambda), \text{ and } e \in W^{1,2}_0(\Lambda).
 \end{equation}
