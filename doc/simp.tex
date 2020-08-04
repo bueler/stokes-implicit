@@ -61,7 +61,7 @@ urlcolor=black     % only if colorlinks=true
 
 \section{Equations of ice flow in glaciers} \label{sec:strongform}
 
-The standard description of the flow of glaciers is a shear-thinning Stokes model  incorporating the Glen's flow law for ice \cite{GreveBlatter2009,JouvetRappaz2011}.\footnote{version: \today}  We will apply this model on a time-dependent 2D domain, the region occupied by the ice, using time $t>0$ and spatial variables $(x,z)$, with $z$ vertical.  The evolving domain $\Omega^t \subset \RR^2$ must have a piecewise smooth boundary so that we may apply the boundary conditions, but it is otherwise general.
+The standard description of the flow of glaciers is a shear-thinning Stokes model  incorporating Glen's flow law for ice \cite{GreveBlatter2009,JouvetRappaz2011}.\footnote{version: \today}  We will apply this model on a time-dependent 2D domain using time $t>0$ and spatial variables $(x,z)$, with $z$ vertical.  The evolving domain $\Omega^t \subset \RR^2$ must have a piecewise smooth boundary so that we may apply the boundary conditions, but it is otherwise general.
 
 Allowing any Glen exponent $n\ge 1$, the strong form model equations are:
 \begin{align}
@@ -71,11 +71,17 @@ Allowing any Glen exponent $n\ge 1$, the strong form model equations are:
 \end{align}
 The fields are velocity $\bu$, pressure $p$, deviatoric stress tensor $\tau$, and strain rate tensor $D\bu$.  We take the ice density $\rho$ and the acceleration of gravity $\bg = \left<g\sin\alpha,-g\cos\alpha\right>$, where $g>0$ and $\alpha$ is an optional angle allowed for (e.g.) exact solutions, to be constant.
 
-Regarding tensors and notation, first recall that $D\bu$ is the symmetric part of $\grad \bu$, i.e.~$(D\bu)_{ij} = \frac{1}{2} \left(\grad\bu + \grad\bu^\top\right)$.  The tensor norm in \eqref{viscflowlaw} satisfies $|D\bu|^2 = \frac{1}{2} \trace\left((D\bu)^2\right) = \frac{1}{2} (D\bu)_{ij} (D\bu)_{ij}$.  The full (Cauchy) stress tensor $\sigma$ is the deviatoric part $\tau$ minus the pressure, i.e.~$\sigma = \tau - p\,I$, and so equation \eqref{forcebalance} says $-\Div \sigma = \rho \bg$.  For the linear Stokes equations, i.e.~the $n=1$ case, one would traditionally write \eqref{viscflowlaw} as $\tau = 2\nu D\bu$ \cite{Elmanetal2014}, thus one says in glaciology that $\nu=(1/2)B_n |D\bu|^{(1/n) - 1}$ is the \emph{effective viscosity}, a quantity which generally varies nonlinearly with the solution of the equations.  Also $B_n$ is the $n$-dependent \emph{ice hardness} in units $\text{Pa}\,\text{s}^{1/n}$; it is sometimes written $B_n = (A_n)^{-1/n}$ in terms of the \emph{ice softness} $A_n$.  Finally, because $D\bu$ is symmetric, and because it has trace zero by \eqref{incompressible}, i.e.~$\trace(D\bu)=\nabla \cdot \bu = 0$, by equation \eqref{viscflowlaw} the same two properties hold for $\tau$.
+Regarding tensors and notation, first recall that $D\bu$ is the symmetric part of $\grad \bu$, i.e.~$(D\bu)_{ij} = \frac{1}{2} \left(\grad\bu + \grad\bu^\top\right)$.  The tensor norm in \eqref{viscflowlaw} satisfies $|D\bu|^2 = \frac{1}{2} \trace\left((D\bu)^2\right) = \frac{1}{2} (D\bu)_{ij} (D\bu)_{ij}$.  The full (Cauchy) stress tensor $\sigma$ is the deviatoric part $\tau$ minus the pressure, i.e.~$\sigma = \tau - p\,I$, and so equation \eqref{forcebalance} says $-\Div \sigma = \rho \bg$.  Also $B_n$ is the $n$-dependent \emph{ice hardness} in units $\text{Pa}\,\text{s}^{1/n}$; it is sometimes written $B_n = (A_n)^{-1/n}$ in terms of the \emph{ice softness} $A_n$.  Finally, because $D\bu$ is symmetric, and because it has trace zero by \eqref{incompressible}, i.e.~$\trace(D\bu)=\nabla \cdot \bu = 0$, by equation \eqref{viscflowlaw} the same two properties hold for $\tau$.
 
-Using \eqref{viscflowlaw} we can eliminate $\tau$ from equation \eqref{forcebalance}, thereby rewriting the system in terms of velocity and pressure only:
+For the linear Stokes equations, i.e.~the $n=1$ case, one would traditionally write \eqref{viscflowlaw} as $\tau = 2\nu D\bu$ \cite{Elmanetal2014}, and in that case the viscosity would be $\nu = (1/2) B_1$.  For general $n>1$ the ``effective viscosity'' involves a negative power of the strain rate magnitudes $|D\bu|$, thus for such non-Newtonian cases the effective viscosity is singular in the limit of small strain rates.  Motivated by the expected finite viscosity of real ice \cite{GreveBlatter2009}, and by the expectation that the equations using a regularized viscosity will be well-posed and solvable \cite{JouvetRappaz2011}, we denote the nonlinear power as $r=(1/n)-1$ and define the \emph{regularized effective viscosity}
+\begin{equation}
+\nu_\eps(|D\bu|) = (1/2) B_n \left(|D\bu|^2 + (\eps D_0)^2\right)^{r/2} \label{regeffvisc}
+\end{equation}
+where $\eps = 0.01$ and $D_0 = 2 a^{-1}$.  The constant $D_0$ defines a typical strain-rate scale for glacier flow, here corresponding to a flow speed difference of 1000 meters per year in a distance of 500 meters.
+
+Using \eqref{viscflowlaw}, as modified by \eqref{regeffvisc}, we can eliminate $\tau$ from equation \eqref{forcebalance}, thereby rewriting the system in terms of velocity and pressure only:
 \begin{align}
-- \nabla \cdot \left(B_n |D\bu|^{(1/n) - 1} D\bu\right) + \nabla p &= \rho \mathbf{g} \label{stokes} \\
+- \nabla \cdot \left(2 \nu_\eps(|D\bu|)\, D\bu\right) + \nabla p &= \rho \mathbf{g} \label{stokes} \\
 \Div \bu &= 0 \label{incompagain}
 \end{align}
 This system is the Glen-Stokes model.  A solution is a velocity-pressure pair $(\bu,p)$, from which one may derive the strain rates $D\bu$ and thus the stresses $\tau$ and/or $\sigma = \tau - p\,I$.
@@ -84,11 +90,11 @@ Certain glacier-suitable velocity and stress boundary conditions will be used he
 \begin{align}
 \bu &= \bzero  &&\text{\emph{base}} \label{basebc} \\
 \intertext{On the top we set a condition of zero applied stress, i.e.~$\sigma\hbn=0$ where $\hbn$ is the outward normal:}
-\left(B_n |D\bu|^{\frac{1}{n} - 1} D\bu - pI\right) \hbn &= \bzero  &&\text{\emph{top}} \label{topbc} \\
+\left(2 \nu_\eps(|D\bu|) D\bu - pI\right) \hbn &= \bzero  &&\text{\emph{top}} \label{topbc} \\
 \intertext{On the inflow boundary we prescribe a velocity which should satisfy $\bu_{\text{in}}\cdot \hbn < 0$, where $\hbn$ is the outward unit normal of $\Omega^t$:}
 \bu &= \bu_{\text{in}}  &&\text{\emph{inflow}} \label{inflowbc} \\
 \intertext{On the outflow boundary we set a nonzero hydrostatic normal stress determined by the thickness $H_{\text{out}}$ of the ice outside of $\Omega^t$:}
-\left(B_n |D\bu|^{\frac{1}{n} - 1} D\bu - pI\right) \hbn &= -\rho \bg (H_{\text{out}}-z) &&\text{\emph{outflow}} \label{outflowbc}
+\left(2 \nu_\eps(|D\bu|) D\bu - pI\right) \hbn &= -\rho \bg (H_{\text{out}}-z) &&\text{\emph{outflow}} \label{outflowbc}
 \end{align}
 If there is no ice outside $\Omega^t$ then $H_{\text{out}}=0$.  If $\alpha=0$ and the boundary is vertical then the outflow boundary condition corresponds to zero traction tangent to the boundary and hydrostatic pressure applied normally.
 
@@ -133,7 +139,7 @@ To derive the nonlinear functional which defines the weak form, we first multipl
 \end{equation}
 where $dS$ is the arclength element along $\partial\Omega^t$, and using the stress tensor notation for brevity.  Note that $\bu,\bv$ appear with at most first derivatives and $p,q$ appear without derivatives.  Next, because $\bv\in V_0$ satisfies $\bv=\bzero$ along the base and inflow surfaces, these parts of the integral over $\partial\Omega^t$ in \eqref{nonfunctwo} are zero.  The stress-free condition \eqref{topbc} on the top surface and the outflow condition \eqref{outflowbc} on the outflow boundary, which we denote $\partial_O \Omega^t$, now eliminate the unknowns from the boundary integral.  Thus we have the following formula for $\tilde F$:
 \begin{align}
-\tilde F(\bu,p;\bv,q) &= \int_{\Omega^t} B_n |D\bu|^{\frac{1}{n} - 1} D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q \,dx dz \label{definetildeF} \\
+\tilde F(\bu,p;\bv,q) &= \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q \,dx dz \label{definetildeF} \\
     &\qquad  - \int_{\Omega^t} \rho \mathbf{g} \cdot \bv \,dx dz + \int_{\partial_O \Omega^t} \rho (H_{\text{out}}-z) \bg \cdot \bv \,dS \notag
 \end{align}
 We say $\bu\in V_D$ and $p\in Q$ solve the weak formulation if
@@ -264,7 +270,7 @@ FIXME state the weak form using independent variables $r,s$ and integrals over $
 
 From weak forms \eqref{definetildeF} and \eqref{surfaceweakform}, the proposed [DRAFT] weak form is
 \begin{align}
-F(\bu,p,c;\bv,q,e) &= \int_\Lambda B_n |D\bu|^{\frac{1}{n} - 1} D\bu\,:\,D\bv\, j\,dr ds [FIXME] \label{defineF} \\
+F(\bu,p,c;\bv,q,e) &= \int_\Lambda 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv\, j\,dr ds [FIXME] \label{defineF} \\
     &\quad  - \int_\Lambda p \left(j \frac{\partial v_0}{\partial r} - \frac{\partial c}{\partial r} \frac{\partial v_0}{\partial s} + \frac{\partial v_2}{\partial s}\right) \,dr ds \notag \\
     &\quad - \int_\Lambda q \left(j \frac{\partial u_0}{\partial r} - \frac{\partial c}{\partial r} \frac{\partial u_0}{\partial s} + \frac{\partial u_2}{\partial s}\right)\,dr ds \notag \\
     &\quad  - \int_\Lambda \rho \mathbf{g} \cdot \bv \, j\,dr ds \notag \\
