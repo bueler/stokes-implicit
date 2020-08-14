@@ -178,7 +178,7 @@ FIXME
 
 From \eqref{changecoords} the Jacobian of the coordinate change is
 \begin{equation}
-J = \begin{pmatrix} \partial x / \partial r & \partial x / \partial s \\ {\large\strut} \partial z / \partial r & \partial z / \partial s \end{pmatrix} = \begin{pmatrix} 1 & 0 \\ \partial c/\partial r & 1+(\partial c/\partial s) \end{pmatrix}, \label{jacchange}
+J = \begin{pmatrix} \partial x / \partial r & \partial x / \partial s \\ \strut \partial z / \partial r & \partial z / \partial s \end{pmatrix} = \begin{pmatrix} 1 & 0 \\ \partial c/\partial r & 1+(\partial c/\partial s) \end{pmatrix}, \label{jacchange}
 \end{equation}
 with determinant
 \begin{equation}
@@ -188,7 +188,7 @@ For a generic, smooth function $\tilde f(x,z)$ defined on $\Omega^n$ we define a
     $$f(r,s) = \tilde f(r,s+c(r,s)),$$
 and then partial derivatives transform as
 \begin{equation}
-\begin{bmatrix} \partial \tilde f / \partial x \\ {\large\strut} \partial \tilde f / \partial z\end{bmatrix} = (J^\top)^{-1} \begin{bmatrix} \partial f / \partial r \\ {\large\strut} \partial f / \partial s\end{bmatrix} = \begin{pmatrix} 1 & \ell \\ 0 & k \end{pmatrix} \begin{bmatrix} \partial f / \partial r \\ {\large\strut} \partial f / \partial s\end{bmatrix} \label{changederivatives}
+\begin{bmatrix} \partial \tilde f / \partial x \\ \strut \partial \tilde f / \partial z\end{bmatrix} = (J^\top)^{-1} \begin{bmatrix} \partial f / \partial r \\ \strut \partial f / \partial s\end{bmatrix} = \begin{pmatrix} 1 & \ell \\ 0 & k \end{pmatrix} \begin{bmatrix} \partial f / \partial r \\ \strut \partial f / \partial s\end{bmatrix} \label{changederivatives}
 \end{equation}
 where
 \begin{equation}
@@ -256,7 +256,7 @@ with weight $j(r,s)$ defined in \eqref{definejkl} and $f(r,s) = \tilde f(r,s+c(r
 \begin{align*}
 \grad_{x,z} \cdot \tilde \bu &= \frac{\partial u_0}{\partial r} + \ell \frac{\partial u_0}{\partial s} + k \frac{\partial u_2}{\partial s} \\
 D_{x,z} \tilde \bu &= \begin{pmatrix} \partial u_0/\partial r + \ell (\partial u_0/\partial s) & \gamma \\
-  {\large\strut} \gamma & k (\partial u_2/\partial s)\end{pmatrix} \\
+  \strut \gamma & k (\partial u_2/\partial s)\end{pmatrix} \\
 |D_{x,z} \tilde \bu|^2 &= \frac{1}{2}\left(\frac{\partial u_0}{\partial r} + \ell \frac{\partial u_0}{\partial s}\right)^2 + \gamma^2 + \frac{1}{2}\left(k \frac{\partial u_2}{\partial s}\right)^2
 \end{align*}
 where
