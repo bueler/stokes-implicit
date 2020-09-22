@@ -50,7 +50,7 @@ urlcolor=black     % only if colorlinks=true
 
 
 \begin{document}
-\title{Evolving-surface glacier flow using Stokes dynamics}
+\title{High-performance evolving-surface glacier flow simulations using Stokes dynamics}
 
 \author{Ed Bueler}
 
@@ -58,6 +58,23 @@ urlcolor=black     % only if colorlinks=true
 
 \thispagestyle{empty}
 \bigskip
+
+\section{Introduction} \label{sec:intro}
+
+Evolving-geometry simulations are widely used by scientists to understand the relationship between surface mass inputs, i.e.~climate inputs, and the size of, and changes in, glaciers and ice sheets.  A variety of methodologies for such numerical simulations are used in practice, with most of the well-established schemes involving signicant shallowness approximations in the continuum equations.  Additionally, most methods use explicit or semi-implicit time-stepping, with correspondingly small time steps at high spatial resolution.  Current performance properties tend to limit either the physical modeling authenticity (from shallowness and other approximations) or the spatial resolution (from time-stepping and solver performance limitations).  The quality of ensemble simulations, both in terms of the number of ensemble members and the quality of the individual simulations, is directly limited by performance properties.
+
+This paper addresses an important, but also restricted, class of simulations which model the conservation of mass and momentum within the ice.  Conservation of momentum uses the standard shear-thinning (power law) Stokes model, which mass conservation refers both to incompressibility and mass conservation at the ice surface, namely the surface kinematical equation.  We consider three-dimensional grounded glaciers and ice sheets for which there is a well-defined ice thickness---overhanging ice is not modeled---but with an evolving free boundary at the ice margin.  The ice thickness is zero in those locations where the solved surface balance and ice flow do not allow a glacier.  Figure \ref{fig:cartoon} sketches our situation.  We do not, however, address the conservation of energy, that is we do not model thermomechanical coupling or basal melt.  Nor do we consider floating ice or sliding bases, and furthermore we only consider cases where the bed elevations are relatively-smooth.
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=0.7\textwidth]{cartoon.pdf}
+\end{center}
+
+\caption{We consider models based on Glen-Stokes dynamics within the ice, coupled to surface mass balance through the kinematical equation, with both an evolving free surface and a free boundary at the glacier margin.}
+\label{fig:cartoon}
+\end{figure}
+
+Within this restricted class of problems we WILL demonstrate numerical simulations which use the Stokes model of momentum conservation, fully coupled with the surface kinematical equation, with implicit time-stepping and unstructured-meshes in the map-plane.  The numerical software framework is to use relatively-brief programs in Python which apply the finite element (FE) method through calls to the Firedrake library, with nonlinear solutions of the discrete equations through PETSc.  We WILL validate the model based on results of laboratory-scale experiments, and we WILL demonstrate solver optimality.  The performance metric introduced here is one which practitioners will regard as natural, namely we measure the run time and floating-point operations (flops) of our simulations relative to the time and flops for the computation of ice velocity in the shallow ice approximation on the same mesh.
 
 \section{Equations of ice flow in glaciers} \label{sec:strongform}
 
