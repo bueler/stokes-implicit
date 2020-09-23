@@ -48,9 +48,8 @@ urlcolor=black     % only if colorlinks=true
 \newtheorem{lemma}{Lemma}
 
 
-
 \begin{document}
-\title{High-performance evolving-geometry glacier flow simulations using Stokes dynamics}
+\title[High-performance evolving-geometry glacier flow simulations]{High-performance evolving-geometry glacier flow simulations using Stokes dynamics}
 
 \author{Ed Bueler}
 
@@ -93,11 +92,11 @@ Allowing any Glen exponent $n\ge 1$, the strong form model equations are:
 \nabla \cdot \bu &= 0 &&\text{\emph{incompressibility}} \label{incompressible} \\
 \tau &= B_n |D\bu|^{(1/n) - 1} D\bu  &&\text{\emph{viscosity-form flow law}} \label{viscflowlaw}
 \end{align}
-The fields are velocity $\bu$, pressure $p$, deviatoric stress tensor $\tau$, and strain rate tensor $D\bu$.  We take the ice density $\rho$ and the acceleration of gravity $\bg = \left<g\sin\alpha,-g\cos\alpha\right>$, where $g>0$ and $\alpha$ is an optional angle allowed for (e.g.) exact solutions, to be constant.
+The fields are velocity $\bu$, pressure $p$, deviatoric stress tensor $\tau$, and strain rate tensor $D\bu$.  For simplicity we take the ice density $\rho$ and the acceleration of gravity $\bg=\left<0,0,-g\right>$, with $g>0$, to be constant.  For convenience we allow an optional constant tilt angle $\alpha$ in the $x,z$ plane, so that $\bg = \left<g\sin\alpha,0,-g\cos\alpha\right>$.
 
-Regarding tensors and notation, first recall that $D\bu$ is the symmetric part of $\grad \bu$, i.e.~$(D\bu)_{ij} = \frac{1}{2} \left(\grad\bu + \grad\bu^\top\right)$.  The tensor norm in \eqref{viscflowlaw} satisfies $|D\bu|^2 = \frac{1}{2} \trace\left((D\bu)^2\right) = \frac{1}{2} (D\bu)_{ij} (D\bu)_{ij}$.  The full (Cauchy) stress tensor $\sigma$ is the deviatoric part $\tau$ minus the pressure, i.e.~$\sigma = \tau - p\,I$, and so equation \eqref{forcebalance} says $-\Div \sigma = \rho \bg$.  Also $B_n$ is the $n$-dependent \emph{ice hardness} in units $\text{Pa}\,\text{s}^{1/n}$; it is sometimes written $B_n = (A_n)^{-1/n}$ in terms of the \emph{ice softness} $A_n$.  Finally, because $D\bu$ is symmetric, and because it has trace zero by \eqref{incompressible}, i.e.~$\trace(D\bu)=\nabla \cdot \bu = 0$, by equation \eqref{viscflowlaw} the same two properties hold for $\tau$.
+Regarding tensors and notation, first recall that $D\bu$ is the symmetric part of $\grad \bu$, i.e.~$(D\bu)_{ij} = \frac{1}{2} \left(\grad\bu + \grad\bu^\top\right)$.  The tensor norm in \eqref{viscflowlaw} satisfies $|D\bu|^2 = \frac{1}{2} \trace\left((D\bu)^2\right) = \frac{1}{2} (D\bu)_{ij} (D\bu)_{ij}$.  The full (Cauchy) stress tensor $\sigma$ is the deviatoric part $\tau$ minus the pressure, i.e.~$\sigma = \tau - p\,I$, and so equation \eqref{forcebalance} simply says $-\Div \sigma = \rho \bg$.  Also $B_n$ is the $n$-dependent \emph{ice hardness} in units $\text{Pa}\,\text{s}^{1/n}$; it is sometimes written $B_n = (A_n)^{-1/n}$ in terms of the \emph{ice softness} $A_n$.  Finally, because $D\bu$ is symmetric, and because it has trace zero by \eqref{incompressible}, i.e.~$\trace(D\bu)=\nabla \cdot \bu = 0$, by equation \eqref{viscflowlaw} the same two properties hold for $\tau$.
 
-For the linear Stokes equations, i.e.~the $n=1$ case, one would traditionally write \eqref{viscflowlaw} as $\tau = 2\nu D\bu$ \cite{Elmanetal2014}, and in that case the viscosity would be $\nu = (1/2) B_1$.  For general $n>1$, namely realistically shear-thinning ice, the corresponding ``effective viscosity'' involves a negative power of the strain rate magnitudes $|D\bu|$, thus the effective viscosity is singular in the limit of small strain rates.  Motivated by the expected finite viscosity of real ice \cite{GreveBlatter2009}, and by the expectation that the equations using a regularized viscosity will be well-posed and solvable \cite{JouvetRappaz2011}, we define the \emph{regularized effective viscosity}
+For the linear Stokes equations, i.e.~the $n=1$ case, one would traditionally write \eqref{viscflowlaw} as $\tau = 2\nu D\bu$ \cite{Elmanetal2014}, and in that case the viscosity would be $\nu = (1/2) B_1$.  For general $n>1$, namely actual shear-thinning ice, the corresponding ``effective viscosity'' in \eqref{viscflowlaw} involves a negative power of the strain rate magnitudes $|D\bu|$, thus the effective viscosity is singular in the limit of small strain rates.  Motivated by the expected finite viscosity of real ice \cite{GreveBlatter2009}, and by the expectation that the equations using a regularized viscosity will be well-posed and solvable \cite{JouvetRappaz2011}, we define the \emph{regularized effective viscosity}
 \begin{equation}
 \nu_\eps(|D\bu|) = (1/2) B_n \left(|D\bu|^2 + (\eps D_0)^2\right)^{(p-2)/2} \label{regeffvisc}
 \end{equation}
@@ -108,38 +107,39 @@ Using \eqref{viscflowlaw}, as modified by \eqref{regeffvisc}, we can eliminate $
 - \nabla \cdot \left(2 \nu_\eps(|D\bu|)\, D\bu\right) + \nabla p &= \rho \mathbf{g} \label{stokes} \\
 \Div \bu &= 0 \label{incompagain}
 \end{align}
-This system is the Glen-Stokes model.  A solution is a velocity-pressure pair $(\bu,p)$, from which one may derive the strain rates $D\bu$ and thus the stresses $\tau$ and/or $\sigma = \tau - p\,I$.
+This system is our \emph{Glen-Stokes model}.  A solution is a velocity-pressure pair $(\bu,p)$, from which one may derive the strain rates $D\bu$ and thus the stresses $\tau$ or $\sigma = \tau - p\,I$.
 
-Glacier-suitable velocity and stress boundary conditions will be used here.  We assume that the base, top, inflow, and outflow boundaries of $\Omega^t$, at each time, can all be identified.  Only the base and top surfaces (curves in the 2D case) are assumed to have positive measure.   On the base we require no slip:\footnote{It is expected that we will allow sliding laws for the ice base  \cite{JouvetRappaz2011} at some later time.}
+Glacier-suitable velocity and stress boundary conditions will be used, with an emphasis on the case of an isolated glacier (or collection of glaciers), in which the ice flow extends to a free boundary at the glacier margin.\footnote{In real glaciers grounded margins may occur as fracture-generated cliffs, but such are not modeled here.}  As noted, we assume that the base and top boundaries of $\Omega^t$, at each time, can be identified, and we assume that at least the base has positive measure.   On the base we require no slip:
 \begin{align}
-\bu &= \bzero  &&\text{\emph{base}} \label{basebc} \\
+\bu &= \bzero  &&\text{\emph{base}: } \underline{\partial} \Omega^t \label{basebc} \\
 \intertext{On the top we set a condition of zero applied stress, i.e.~$\sigma\hbn=0$ where $\hbn$ is the outward normal:}
-\left(2 \nu_\eps(|D\bu|) D\bu - pI\right) \hbn &= \bzero  &&\text{\emph{top}} \label{topbc} \\
-\intertext{On the inflow boundary we prescribe a velocity $\bu_{\text{in}}$, satisfying $\bu_{\text{in}}\cdot \hbn < 0$ where $\hbn$ is the outward unit normal of $\Omega^t$:}
-\bu &= \bu_{\text{in}}  &&\text{\emph{inflow}} \label{inflowbc} \\
-\intertext{On the outflow boundary, which we assume is vertical, we set a nonzero hydrostatic normal stress determined by the thickness $H_{\text{out}}$ of the ice outside of $\Omega^t$:}
-\left(2 \nu_\eps(|D\bu|) D\bu - pI\right) \hbn &= -\rho \bg (H_{\text{out}}-z) &&\text{\emph{outflow}} \label{outflowbc}
+\left(2 \nu_\eps(|D\bu|) D\bu - pI\right) \hbn &= \bzero  &&\text{\emph{top}: } \overline{\partial} \Omega^t \label{topbc} \\
+\intertext{Optionally, to allow simulation of a certain laboratory experiment \cite{SayagWorster2013}, we also allow an inflow boundary on which a prescribed velocity $\bu_{\text{in}}$ is applied:}
+\bu &= \bu_{\text{in}}  &&\text{\emph{inflow}: } \partial_{\text{in}} \Omega^t. \label{inflowbc}
 \end{align}
-This condition corresponds to zero traction tangent to the boundary and hydrostatic pressure applied normally.  If there is no ice outside $\Omega^t$ then $H_{\text{out}}=0$.
+We require $\bu_{\text{in}}\cdot \hbn \le 0$ in this case.
 
-Assuming the well-posedness \cite{JouvetRappaz2011} of the above model \eqref{stokes}--\eqref{outflowbc}, if at any time $t$ the ice geometry $\Omega^t$ is known then the solution is a unique pair $(\bu,p)$.  That is, the slowness of the fluid ($\text{Re}=0$) implies that the boundary stresses and body forces determine velocity and pressure fields without any ``memory'' of prior states or influence from inertia.
+Assuming the well-posedness of the above model \eqref{stokes}--\eqref{inflowbc}, proven by \cite{JouvetRappaz2011}, if the ice geometry $\Omega^t$ is known then the solution is a unique pair $(\bu,p)$.  Note that the slowness of the fluid, i.e.~zero Reynolds number, implies that the given boundary stresses and body forces determine velocity and pressure fields without any ``memory'' of prior states or influence from inertia (as would arise in the Navier-Stokes equations).
 
-The above equations do not describe the process by which the glacier changes shape.  This process, namely the \emph{surface kinematical equation}, states conservation of mass on the boundary $\partial\Omega^t$ of the icy domain.  To present this equation we suppose the following time-dependent form for the domain:
+The above equations do not describe the process by which the glacier changes shape.  This is described by an additional \emph{surface kinematical equation} which states conservation of mass on the top boundary $\overline{\partial} \Omega^t$ of the icy domain.  To present this equation we first assume a map-plane computational domain $R\subset \RR^{d-1}$, typically a rectangle for $d=3$ or an interval for $d=2$.  The ice-covered area is then a subset of the interior of $R$, that is, ice is not present on, nor flow across, the boundary of $R$.  Then we suppose the following time-dependent form for the domain:
 \begin{equation}
-\Omega^t = \left\{(x,z)\,\big|\, b(x) < z < h(x,t)\right\}.  \label{Omegat}
+\Omega^t = \left\{\bx\,\big|\,(x,y)\in R \text{ and } b(x,y) < z < h(x,y,t)\right\}.  \label{Omegat}
 \end{equation}
-Here $z=b(x)$ is the base elevation, assumed time-independent for simplicity, and $z=h(x,t)$ is the ice surface elevation, and note the key fact that
-\begin{equation}
-h(x,t) \ge b(x).  \label{admissibility}
-\end{equation}
-Note that conservation of mass also includes the incompressibility relation in the interior of $\Omega^t$, namely already-stated equation \eqref{incompagain}.
+Here $z=b(x,y)$ is the base elevation, assumed time-independent for simplicity, and $z=h(x,y,t)$ is the ice surface elevation.  Note that the ice surface elevation is \emph{equal} to the base elevation in ice-free areas of $R$, and that the top surface of the ice is
+    $$\overline{\partial} \Omega^t = \left\{(x,y,h(x,t))\,\big|\,(x,y)\in R \text{ and } b(x,y) < h(x,y,t)\right\}.$$
+In $d=2$ cases we have corresponding formulations of $\Omega^t$ and $\overline{\partial} \Omega^t$.
 
-That the top of the icy region is described by a surface elevation function $h(x,t)$ represents a kind of ``shallowness'' assumption, namely that for every $x$-coordinate value there are well-defined surface (and base) elevation values.  That is, from now on we are assuming, in agreement with almost all ice sheet and glacier modeling literature, that
+Next we note the key fact, which is an admissibility requirement for the function $h(x,y,t)$, as a part of the model solution, that
 \begin{equation}
-I(x,t) = \{z\,:\,(x,z) \in \Omega^t\} \, \text{ is a single real interval}.\label{intervalassume}
+h(x,y,t) \ge b(x,y).  \label{admissibility}
 \end{equation}
-(In fact $I(x,t)$ is open, because $\Omega^t$ is itself open, but this is of no importance in the following.)  Thus one may define the ice-surface and base elevation functions as follows:
-    $$h(x,t) = \sup I(x,t), \qquad b(x) = \inf I(x,t).$$
+For a given map-plane location $(x,y)$ the ice may be present ($h(x,y,t)>b(x,y)$) or absent ($h(x,y,t)=b(x,y)$) in an evolving, time-dependent manner.
+
+Our assumption that the top of the icy region is described by a well-defined surface elevation function $h(x,y,t)$ represents a kind of ``shallowness'' assumption.  In agreement with almost all ice sheet and glacier modeling literature, we assume that for each map-plane location $(x,y)$ and time $t$,
+\begin{equation}
+I(x,y,t) = \{z\,\big|\,\bx=(x,y,z) \in \Omega^t\} \label{intervalassume}
+\end{equation}
+is a single (open) real interval, and in particular that there are no ice overhangs.  Note that $I(x,y,t)$ is the empty set when ice is not present at map-plane location $(x,y)$.
 
 Denoting the velocity components as $\bu=\left<u(x,z,t),w(x,z,t)\right>$, the surface kinematical equation is
 \begin{equation}
