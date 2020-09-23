@@ -8,6 +8,7 @@
 \usepackage{graphicx}
 \usepackage{verbatim,fancyvrb}
 \usepackage{tikz}
+\usepackage{times}
 
 % hyperref should be the last package we load
 \usepackage[pdftex,
@@ -68,8 +69,7 @@ A variety of methodologies for such numerical simulations are used in practice, 
 \begin{center}
 \includegraphics[width=0.7\textwidth]{cartoon.pdf}
 \end{center}
-
-\caption{We consider grounded glacier and ice sheet models based on Glen-Stokes dynamics within the ice, coupled to surface mass balance through the kinematical equation, with both an evolving free surface and a free boundary at the glacier margin.}
+\caption{We consider grounded glacier and ice sheet models based on Glen-Stokes ice flow, an evolving free surface, and a free boundary (margin).}
 \label{fig:cartoon}
 \end{figure}
 
@@ -82,7 +82,7 @@ To discretize the continuum equations we apply the finite element (FE) method \c
 The primary purpose of the paper is to demonstrate high-performance numerical simulations with Glen-Stokes momentum conservation, coupled to the surface kinematical equation at each implicit time step.  Our performance metric, introduced here, is one which practitioners should regard as natural, namely we measure the run time and floating-point operations (flops) of our simulations relative to the well-understood computation of ice velocity in the shallow ice approximation (SIA) on the same mesh.  That is, we define a ``work unit'' as a diagnostic computation of the SIA velocity solution, a mere vertical integration \cite{SchoofHewitt2013}, and we report performance of the Stokes model in these work units.  We WILL validate the model based on results of laboratory-scale experiments, and we WILL demonstrate solver optimality.
 
 
-\section{Equations of ice flow in glaciers} \label{sec:strongform}
+\section{Equations for glacier flow and evolution} \label{sec:strongform}
 
 The standard description of the flow of glaciers applies shear-thinning Stokes equations incorporating Glen's flow law for ice \cite{GreveBlatter2009,JouvetRappaz2011,SchoofHewitt2013}.  We will apply this model on time-dependent $d=2$ or $d=3$ dimensional domains using time $t>0$ and spatial variables $\bx=(x,y,z)$, with $z$ vertical.  (Coordinates are $\bx=(x,z)$ in 2D.)  The evolving domain $\Omega^t \subset \RR^d$ must have a piecewise smooth boundary so that we may apply the boundary conditions, but it is otherwise general.
 
@@ -109,11 +109,11 @@ Using \eqref{viscflowlaw}, as modified by \eqref{regeffvisc}, we can eliminate $
 \end{align}
 This system is our \emph{Glen-Stokes model}.  A solution is a velocity-pressure pair $(\bu,p)$, from which one may derive the strain rates $D\bu$ and thus the stresses $\tau$ or $\sigma = \tau - p\,I$.
 
-Glacier-suitable velocity and stress boundary conditions will be used, with an emphasis on the case of an isolated glacier (or collection of glaciers), in which the ice flow extends to a free boundary at the glacier margin.\footnote{In real glaciers grounded margins may occur as fracture-generated cliffs, but such are not modeled here.}  As noted, we assume that the base and top boundaries of $\Omega^t$, at each time, can be identified, and we assume that at least the base has positive measure.   On the base we require no slip:
+Glacier-suitable velocity and stress boundary conditions will be used, with an emphasis on the case of an isolated glacier (or collection of glaciers), in which the ice flow extends to a free boundary at the glacier margin.\footnote{In real glaciers grounded margins may occur as fracture-generated cliffs, but such are not modeled here.}  As noted, we assume that the base and top boundaries of $\Omega^t$, at each time, can be identified, and we assume that at least the base has positive measure.  On the top surface we set a condition of zero applied stress, i.e.~$\sigma\hbn=0$ where $\hbn$ is the outward normal:
 \begin{align}
-\bu &= \bzero  &&\text{\emph{base}: } \underline{\partial} \Omega^t \label{basebc} \\
-\intertext{On the top we set a condition of zero applied stress, i.e.~$\sigma\hbn=0$ where $\hbn$ is the outward normal:}
 \left(2 \nu_\eps(|D\bu|) D\bu - pI\right) \hbn &= \bzero  &&\text{\emph{top}: } \overline{\partial} \Omega^t \label{topbc} \\
+\intertext{On the base we require no slip:}
+\bu &= \bzero  &&\text{\emph{base}: } \underline{\partial} \Omega^t \label{basebc} \\
 \intertext{Optionally, to allow simulation of a certain laboratory experiment \cite{SayagWorster2013}, we also allow an inflow boundary on which a prescribed velocity $\bu_{\text{in}}$ is applied:}
 \bu &= \bu_{\text{in}}  &&\text{\emph{inflow}: } \partial_{\text{in}} \Omega^t. \label{inflowbc}
 \end{align}
@@ -121,19 +121,25 @@ We require $\bu_{\text{in}}\cdot \hbn \le 0$ in this case.
 
 Assuming the well-posedness of the above model \eqref{stokes}--\eqref{inflowbc}, proven by \cite{JouvetRappaz2011}, if the ice geometry $\Omega^t$ is known then the solution is a unique pair $(\bu,p)$.  Note that the slowness of the fluid, i.e.~zero Reynolds number, implies that the given boundary stresses and body forces determine velocity and pressure fields without any ``memory'' of prior states or influence from inertia (as would arise in the Navier-Stokes equations).
 
-The above equations do not describe the process by which the glacier changes shape.  This is described by an additional \emph{surface kinematical equation} which states conservation of mass on the top boundary $\overline{\partial} \Omega^t$ of the icy domain.  To present this equation we first assume a map-plane computational domain $R\subset \RR^{d-1}$, typically a rectangle for $d=3$ or an interval for $d=2$.  The ice-covered area is then a subset of the interior of $R$, that is, ice is not present on, nor flow across, the boundary of $R$.  Then we suppose the following time-dependent form for the domain:
+The above equations do not describe the process by which the glacier changes shape or extent.  This is described by an additional equation which states conservation of mass on the top boundary $\overline{\partial} \Omega^t$.  To present this equation we first assume a larger map-plane computational domain $R\subset \RR^{d-1}$, typically a rectangle for $d=3$ or an interval for $d=2$, on which the data $a,b$ of the problem are defined; see Figure \ref{fig:domainnotation}.  The ice-covered area is then a subset of the interior of $R$; that is, we require that ice is not present on, nor does it flow across, the boundary of $R$.  Thus the following time-dependent form for the domain applies:
 \begin{equation}
 \Omega^t = \left\{\bx\,\big|\,(x,y)\in R \text{ and } b(x,y) < z < h(x,y,t)\right\}.  \label{Omegat}
 \end{equation}
-Here $z=b(x,y)$ is the base elevation, assumed time-independent for simplicity, and $z=h(x,y,t)$ is the ice surface elevation.  Note that the ice surface elevation is \emph{equal} to the base elevation in ice-free areas of $R$, and that the top surface of the ice is
-    $$\overline{\partial} \Omega^t = \left\{(x,y,h(x,t))\,\big|\,(x,y)\in R \text{ and } b(x,y) < h(x,y,t)\right\}.$$
-In $d=2$ cases we have corresponding formulations of $\Omega^t$ and $\overline{\partial} \Omega^t$.
-
-Next we note the key fact, an admissibility requirement for the function $h(x,y,t)$ as a part of the model solution \cite{Bueler2016}, that
+Here $z=b(x,y)$ is the base elevation, assumed time-independent for simplicity, and $z=h(x,y,t)$ is the ice surface elevation.  An admissibility requirement for the function $h(x,y,t)$ as a part of the model solution \cite{Bueler2016}, is that
 \begin{equation}
 h(x,y,t) \ge b(x,y).  \label{admissibility}
 \end{equation}
-For a given map-plane location $(x,y)$ the ice may be present $h(x,y,t)>b(x,y)$ or absent $h(x,y,t)=b(x,y)$ in an evolving, time-dependent manner.
+For a given map-plane location $(x,y)$ the ice may be present $h(x,y,t)>b(x,y)$ or absent $h(x,y,t)=b(x,y)$ in an evolving, time-dependent manner.  Note that both $h$ and $b$ are defined for all $(x,y)\in R$.  The time-dependent ice-covered map-plane domain is the vertical projection of $\Omega^t$, denoted $\pi \Omega^t$.
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=0.7\textwidth]{domainnotation.pdf}
+\end{center}
+\caption{Notation: The evolving ice domain $\Omega^t$ has projection $\pi \Omega^t$.  Surface mass balance $a$ and base elevation $b$ are defined on all of $R$.}
+\label{fig:domainnotation}
+\end{figure}
+
+
 
 In agreement with most ice sheet and glacier modeling literature we assume that the top of the ice mass is described by a well-defined surface elevation function $h(x,y,t)$.  This should be acknowledged as a kind of ``proto-shallowness'' assumption, as the domain $\Omega^t$ is not general, but rather is a fluid layer \cite{Bueler2020}, and in particular there are no ice overhangs.  In other words we are assuming that for each map-plane location $(x,y)$ and time $t$ the set
 \begin{equation}
@@ -148,6 +154,8 @@ or, stated somewhat more precisely using vector notation,
 h_t = a\big|_{z=h} + \bu\big|_{z=h} \cdot \left<-\grad h,1\right> \quad \text{ on } \overline{\partial}\Omega^t. \label{surfacekinematical}
 \end{equation}
 The surface mass balance entering into this equation, as a source term, is the trace of $a$ along the surface, namely $a\big|_{z=h}=a(x,y,h(x,y,t),t)$.
+
+FIXME surface kinematical is actually an inequality
 
 Informally, \eqref{surfacekinematical} describes how the top surface elevation is updated by using the climatically added or removed ice $a\,\Delta t$, plus the component of the ice motion in the outward (upward) normal direction $\bn = \left<-\grad h,1\right>$.  Note that $a(x,y,z,t)$ is typically computed by a separate model covering the dynamical state of the atmosphere, including snow precipitation and atmospheric energy-driven melt.  (Clearly this topic is well beyond our scope.)  Numerical glacier models often evolve the time-dependent surface $z=h$ by explicit steps, i.e.~$\Delta h \approx \left(a + \bu\cdot \bn\right) \Delta t$ in the simplest forward-Euler case, based upon the current values $a=a\big|_{z=h}$, $\bu= \bu\big|_{z=h}$, and $\grad h$.  However, we will be solving \eqref{surfacekinematical} implicitly, that is, coupled with the Glen-Stokes system \eqref{stokes}--\eqref{inflowbc}.
 

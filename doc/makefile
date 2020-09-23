@@ -1,14 +1,15 @@
 all: simp.pdf
 
-simp.pdf: simp.tex simp.bib cartoon.pdf
+simp.pdf: simp.tex simp.bib cartoon.pdf domainnotation.pdf
 	pdflatex simp
 	bibtex simp
 	pdflatex simp
 	pdflatex simp
 
-cartoon.pdf: cartoon.py
+cartoon.pdf domainnotation.pdf: cartoon.py
 	python3 cartoon.py
 	pdfcrop cartoon.pdf cartoon.pdf
+	pdfcrop domainnotation.pdf domainnotation.pdf
 
 .PHONY: clean
 
