@@ -8,8 +8,9 @@ simp.pdf: simp.tex simp.bib cartoon.pdf domainnotation.pdf
 
 cartoon.pdf domainnotation.pdf: cartoon.py
 	python3 cartoon.py
-	pdfcrop cartoon.pdf cartoon.pdf
-	pdfcrop domainnotation.pdf domainnotation.pdf
+	for X in cartoon.pdf domainnotation.pdf currenttime.pdf referencedomain.pdf nexttime.pdf; do \
+	     (pdfcrop $$X $$X); \
+	done
 
 .PHONY: clean
 

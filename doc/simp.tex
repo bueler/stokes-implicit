@@ -139,8 +139,6 @@ For a given map-plane location $(x,y)$ the ice may be present $h(x,y,t)>b(x,y)$ 
 \label{fig:domainnotation}
 \end{figure}
 
-
-
 In agreement with most ice sheet and glacier modeling literature we assume that the top of the ice mass is described by a well-defined surface elevation function $h(x,y,t)$.  This should be acknowledged as a kind of ``proto-shallowness'' assumption, as the domain $\Omega^t$ is not general, but rather is a fluid layer \cite{Bueler2020}, and in particular there are no ice overhangs.  In other words we are assuming that for each map-plane location $(x,y)$ and time $t$ the set
 \begin{equation}
 I(x,y,t) = \{z\,\big|\,\bx=(x,y,z) \in \Omega^t\} \label{intervalassume}
@@ -209,9 +207,15 @@ so the new domain $\Omega^n$ is an image of $\Lambda$,
 and this $\Lambda \stackrel{\Delta t}{\to} \Omega^n$ domain update is sketched in Figure \ref{fig:domainupdate}.  Note that the horizontal coordinate does not change ($x=r$), but the $z$-coordinate is nontrivial.  Here $c(r,s)$ is a scalar function which will be computed by solving coupled PDEs on $\Lambda$ (below).  Because $c$ will solve an elliptic PDE (below), the new coordinates $x,z$ are smooth functions of $r,s$.
 
 \begin{figure}[h]
-FIXME
+\begin{center}
+\includegraphics[width=0.6\textwidth]{currenttime.pdf}
+\vspace{-3mm}
 
-\caption{The current $t_{n-1}$ domain $\Lambda$ is the reference configuration for the new $t_n$ domain $\Omega^n$.}
+\includegraphics[width=0.6\textwidth]{referencedomain.pdf}
+
+\includegraphics[width=0.6\textwidth]{nexttime.pdf}
+\end{center}
+\caption{The current domain $\Omega^{n-1}$ is modified to be the reference domain $\Lambda$.  The coupled solution then includes a map from $\Lambda$ to the next domain $\Omega^n$.  The mapping is degenerate where the solution indicates no ice.}
 \label{fig:domainupdate}
 \end{figure}
 
