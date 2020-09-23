@@ -129,48 +129,55 @@ Here $z=b(x,y)$ is the base elevation, assumed time-independent for simplicity, 
     $$\overline{\partial} \Omega^t = \left\{(x,y,h(x,t))\,\big|\,(x,y)\in R \text{ and } b(x,y) < h(x,y,t)\right\}.$$
 In $d=2$ cases we have corresponding formulations of $\Omega^t$ and $\overline{\partial} \Omega^t$.
 
-Next we note the key fact, which is an admissibility requirement for the function $h(x,y,t)$, as a part of the model solution, that
+Next we note the key fact, an admissibility requirement for the function $h(x,y,t)$ as a part of the model solution \cite{Bueler2016}, that
 \begin{equation}
 h(x,y,t) \ge b(x,y).  \label{admissibility}
 \end{equation}
-For a given map-plane location $(x,y)$ the ice may be present ($h(x,y,t)>b(x,y)$) or absent ($h(x,y,t)=b(x,y)$) in an evolving, time-dependent manner.
+For a given map-plane location $(x,y)$ the ice may be present $h(x,y,t)>b(x,y)$ or absent $h(x,y,t)=b(x,y)$ in an evolving, time-dependent manner.
 
-Our assumption that the top of the icy region is described by a well-defined surface elevation function $h(x,y,t)$ represents a kind of ``shallowness'' assumption.  In agreement with almost all ice sheet and glacier modeling literature, we assume that for each map-plane location $(x,y)$ and time $t$,
+In agreement with most ice sheet and glacier modeling literature we assume that the top of the ice mass is described by a well-defined surface elevation function $h(x,y,t)$.  This should be acknowledged as a kind of ``proto-shallowness'' assumption, as the domain $\Omega^t$ is not general, but rather is a fluid layer \cite{Bueler2020}, and in particular there are no ice overhangs.  In other words we are assuming that for each map-plane location $(x,y)$ and time $t$ the set
 \begin{equation}
 I(x,y,t) = \{z\,\big|\,\bx=(x,y,z) \in \Omega^t\} \label{intervalassume}
 \end{equation}
-is a single (open) real interval, and in particular that there are no ice overhangs.  Note that $I(x,y,t)$ is the empty set when ice is not present at map-plane location $(x,y)$.
+is a single (open) real interval.  Note that $I(x,y,t)$ is the empty set when ice is not present at map-plane location $(x,y)$.  Looking ahead, this basic layer assumption is compatible with a numerical scheme based on a more-or-less arbitrary unstructured mesh in the map plane which is then extruded vertically, upward from the base, to cover $\Omega^t$.
 
-Denoting the velocity components as $\bu=\left<u(x,z,t),w(x,z,t)\right>$, the surface kinematical equation is
+Let $a(x,y,z,t)$ be the (modeled) climatic mass balance, in (ice-equivalent) units $\text{m}\,\text{s}^{-1}$, which we assume is prescribed for all locations above the base elevation, i.e.~$(x,y,z) \in R\times[b(x,y),\infty)$, and all times $t>0$.  Denoting the velocity components as $\bu=\left<u,v,w\right>$, the surface kinematical equation \cite{GreveBlatter2009} applies on the top of the ice,\footnote{Modeling melting or freeze-on at the ice base would add a basal kinematic equation \cite{Aschwandenetal2012}.}
+    $$h_t = a - u h_x - v h_y + w \quad \text{ on } \overline{\partial}\Omega^t,$$
+or, stated somewhat more precisely using vector notation,
 \begin{equation}
-h_t = a(x,h,t) - u(x,h,t) h_x + w(x,h,t) \label{surfacekinematical}
+h_t = a\big|_{z=h} + \bu\big|_{z=h} \cdot \left<-\grad h,1\right> \quad \text{ on } \overline{\partial}\Omega^t. \label{surfacekinematical}
 \end{equation}
-Here $a(x,z,t)$ is the (modeled) climatic mass balance in (ice-equivalent) units $\text{m}\,\text{s}^{-1}$.\footnote{Modeling melting or freeze-on at the ice base would add a basal kinematic equation \cite{Aschwandenetal2012}.}  Informally, \eqref{surfacekinematical} describes how the top surface elevation is updated, $\Delta h \approx h_t\,\Delta t$, by using the climatically added or removed ice $a\,\Delta t$, plus the component of the ice motion in the outward (upward) normal direction $\hbn = \left<-h_x,1\right>$.
+The surface mass balance entering into this equation, as a source term, is the trace of $a$ along the surface, namely $a\big|_{z=h}=a(x,y,h(x,y,t),t)$.
 
-Ice sheet and glacier models often evolve the time-dependent surface $z=h(x,t)$ by explicit steps $\Delta h \approx \left(a + \hbn\cdot \bu|_{z=h}\right) \Delta t$.  However, we will solve \eqref{surfacekinematical} implicitly, that is, coupled with the Glen-Stokes system \eqref{stokes}--\eqref{outflowbc}.  We first write the weak form for the decoupled problem \eqref{stokes}--\eqref{outflowbc} in order to set notation and have a familiar starting point, before describing the coupled geometry evolution in the next section.
+Informally, \eqref{surfacekinematical} describes how the top surface elevation is updated by using the climatically added or removed ice $a\,\Delta t$, plus the component of the ice motion in the outward (upward) normal direction $\bn = \left<-\grad h,1\right>$.  Note that $a(x,y,z,t)$ is typically computed by a separate model covering the dynamical state of the atmosphere, including snow precipitation and atmospheric energy-driven melt.  (Clearly this topic is well beyond our scope.)  Numerical glacier models often evolve the time-dependent surface $z=h$ by explicit steps, i.e.~$\Delta h \approx \left(a + \bu\cdot \bn\right) \Delta t$ in the simplest forward-Euler case, based upon the current values $a=a\big|_{z=h}$, $\bu= \bu\big|_{z=h}$, and $\grad h$.  However, we will be solving \eqref{surfacekinematical} implicitly, that is, coupled with the Glen-Stokes system \eqref{stokes}--\eqref{inflowbc}.
 
-Recall $p=1/n + 1$.  Now let $p'=(1-p^{-1})^{-1}=p/(p-1)$ and fix $t>0$.  We will seek a solution from the following spaces:
+
+\section{Decoupled Stokes weak form} \label{sec:weakstokes}
+
+Next we write the weak form for the decoupled problem \eqref{stokes}--\eqref{inflowbc}.  This will set notation, and provide a possibly-familiar starting point \cite[for example]{Bueler2021,Elmanetal2014}, before describing the coupled momentum and mass model in the next section.
+
+Recall $p=1/n + 1>1$, and let $p'=(1-p^{-1})^{-1}=p/(p-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocities with first derivatives in $L^p$ is denoted $W^{1,p}(\Omega^t)$ \cite{Evans2010}.  Fix $t>0$.  We will seek a solution from the following spaces:
 \begin{align*}
-\bu \in V_D &= \left\{\bv \in W^{1,p}(\Omega^t)\,:\,\bv\big|_{\text{base}}=\bzero \text{ and } \bv\big|_{\text{inflow}} = \bu_{\texttt{in}}\right\}, \quad p \in Q =L^{p'}(\Omega^t).
+\bu &\in V_D = \left\{\bv \in W^{1,p}(\Omega^t)\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
+p &\in Q =L^{p'}(\Omega^t).
 \end{align*}
-Test functions $\bv \in V_0$ and $q\in Q$ come from nearly the same spaces, but with $\bv=\bzero$ on the base and inflow surfaces.
+For the following weak form, test functions $\bv \in V_0$ and $q\in Q$ will come from nearly the same spaces, but with $\bv=\bzero$ on both the base and the inflow boundaries.
 
-To derive the nonlinear functional which defines the weak form we first multiply \eqref{stokes} by $\bv\in V_0$ and \eqref{incompagain} by $q\in Q$, then add these and integrate-by-parts:
+To derive the weak form we multiply \eqref{stokes} by $\bv\in V_0$ and \eqref{incompagain} by $q\in Q$, then add these and integrate-by-parts:
 \begin{equation}
-\tilde F = -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,dS + \int_{\Omega^t} \tau \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,dx dz \label{nonfunctwo}
+-\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,dS + \int_{\Omega^t} \tau \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx = 0. \label{nonfunctwo}
 \end{equation}
-where $dS$ is the arclength element along $\partial\Omega^t$, and labeling the stress tensor for brevity.  Note that $\bu,\bv$ appear with at most first derivatives and $p,q$ appear without derivatives.  Next, because $\bv\in V_0$, portions of the integral over $\partial\Omega^t$ are zero.  The stress-free and outflow conditions \eqref{topbc} and \eqref{outflowbc} now eliminate the unknowns from the boundary integral.  Thus we have the following formula for $\tilde F$:
-\begin{align}
-\tilde F(\bu,p;\bv,q) &= \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q \,dx dz \label{definetildeF} \\
-    &\qquad  - \int_{\Omega^t} \rho \mathbf{g} \cdot \bv \,dx dz + \int_{\partial_O \Omega^t} \rho (H_{\text{out}}-z) \bg \cdot \bv \,dS \notag
-\end{align}
-where $\partial_O \Omega^t$ denotes the outflow boundary.  The last two integrals in \eqref{definetildeF} can be regarded as source terms.
+Here $dS$ is the arclength element along $\partial\Omega^t$.  Note that $\bu,\bv$ appear with at most first derivatives and $p,q$ appear without derivatives.  Next, because $\bv\in V_0$, portions of the integral over $\partial\Omega^t$ are zero, and the stress-free surface condition then eliminates the boundary integral.  Thus we have the following formula for the nonlinear residual functional $\tilde F$:
+\begin{equation}
+\tilde F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx. \label{definetildeF}
+\end{equation}
+The final integral in \eqref{definetildeF} can be regarded as a source term.
 
 We say $\bu\in V_D$ and $p\in Q$ solve the weak formulation if
 \begin{equation}
 \tilde F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in V_0 \text{ and } q\in Q.  \label{weak}
 \end{equation}
-An equivalent formulation is proven in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data.  Note that if the inflow velocity is zero and if the source terms are also zero, for instance because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weak} is $\bu=\bzero$ and $p=0$.
+An equivalent formulation is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data.  Note that if the inflow velocity is zero or absent ($\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero, for instance because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weak} is $\bu=\bzero$ and $p=0$.
 
 
 \section{Implicit time-discretization and the icy domain update} \label{sec:implicitstep}
