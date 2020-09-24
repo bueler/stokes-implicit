@@ -44,6 +44,8 @@ urlcolor=black     % only if colorlinks=true
 
 \newcommand{\bX}{\mathbf{X}}
 
+\newcommand{\bxi}{\bm{\xi}}
+
 \newcommand{\bzero}{\bm{0}}
 
 \newtheorem{lemma}{Lemma}
@@ -188,23 +190,25 @@ An equivalent formulation is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to b
 
 \section{Implicit time-discretization and the icy domain update} \label{sec:implicitstep}
 
-The main purpose of this paper is to propose an implicit domain-updating scheme to simultaneously solve the Glen-Stokes equations and the surface kinematical equation.  In this proposed scheme we compute a greatly-simplified surrogate of the ice strain field during a time step.  This surrogate, a vertical-only displacement value defined everywhere within the current icy domain, is found simultaneously with the velocity and pressure.  That is, we solve the coupled system consisting of mass and momentum conservation, including the surface kinematical equation, plus an additional equation for the vertical-only displacement.  This scheme is stated using a time-discretized but continuous-space weak formulation.  At each time step the current domain is the reference configuration on which we compute all quantities.  The corresponding finite element equations, considered in the next section, compute the vertical-only \emph{mesh} displacement simultaneously with the discrete velocity and pressure fields.
+The main purpose of this paper is to propose an implicit domain-updating scheme to simultaneously solve the Glen-Stokes equations and the surface kinematical equation.  In this proposed scheme we compute a greatly-simplified surrogate of the ice strain field during a time step.  This surrogate, a vertical-only displacement value defined everywhere within the current icy domain, is found simultaneously with the velocity and pressure.  That is, we solve a coupled system consisting of mass and momentum conservation, including the surface kinematical equation, plus an additional equation for the vertical-only displacement.  This scheme is first stated using a time-discretized but continuous-space weak formulation.  At each time step the current domain is the reference configuration on which we compute all quantities.  The corresponding finite element equations, considered in the next section, compute the vertical-only \emph{mesh} displacement simultaneously with the discrete velocity and pressure fields.
 
-Though better implicit schemes exist, we will describe the time-stepping using a backward Euler scheme.  In later work we plan to restate the problem as a differential algebraic equation (DAE) and apply suitable higher-order schemes.
+Though more accurate implicit schemes exist, we will describe the time-stepping using a first-order backward Euler scheme.  In later work we plan to restate the problem as a differential algebraic equation (DAE) and apply suitable higher-order schemes.
 %  Specifically, we will consider the second-order backward-differentiation formula (BDF2) \cite{AscherPetzold1998} and solver tools based on PETSc's \cite{Balayetal2020,BuelerBook} time-stepping TS object.
 % possibly \texttt{firedrake-ts}; https://github.com/IvanYashchuk/firedrake-ts
 
-Let $t_{n-1}$ and $t_n$ be consecutive times with step $\Delta t = t_n - t_{n-1} > 0$.  Suppose the model's state, namely the (current) ice geometry, is known at time $t_{n-1}$.  Denote this ice-filled domain as $\Lambda = \Omega^{t_{n-1}} \subset \RR^2$.  We will approximate the updated (new) domain $\Omega^n = \Omega^{t_n} \subset \RR^2$ using the weak form \eqref{weak} of the Glen-Stokes equations, plus a weak form of the surface kinematical equation \eqref{surfacekinematical} (see below), plus input data for the surface mass balance $a(x,z,t)$.  Note that assumption \eqref{intervalassume} needs to hold for $\Lambda$, and, once we have solved all the equations, it must also hold for $\Omega^n$ so that time-stepping may proceed.
+Let $t_{n-1}$ and $t_n$ be consecutive times with step $\Delta t = t_n - t_{n-1} > 0$.  Suppose the model's state, namely the (current) ice geometry $\Omega^{n-1}$, is known at time $t_{n-1}$.  We will approximate the updated (new) domain $\Omega^n$ using the coupled Glen-Stokes plus surface kinematical equations.
 
-The coordinates on the current domain $\Lambda$ are denoted $\bm{\xi}=(r,s)$.  We update the region by computing a change of coordinates $\bm{\xi} = (r,s) \mapsto \bx = (x,z)$,
+FIXME describe how $\Lambda$ built
+
+The coordinates on the reference domain $\Lambda$ are denoted $\bxi=(\xi,\eta,\zeta)$.  We update the region by computing a change of coordinates $\bxi \mapsto \bx$,
 \begin{equation}
-x(r,s)=r, \quad z(r,s)=s+c(r,s), \label{changecoords}
+x=\xi, \quad y=\eta, \quad z=\zeta+c(\xi,\eta,\zeta), \label{changecoords}
 \end{equation}
-so the new domain $\Omega^n$ is an image of $\Lambda$,
+or $\bx(\bxi) = \bxi + (0,0,c(\bxi))$.  The new domain $\Omega^n$ is the interior of the image of $\Lambda$ under this map:
 \begin{equation}
-\Omega^n = \{(x,z)=(r,s+c(r,s)) \,\big|\, (r,s) \in \Lambda\}, \label{updateddomain}
+\Omega^n = \{\bx=\bxi + (0,0,c(\bxi)) \,\big|\, \bxi \in \Lambda\}^\circ. \label{updateddomain}
 \end{equation}
-and this $\Lambda \stackrel{\Delta t}{\to} \Omega^n$ domain update is sketched in Figure \ref{fig:domainupdate}.  Note that the horizontal coordinate does not change ($x=r$), but the $z$-coordinate is nontrivial.  Here $c(r,s)$ is a scalar function which will be computed by solving coupled PDEs on $\Lambda$ (below).  Because $c$ will solve an elliptic PDE (below), the new coordinates $x,z$ are smooth functions of $r,s$.
+This $\Lambda \stackrel{\Delta t}{\to} \Omega^n$ domain update is sketched in Figure \ref{fig:domainupdate}.  Note that the horizontal coordinate does not change ($(x,y)=(\xi,\eta)$), but the $z$-coordinate is nontrivial.  We emphasize that $c(\xi,\eta,\zeta)$ is a scalar function which will be computed by solving coupled PDEs on $\Lambda$ (below).  In particular, $c$ will solve an elliptic PDE and thus the new coordinates $\bx$ are smooth functions of $\bxi$.
 
 \begin{figure}[h]
 \begin{center}
@@ -221,30 +225,26 @@ and this $\Lambda \stackrel{\Delta t}{\to} \Omega^n$ domain update is sketched i
 
 From \eqref{changecoords} the Jacobian of the coordinate change is
 \begin{equation}
-J = \begin{pmatrix} \partial x / \partial r & \partial x / \partial s \\ \strut \partial z / \partial r & \partial z / \partial s \end{pmatrix} = \begin{pmatrix} 1 & 0 \\ \partial c/\partial r & 1+(\partial c/\partial s) \end{pmatrix}, \label{jacchange}
+J(\bxi) = \frac{\partial \bx}{\partial \bm{\xi}} = \begin{pmatrix} 1 & 0 & 0 \\  0 & 1 & 0 \\ \frac{\partial c}{\partial \xi} & \frac{\partial c}{\partial \eta} & 1+\frac{\partial c}{\partial \zeta} \end{pmatrix}, \label{jacchange}
 \end{equation}
-with determinant
+with determinant $\det(J)=1+\frac{\partial c}{\partial \zeta}$.
+
+For a generic, smooth function $f(\bx)$ defined on $\Omega^n$ the change of coordinates defines a function on $\Lambda$,
+    $$\tilde f(\bxi) = f(\xi,\eta,\zeta+c(\xi,\eta,\zeta)).$$
+The gradient transforms as
 \begin{equation}
-j(r,s) = 1+\frac{\partial c}{\partial s}. \label{definej}
+\grad_{\bxi} \tilde f = J^\top \grad_{\bx} f
 \end{equation}
-For a generic, smooth function $\tilde f(x,z)$ defined on $\Omega^n$ we define a new function on $\Lambda$,
-    $$f(r,s) = \tilde f(r,s+c(r,s)),$$
-and then partial derivatives transform as
+and thus
 \begin{equation}
-\begin{bmatrix} \partial \tilde f / \partial x \\ \strut \partial \tilde f / \partial z\end{bmatrix} = (J^\top)^{-1} \begin{bmatrix} \partial f / \partial r \\ \strut \partial f / \partial s\end{bmatrix} = \begin{pmatrix} 1 & \ell \\ 0 & k \end{pmatrix} \begin{bmatrix} \partial f / \partial r \\ \strut \partial f / \partial s\end{bmatrix} \label{changederivatives}
+\grad_{\bx} f = (J^\top)^{-1} \grad_{\bxi} \tilde f = \begin{pmatrix} 1 & 0 & j \\ 0 & 1 & k \\ 0 & 0 & \ell \end{pmatrix} \grad_{\bxi} \tilde f \label{changederivatives}
 \end{equation}
 where
 \begin{equation}
-k(r,s) = j(r,s)^{-1}, \qquad \ell(r,s) = - \frac{\partial c}{\partial r}(r,s) j(r,s)^{-1}. \label{definejkl}
+j(\bxi) = -\frac{\frac{\partial c}{\partial \xi}}{1+\frac{\partial c}{\partial \zeta}}, \quad k(\bxi) = -\frac{\frac{\partial c}{\partial \eta}}{1+\frac{\partial c}{\partial \zeta}}, \quad \ell(\bxi) = \frac{1}{1+\frac{\partial c}{\partial \zeta}}. \label{definejkl}
 \end{equation}
 
-For stability we require that the change of coordinates not cause a local flip in orientation, though degeneration is allowed.  That is, we will require $j\ge 0$ or equivalently
-\begin{equation}
-\frac{\partial c}{\partial s} \ge -1. \label{differentialVI}
-\end{equation}
-(We reconsider the meaning of this restriction in Section \ref{sec:inequalities}.)
-
-Let $\eta(r)$ denote the current surface elevation (i.e.~of $\Lambda$).  The new surface elevation, for the region $\Omega^n$, is
+FIXME Let $\eta(r)$ denote the current surface elevation (i.e.~of $\Lambda$).  The new surface elevation, for the region $\Omega^n$, is
 \begin{equation}
 h(r) = \eta(r) + c(r,\eta(r)).  \label{newsurfaceelevation}
 \end{equation}
@@ -270,26 +270,27 @@ From \eqref{newsurfaceelevation} we have
     $$h'(r) = \eta'(r) + \grad c (r,\eta(r)) \cdot \left<1,\eta'(r)\right>.$$
 Thus the fully-implicit choice B involves a tangential derivative of $c$ along the top boundary of $\Lambda$, and it couples with the determination of the mass balance during the time interval $[t_{n-1},t_n]$.
 
-Finally we can state how the domain update is computed.  We propose that the vertical displacement function $c(r,s)$, defined on the current domain $\Lambda$, solves the Laplace equation along with boundary conditions which include either \eqref{surfacesemiimplicit} or \eqref{surfaceimplicit}.  The strong form of the problem uses either choice A or B on the top surface:
+FIXME Finally we can state how the domain update is computed.  We propose that the vertical displacement function $c(r,s)$, defined on the current domain $\Lambda$, solves the Laplace equation along with boundary conditions which include either \eqref{surfacesemiimplicit} or \eqref{surfaceimplicit}.  The strong form of the problem uses either choice A or B on the top surface:
 \begin{align}
-        \grad^2 c &= 0 &&\emph{in } \Lambda \label{claplace} \\
-                c &= \Delta t\,\begin{Bmatrix} a^{n-1} - u \eta' + w \\ a^n - u h' + w \end{Bmatrix} &&\emph{top} \notag \\
-                c &= 0 &&\text{\emph{base} \& \emph{inflow}} \notag \\
-\grad c\cdot \hbn &= 0 &&\emph{outflow} \notag
+        \grad^2 c &= 0 &&\text{in } \Lambda \label{claplace} \\
+                c &= \Delta t\,\begin{cases} \text{A: } (a^{n-1} - u \eta' + w) \\ \text{B: } (a^n - u h' + w) \end{cases} &&\text{top: } \overline{\partial \Lambda} \notag \\
+                c &= 0 &&\text{base and inflow: } \underline{\partial \Lambda} \cup \partial_{\text{in}} \Lambda \notag
 \end{align}
 where $a^{n-1}(r) = a(r,\eta(r))$.  Note that Dirichlet conditions apply on most of the boundary, but a Neumann condition applies on the outflow (if it is present).
 
 Because it involves the velocity unknowns, we impose the Dirichlet boundary condition along the top surface $\partial_{\text{top}} \Lambda$ weakly.  Let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}(\Lambda)$ functions which are zero on the base and inflow.  Noting that the outflow has a natural condition, and assuming that functions $u,w$ are defined on $\overline\Lambda$, define the bilinear form
 \begin{equation}
-a(c;e) = \int_\Lambda \grad c \cdot \grad e \,dr ds + \int_{\partial_{\text{top}} \Lambda} \left(c - \Delta t\,\begin{Bmatrix} a^{n-1} - u \eta' + w \\ a^n - u h' + w \end{Bmatrix}\right) e\,d\sigma \label{surfaceweakform}
+a(c;e) = \int_\Lambda \grad c \cdot \grad e \,dr ds + \int_{\overline{\partial} \Lambda} \left(c - \Delta t\,\begin{Bmatrix} a^{n-1} - u \eta' + w \\ a^n - u h' + w \end{Bmatrix}\right) e\,d\sigma \label{surfaceweakform}
 \end{equation}
-The integral along $\partial_{\text{top}} \Lambda$, with length element $d\sigma$, evaluates $c$ and $e$ in the trace sense.  In the decoupled case we say that $c \in W_0^{1,2}(\Lambda)$ solves the (decoupled) weak form of \eqref{claplace} if $a(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.
+The integral along $\overline{\partial} \Lambda$, with length element $d\sigma$, evaluates $c$ and $e$ in the trace sense.  In the decoupled case we say that $c \in W_0^{1,2}(\Lambda)$ solves the (decoupled) weak form of \eqref{claplace} if $a(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.
 
-Assuming that $\Lambda$ is a well-behaved domain, this boundary-value problem, which is linear in choice A above, is expected to be well-posed if $u,w$ are given functions.  However, we intend to solve \eqref{claplace} in a coupled context, whether in choice A or B, where the Dirichlet condition on the top couples the computation of $c$ with the nonlinear Glen-Stokes model.  The well-posedness of the coupled equations is not resolved in this paper.
+Assuming that $\Lambda$ is a well-behaved domain, this boundary-value problem, which is linear under choice A above, is expected to be well-posed if $u,w$ are given functions.  However, we intend to solve \eqref{claplace} in a coupled context, whether in choice A or B, where the Dirichlet condition on the top couples the computation of $c$ with the nonlinear Glen-Stokes model.  The well-posedness of the coupled equations is not resolved in this paper.
 
 
 
 \section{Weak form of the coupled equations} \label{sec:weakformcoupled}
+
+FIXME everything in this section
 
 The change of variables defined in the last section requires us to rewrite the weak form integrals of the Glen-Stokes model.  For a generic scalar-valued $L^1$ function $\tilde f(x,z)$ defined on $\Omega^n$, by the change of variables theorem we have
 \begin{equation}
