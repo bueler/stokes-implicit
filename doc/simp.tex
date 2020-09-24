@@ -344,6 +344,29 @@ FIXME: numerical solver should check element orientation under change of coordin
 FIXME cite \cite{Tuminaroetal2016} re preconditioning for thin-film extruded meshes, and \cite{IsaacStadlerGhattas2015} for existing optimal Stokes solver for ice sheets
 
 
+\section{Results}
+
+FIXME among many things cite \cite{LeysingerGudmundsson2004} regarding earlier comparison of stokes to Halfar
+
+\appendix
+\section{The shallow ice approximation and its Halfar solutions}
+
+In section FIXME, states of a certain similarity solution to an approximation of the Stokes problem are used as synthetic geometries for testing.  They arise from the $n=3$, isothermal, flat-bed ($b=0$), and zero surface mass balance ($a=0$) case of the shallow ice approximation.  This model, derived by \cite{GreveBlatter2009} among other sources, determines an evolving ice thickness function $H(t,x,y)$ according to a nonlinear, free-boundary diffusion which applies on the set where $H>0$:
+\begin{equation}
+\frac{\partial H}{\partial t} = \Gamma \Div \left(H^5 |\grad H|^2 \grad H\right). \label{sia}
+\end{equation}
+(References \cite{Bueler2016} and \cite{JouvetBueler2012} consider the rigorous meaning of this free boundary problem.)  In this equation we define $\Gamma = \frac{2}{5} A_3 (\rho g)^n$; constants $A_3,\rho,g$ have the same meaning and values as in the body of the paper.
+
+P.~Halfar \cite{Halfar1981,Halfar1983} seems to have been the first to observe that \eqref{sia} has a similarity solution with $\lim_{t\to 0} H$ equal to a multiple of the Dirac delta function, and he observed that this solution is asymptotically stable.  This solution exactly solves the shallow approximation of no-slip flow.  Informally, the solution is a circular dome which spreads radially while thinning, with constant-in-time total volume.
+
+In more detail, denoting the usual radial coordinate as $r=(x^2+y^2)^{1/2}$, the Halfar solution \cite{Halfar1983} is of the form $H(t,r) = t^{-\alpha} \varphi(s)$ with similarity variable $s=t^{-\beta} r$ and $\alpha=1/9$ and $\beta=1/18$.  If $H_0$ is a given central thickness value at a time $t_0$, and $R_0$ is a given radius, then the solution is
+    $$H(t,x,y) = H_0 \left(\frac{t}{t_0}\right)^{-\alpha} \left\{1 - \left[\left(\frac{t}{t_0}\right)^{-\beta} \frac{r}{R_0}\right]^{4/3}\right\}^{3/7}.$$
+This formula applies where the resulting value is positive, and $H=0$ otherwise; see \cite{Bueleretal2005}.  The characteristic time can by found by $\displaystyle t_0 = \frac{\beta}{\Gamma} \left(\frac{7}{4}\right)^3 \frac{R_0^4}{H_0^7}$.
+
+The corresponding $d=2$ Halfar solution \cite{Halfar1981}, namely in one horizontal dimension, is of the form $H(t,x) = t^{-\alpha} \varphi(s)$ with similarity variable $s=t^{-\alpha} x$ and $\alpha=1/11$.  The solution is
+    $$H(t,x) = H_0 \left(\frac{t}{t_0}\right)^{-\alpha} \left\{1 - \left[\left(\frac{t}{t_0}\right)^{-\alpha} \frac{x}{R_0}\right]^{4/3}\right\}^{3/7},$$
+with characteristic time $\displaystyle t_0 = \frac{\alpha}{\Gamma} \left(\frac{7}{4}\right)^3 \frac{R_0^4}{H_0^7}$.
+
 \small
 
 \bigskip
