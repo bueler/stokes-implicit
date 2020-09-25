@@ -4,8 +4,6 @@
 # solution H(t0,x) to the isothermal flat-bed SIA from Halfar (1981).
 # Defaults: H0 = 5000 m and R0 = 50 km gives 20-to-1 aspect.
 
-# FIXME neumann on ice surface, dirichlet otherwise
-
 import argparse
 parser = argparse.ArgumentParser(description=
 '''Generate .geo geometry-description file, suitable for meshing by Gmsh, from
@@ -83,11 +81,14 @@ geo.write('// geometry-description file created %s by %s using command\n//   %s\
 # CHARACTERISTIC LENGTHS
 geo.write('cl = %f;\n' % dx)
 geo.write('Href = %f;\n' % args.Href)
+
 # points in counter-clockwise order from lower left
 M = 1   # M is the object index in the .geo
+# run across the base from left to right
 for k in range(args.nintervals+1):
     geo.write('Point(%d) = {%f,0.0,0.0,cl};\n' % (M,x[k]))
     M = M+1
+# FIXME
 for k in range(args.nintervals+1):
     j = args.nintervals - k
     if H[j] < args.Href:
@@ -95,28 +96,36 @@ for k in range(args.nintervals+1):
     else:
         geo.write('Point(%d) = {%f,%f,0.0,cl};\n' % (M,x[j],H[j]))
     M = M+1
+Mlastpoint = M-1
+
 # lines along boundary
-firstlineM = M
+Mfirstline = M
 for k in range(2*args.nintervals+1):
     ln = 2*args.nintervals+2 + k+1
     geo.write('Line(%d) = {%d,%d};\n' % (M,k+1,k+2))
     M = M+1
 geo.write('Line(%d) = {%d,%d};\n' % (M,k+2,1))
 M = M+1
-geo.write('Line Loop(%d) = {%d' % (M,firstlineM))
+# line loop
+Mlineloop = M
+geo.write('Line Loop(%d) = {%d' % (M,Mfirstline))
 for k in range(2*args.nintervals+1):
-    geo.write(',%d' % (firstlineM+k+1))
+    geo.write(',%d' % (Mfirstline+k+1))
 geo.write('};\n')
-# finish up
 M = M+1
+# plane surface
+Mplanesurface = M
 geo.write('Plane Surface(%d) = {%d};\n' % (M,M-1))
-planesurfaceM = M
 M = M+1
-geo.write('Physical Line(%d) = {%d' % (M,firstlineM))
+# physical line:
+Mphysicalline = M
+geo.write('Physical Line(%d) = {%d' % (M,Mfirstline))
 for k in range(2*args.nintervals+1):
-    geo.write(',%d' % (firstlineM+k+1))
+    geo.write(',%d' % (Mfirstline+k+1))
 geo.write('};\n')
 M = M+1
-geo.write('Physical Surface(%d) = {%d};\n' % (M,planesurfaceM))
+# physical surface
+geo.write('Physical Surface(%d) = {%d};\n\n' % (M,Mplanesurface))
 geo.close()
+
 
