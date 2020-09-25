@@ -42,6 +42,7 @@ urlcolor=black     % only if colorlinks=true
 \newcommand{\bv}{\mathbf{v}}
 \newcommand{\bx}{\mathbf{x}}
 
+\newcommand{\bV}{\mathbf{V}}
 \newcommand{\bX}{\mathbf{X}}
 
 \newcommand{\bxi}{\bm{\xi}}
@@ -170,39 +171,39 @@ Numerical glacier models often evolve the time-dependent surface $z=h$ by explic
 
 \section{Decoupled Stokes weak form} \label{sec:weakstokes}
 
-Next we write the weak form for the decoupled problem \eqref{stokes}--\eqref{inflowbc}.  This will set notation, and provide a familiar basis \cite[for example]{Bueler2021,Elmanetal2014} on which to state the coupled momentum and mass model in the next section.  Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocities with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t; \RR^d)$ \cite{Evans2010}.  For a fixed $t>0$ we will seek a solution from the following spaces:
+Next we write the weak form for the decoupled problem \eqref{stokes}--\eqref{inflowbc}.  This will set notation, and provide a familiar basis \cite[for example]{Bueler2021,Elmanetal2014} on which to state the coupled momentum and mass model in the next section.  Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocities with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For a fixed $t>0$ we will seek a solution from the following spaces:
 \begin{align*}
-\bu &\in V_D = \left\{\bv \in W^{1,r}(\Omega^t; \RR^d)\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
+\bu &\in \bV = \left\{\bv \in W^{1,r}(\Omega^t)^d\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
 p &\in Q = L^{r'}(\Omega^t).
 \end{align*}
-For the following weak form, test functions $\bv \in V_0$ and $q\in Q$ will come from nearly the same spaces, but with $\bv=\bzero$ also on the inflow boundary.
+For the following weak form, test functions $\bv \in \bV_0$ and $q\in Q$ will come from nearly the same spaces, but with $\bv=\bzero$ also on the inflow boundary.
 
-To derive the weak form we multiply \eqref{stokes} by $\bv\in V_0$ and \eqref{incompagain} by $q\in Q$, then add these and integrate-by-parts:
+To derive the weak form we multiply \eqref{stokes} by $\bv\in \bV_0$ and \eqref{incompagain} by $q\in Q$, then add these and integrate-by-parts:
 \begin{equation}
 -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,dS + \int_{\Omega^t} \tau \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx = 0. \label{nonfunctwo}
 \end{equation}
 Here $dS$ is the arclength element along $\partial\Omega^t$.  Note that $\bu,\bv$ appear with at most first derivatives and $p,q$ appear without derivatives.
 
-Because $\bv\in V_0$, portions of the integral over $\partial\Omega^t$ are zero, and then the stress-free surface condition eliminates the boundary integral.  Thus we have the following formula a functional $\tilde F$ which is nonlinear in $\bu,p$ and linear in $\bv,q$:
+Because $\bv\in \bV_0$, portions of the integral over $\partial\Omega^t$ are zero, and then the stress-free surface condition eliminates the boundary integral.  Thus we have the following formula a functional $\tilde F$ which is nonlinear in $\bu,p$ and linear in $\bv,q$:
 \begin{equation}
 \tilde F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx. \label{definetildeF}
 \end{equation}
 The final integral in \eqref{definetildeF} can be regarded as the source term.
 
-We say $\bu\in V_D$ and $p\in Q$ solve the weak formulation if
+We say $\bu\in \bV$ and $p\in Q$ solve the weak formulation if
 \begin{equation}
-\tilde F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in V_0 \text{ and } q\in Q.  \label{weak}
+\tilde F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in \bV_0 \text{ and } q\in Q.  \label{weak}
 \end{equation}
 A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data.  Note that if the inflow velocity is zero or absent ($\bu_{\text{in}}=\bzero$ or $\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero, for instance because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weak} is $\bu=\bzero$ and $p=0$.
 
 
 \section{Implicit time-discretization and the icy domain update} \label{sec:implicitstep}
 
-The main purpose of this paper is to propose an implicit scheme to simultaneously solve the Glen-Stokes equations \eqref{stokes}--\eqref{inflowbc} and the surface kinematical equation \eqref{surfacekinematical}.  At each time step of this proposed scheme we will compute a simplified surrogate for the ice strain field over the duration of the time step.  This surrogate, a vertical-only displacement defined everywhere within a reference domain, is found simultaneously with the velocity and pressure.  The reference domain is based on, and constructed from, the ice domain at the beginning of the step.  Thus we solve a coupled system consisting of mass and momentum conservation, including the surface kinematical equation, plus an additional equation for the vertical-only displacement.  In the current section we will state this scheme using a time-discretized but continuous-space weak formulation.  The corresponding discrete equations, considered in the next section, compute the vertical-only mesh displacement simultaneously with the discrete velocity and pressure fields.
+The main purpose of this paper is to demonstrate an implicit scheme to simultaneously solve the Glen-Stokes equations \eqref{stokes}--\eqref{inflowbc} and the surface kinematical equation \eqref{surfacekinematical}.  At each time step of this proposed scheme we will compute a simplified surrogate for the ice strain field over the duration of the time step.  This surrogate, a vertical-only displacement defined everywhere within a reference domain, will be computed simultaneously with the velocity and pressure.  The reference domain is based on, and constructed from, the ice domain at the beginning of the step.  Thus we solve a coupled system consisting of mass and momentum conservation, including the surface kinematical equation, plus an additional equation for the vertical-only displacement.  In the current section we will state this scheme using a time-discretized but continuous-space weak formulation.  The corresponding discrete equations, considered in the next section, compute the vertical-only mesh displacement simultaneously with the discrete velocity and pressure fields.
 
-Though more accurate implicit schemes exist, we will describe the time-stepping using a first-order backward Euler scheme.\footnote{Later work will restate the problem as a differential algebraic equation (DAE) and apply suitable higher-order schemes.}
+Though more accurate implicit schemes exist, we will describe the method using the first-order backward Euler time-stepping scheme.\footnote{Later work will restate the problem as a differential algebraic equation (DAE) and apply suitable higher-order schemes.}
 %  Specifically, we will consider the second-order backward-differentiation formula (BDF2) \cite{AscherPetzold1998} and solver tools based on PETSc's \cite{Balayetal2020,BuelerBook} time-stepping TS object, possibly using \texttt{firedrake-ts}; https://github.com/IvanYashchuk/firedrake-ts.
-Let $t_{n-1}$ and $t_n$ be consecutive times with step $\Delta t = t_n - t_{n-1} > 0$.  Suppose the model's state, namely the (current) ice geometry $\Omega^{n-1}$, is known at time $t_{n-1}$.  We will approximate the updated (new) domain $\Omega^n$ using the coupled Glen-Stokes plus surface kinematical equations.
+Let $t_{n-1}$ and $t_n$ be consecutive times with step $\Delta t = t_n - t_{n-1} > 0$.  Suppose the current model's state is known at time $t_{n-1}$, and denote the ice domain by $\Omega^{n-1} \subset \RR^d$.  We will approximate the updated (new) domain $\Omega^n \subset \RR^d$ using the coupled equations.
 
 FIXME describe how $\Lambda$ built
 
@@ -210,11 +211,11 @@ The coordinates on the reference domain $\Lambda$ are denoted $\bxi=(\xi,\eta,\z
 \begin{equation}
 x=\xi, \quad y=\eta, \quad z=\zeta+c(\xi,\eta,\zeta), \label{changecoords}
 \end{equation}
-or $\bx(\bxi) = \bxi + (0,0,c(\bxi))$.  The new domain $\Omega^n$ is the interior of the image of $\Lambda$ under this map:
+or $\bx(\bxi) = \bxi + (0,0,c(\bxi))$.  Note that the horizontal coordinate does not change, but the $z$-coordinate is nontrivial.  The new scalar function $c(\bxi)$ will solve an equation which is coupled to the other equations (below).  In particular, it will solve an elliptic PDE and thus the new coordinates $\bx$ are smooth functions of $\bxi$ on $\Lambda$.  The new domain $\Omega^n$ is the interior of the image of $\Lambda$ under this map:
 \begin{equation}
 \Omega^n = \{\bx=\bxi + (0,0,c(\bxi)) \,\big|\, \bxi \in \Lambda\}^\circ. \label{updateddomain}
 \end{equation}
-This $\Lambda \stackrel{\Delta t}{\to} \Omega^n$ domain update is sketched in Figure \ref{fig:domainupdate}.  Note that the horizontal coordinate does not change ($(x,y)=(\xi,\eta)$), but the $z$-coordinate is nontrivial.  We emphasize that $c(\xi,\eta,\zeta)$ is a scalar function which will be computed by solving coupled PDEs on $\Lambda$ (below).  In particular, $c$ will solve an elliptic PDE and thus the new coordinates $\bx$ are smooth functions of $\bxi$.
+This $\Lambda \stackrel{\Delta t}{\to} \Omega^n$ domain update is sketched in Figure \ref{fig:domainupdate}.  Furthermore this map is generally degenerate; it is not a diffeomorphism.  In particular the map takes the ice free areas of $\Lambda$ to zero height in the image, and taking the interior in \eqref{updateddomain} is therefore important.
 
 \begin{figure}[h]
 \begin{center}
@@ -225,7 +226,7 @@ This $\Lambda \stackrel{\Delta t}{\to} \Omega^n$ domain update is sketched in Fi
 
 \includegraphics[width=0.6\textwidth]{nexttime.pdf}
 \end{center}
-\caption{The current domain $\Omega^{n-1}$ is modified to be the reference domain $\Lambda$.  The coupled solution then includes a map from $\Lambda$ to the next domain $\Omega^n$.  The mapping is degenerate where the solution indicates no ice.}
+\caption{The current ice domain $\Omega^{n-1}$ is modified to be the reference domain $\Lambda$.  The coupled solution then includes a map from $\Lambda$ to the next ice domain $\Omega^n$, and either advance or retreat of the margin is allowed.  The mapping degenerates where the solution indicates no ice.}
 \label{fig:domainupdate}
 \end{figure}
 

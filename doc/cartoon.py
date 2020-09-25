@@ -37,7 +37,7 @@ def genbasicfig(icetext='', bedtext='', perturb=False, reference=False):
     plt.text(x[600]-1.0,b[600]+0.4*h[600],icetext,fontsize=fsize,color='k')
     plt.text(x[900]-0.4,b[900]-1.0,bedtext,fontsize=fsize,color='k')
 
-    plt.axis([0.0,10.0,-0.5,4.5])
+    plt.axis([0.0-0.02,10.0+0.02,-0.5,4.5])
     plt.axis('off')
     return x, s, b
 
