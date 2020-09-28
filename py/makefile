@@ -3,5 +3,5 @@ all:
 .PHONY: clean
 
 clean:
-	@rm -f *.pdf *.geo *.msh
+	@rm -f *.pdf *.geo *.msh *.pvd *.vtu
 
