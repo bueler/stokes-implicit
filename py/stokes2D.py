@@ -6,11 +6,10 @@
 from firedrake import *
 
 import argparse
-parser = argparse.ArgumentParser(description=
-'''
-Generate 2D mesh from Halfar (1981) used extrusion of an equally-spaced
+parser = argparse.ArgumentParser(description='''
+Generate 2D mesh from Halfar (1981) by extrusion of an equally-spaced
 interval mesh.  Solve Laplace equation for reference domain scheme for SMB.
-''')
+''',add_help=False)
 parser.add_argument('-H0', type=float, default=5000.0, metavar='X',
                     help='center height in m of ice sheet (default=5000)')
 parser.add_argument('-Href', type=float, default=500.0, metavar='X',
@@ -21,13 +20,17 @@ parser.add_argument('-layers', type=int, default=5, metavar='N',
                     help='number of layers in each column (default=5)')
 parser.add_argument('-nintervals', type=int, default=30, metavar='N',
                     help='number of (equal) subintervals in computational domain (default=30)')
+parser.add_argument('-o', metavar='NAME', type=str, default='',
+                    help='output file name ending with .pvd')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
 parser.add_argument('-refine', type=int, default=-1, metavar='X',
                     help='number of mesh refinement levels (e.g. for GMG)')
-parser.add_argument('-o', metavar='NAME', type=str, default='',
-                    help='output file name ending with .pvd')
+parser.add_argument('-stokes2Dhelp', action='store_true', default=False,
+                    help='help for stokes2D.py options')
 args, unknown = parser.parse_known_args()
+if args.stokes2Dhelp:
+    parser.print_help()
 
 # physical constants
 g = 9.81             # m s-2; constants in SI units
@@ -82,9 +85,12 @@ for k in range(hierlevs):
     x,y = SpatialCoordinate(kmesh)
     Hinitial = halfar2d(x)
     Hlimited = max_value(args.Href, Hinitial)
-    Vc = kmesh.coordinates.function_space()
-    f = Function(Vc).interpolate(as_vector([x,Hlimited*y]))
+    Vcoord = kmesh.coordinates.function_space()
+    f = Function(Vcoord).interpolate(as_vector([x,Hlimited*y]))
     kmesh.coordinates.assign(f)
+
+# fine mesh coordinates
+x,y = SpatialCoordinate(mesh)
 
 # report on generated geometry and fine mesh
 dxelem = 2.0 * args.L / (mx-1)
@@ -98,27 +104,64 @@ PETSc.Sys.Print('    as %d x %d element quadrilateral extruded (fine) mesh, limi
 PETSc.Sys.Print('    reference element dimensions: dx=%.2f m, dy=%.2f m, ratio=%.5f'
                 % (dxelem,dyrefelem,dyrefelem/dxelem))
 
-# space in which to solve Laplace equation (nabla^2 u = 0) with Dirichlet bcs
-V = FunctionSpace(mesh, "CG", 1)
+# spaces
+Vu = VectorFunctionSpace(mesh, 'CG', degree=2)  # velocity  u = (u_0(x,y),u_1(x,y))
+Vp = FunctionSpace(mesh, 'CG', degree=1)        # pressure  p(x,y)
+Vc = FunctionSpace(mesh, 'CG', degree=1)        # displacement  c(x,y)
+Z = Vu * Vp * Vc
+
+# define weak form
+upc = Function(Z)
+u,p,c = split(upc)
+v,q,e = TestFunctions(Z)
+Du = 0.5 * (grad(u)+grad(u).T)
+Dv = 0.5 * (grad(v)+grad(v).T)
+F = (2.0 * inner(Du,Dv) - p * div(v) - div(u) * q) * dx \
+     + inner(grad(c),grad(e)) * dx
 
 # simulate surface kinematical condition value for top; FIXME actual!
 dt = secpera  # 1 year time steps
 a = Constant(0.0)
-x,y = SpatialCoordinate(mesh)
 smbref = conditional(y > args.Href, dt*a, dt*a - args.Href)  # FIXME
-bcs = [DirichletBC(V, smbref, 'top'),
-       DirichletBC(V, Constant(0.0), 'bottom')]
 
-# Laplace equation weak form
-u = Function(V, name='u')  # initialized to zero here
-v = TestFunction(V)
-F = dot(grad(u), grad(v)) * dx
+# boundary conditions
+bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),
+       DirichletBC(Z.sub(2), smbref, 'top'),
+       DirichletBC(Z.sub(2), Constant(0.0), 'bottom')]
+
+# solver parameters
+parameters = {'snes_type': 'ksponly',
+              'mat_type': 'aij',
+              'pc_type': 'fieldsplit',
+              'pc_fieldsplit_type': 'additive',
+              'pc_fieldsplit_0_fields': '0,1',
+              'pc_fieldsplit_1_fields': '2',
+              'fieldsplit_0_pc_type': 'fieldsplit',
+              'fieldsplit_0_pc_fieldsplit_type': 'multiplicative',
+              'fieldsplit_0_fieldsplit_0_pc_type': 'lu',
+              'fieldsplit_0_fieldsplit_1_pc_type': 'jacobi',
+              'fieldsplit_1_pc_type': 'lu'}
+
+#              # schur fieldsplit for (u,p)-(u,p) diagonal block
+#              'fieldsplit_0_pc_type': 'fieldsplit',
+#              'fieldsplit_0_pc_fieldsplit_type': 'schur',
+#              'fieldsplit_0_pc_fieldsplit_schur_fact_type': 'full',
+#              'fieldsplit_0_fieldsplit_0_pc_type': 'lu',
+#              'fieldsplit_0_fieldsplit_1_pc_type': 'jacobi',
+#              # cholesky on the c-c diagonal block
+#              'fieldsplit_1_pc_type': 'cholesky'}
 
 # Solve system as though it is nonlinear:  F(u) = 0
-solve(F == 0, u, bcs=bcs, options_prefix = 's')  # FIXME solver?
+solve(F == 0, upc, bcs=bcs, options_prefix = 's',
+      solver_parameters=parameters)
+#solve(F == 0, upc, bcs=bcs, options_prefix = 's')
 
 # output ParaView-readable file
 if args.o:
-    PETSc.Sys.Print('writing ice geometry and solution to %s ...' % args.o)
-    File(args.o).write(u)
+    PETSc.Sys.Print('writing ice geometry and solution (u,p,c) to %s ...' % args.o)
+    u,p,c = upc.split()
+    u.rename('velocity')
+    p.rename('pressure')
+    c.rename('displacement')
+    File(args.o).write(u,p,c)
 

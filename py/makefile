@@ -6,9 +6,12 @@ runstokes2D_1:
 runstokes2D_2:
 	-@./../testit.sh stokes2D.py "-nintervals 20 -layers 4 -refine 1" 1 2
 
-test: runstokes2D_1 runstokes2D_2
+runstokes2D_3:
+	-@./../testit.sh stokes2D.py "-s_ksp_converged_reason -s_pc_type svd -nintervals 6 -layer 2" 1 3
 
-.PHONY: clean test runstokes2D_1 runstokes2D_2
+test: runstokes2D_1 runstokes2D_2 runstokes2D_3
+
+.PHONY: clean test runstokes2D_1 runstokes2D_2 runstokes2D_3
 
 clean:
 	@rm -f *.pdf *.geo *.msh *.pvd *.vtu
