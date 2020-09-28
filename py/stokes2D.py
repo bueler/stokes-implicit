@@ -14,13 +14,13 @@ interval mesh.  Solve Laplace equation for reference domain scheme for SMB.
 parser.add_argument('-H0', type=float, default=5000.0, metavar='X',
                     help='center height in m of ice sheet (default=5000)')
 parser.add_argument('-Href', type=float, default=500.0, metavar='X',
-                    help='minimum thickness in m of reference domain (default=200)')
+                    help='minimum thickness in m of reference domain (default=500)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
-parser.add_argument('-layers', type=int, default=10, metavar='N',
-                    help='number of layers in each column (default=10)')
-parser.add_argument('-nintervals', type=int, default=60, metavar='N',
-                    help='number of (equal) subintervals in computational domain (default=120)')
+parser.add_argument('-layers', type=int, default=6, metavar='N',
+                    help='number of layers in each column (default=6)')
+parser.add_argument('-nintervals', type=int, default=30, metavar='N',
+                    help='number of (equal) subintervals in computational domain (default=30)')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
 parser.add_argument('-root', metavar='FILE', default='icegeom2d',
