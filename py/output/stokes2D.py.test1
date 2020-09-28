@@ -1,13 +1,13 @@
 generating 2D Halfar geometry on interval [-60.00,60.00] km,
     with H0=5000.00 m and R0=50.00 km, at t0=0.00137 a,
-    as 30 x 6 node quadrilateral extruded mesh limited at Href=500.00 m,
-    reference elements: dx=4000.00 m, dy=83.33 m, ratio=0.02083
+    as 30 x 5 element quadrilateral extruded (fine) mesh, limited at Href=500.00 m,
+    reference element dimensions: dx=4000.00 m, dy=100.00 m, ratio=0.02500
     Residual norms for s_ solve.
-    0 KSP Residual norm 1510.2 
-    1 KSP Residual norm 9.88373 
-    2 KSP Residual norm 0.188098 
-    3 KSP Residual norm 0.00422762 
-    4 KSP Residual norm 0.000108586 
-    5 KSP Residual norm 3.66782e-06 
+    0 KSP Residual norm 1339.04 
+    1 KSP Residual norm 6.32971 
+    2 KSP Residual norm 0.0692734 
+    3 KSP Residual norm 0.000976517 
+    4 KSP Residual norm 1.73902e-05 
+    5 KSP Residual norm 4.20482e-07 
   Linear s_ solve converged due to CONVERGED_RTOL iterations 5
 writing ice geometry to icegeom2d.pvd ...
