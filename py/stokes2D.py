@@ -25,8 +25,8 @@ parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
 parser.add_argument('-refine', type=int, default=-1, metavar='X',
                     help='number of mesh refinement levels (e.g. for GMG)')
-parser.add_argument('-root', metavar='FILE', default='icegeom2d',
-                    help='root of output file name (default=icegeom2d)')
+parser.add_argument('-o', metavar='NAME', type=str, default='',
+                    help='output file name ending with .pvd')
 args, unknown = parser.parse_known_args()
 
 # physical constants
@@ -117,7 +117,8 @@ F = dot(grad(u), grad(v)) * dx
 # Solve system as though it is nonlinear:  F(u) = 0
 solve(F == 0, u, bcs=bcs, options_prefix = 's')  # FIXME solver?
 
-# visualize a function from this space with ParaView
-PETSc.Sys.Print('writing ice geometry to %s ...' % (args.root+'.pvd'))
-File(args.root+'.pvd').write(u)
+# output ParaView-readable file
+if args.o:
+    PETSc.Sys.Print('writing ice geometry and solution to %s ...' % args.o)
+    File(args.o).write(u)
 

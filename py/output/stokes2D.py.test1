@@ -10,4 +10,3 @@ generating 2D Halfar geometry on interval [-60.00,60.00] km,
     4 KSP Residual norm 1.73902e-05 
     5 KSP Residual norm 4.20482e-07 
   Linear s_ solve converged due to CONVERGED_RTOL iterations 5
-writing ice geometry to icegeom2d.pvd ...
