@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from firedrake import *
-import numpy as np
 
 import argparse
 parser = argparse.ArgumentParser(description=
@@ -11,7 +10,7 @@ interval mesh.
 ''')
 parser.add_argument('-H0', type=float, default=5000.0, metavar='X',
                     help='center height in m of ice sheet (default=5000)')
-parser.add_argument('-Href', type=float, default=200.0, metavar='X',
+parser.add_argument('-Href', type=float, default=500.0, metavar='X',
                     help='minimum thickness in m of reference domain (default=200)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
@@ -23,7 +22,7 @@ parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
 parser.add_argument('-root', metavar='FILE', default='icegeom2d',
                     help='root of output file name (default=icegeom2d)')
-args = parser.parse_args()
+args, unknown = parser.parse_known_args()
 
 # physical constants
 g = 9.81             # m s-2; constants in SI units
@@ -44,29 +43,48 @@ def halfar2d(x):
     inside = max_value(0.0, 1.0 - pow(absx / args.R0,inpow))
     return args.H0 * pow(inside,outpow)
 
+dxelem = 2.0*args.L/args.nintervals
+dyrefelem = args.Href/args.layers
 PETSc.Sys.Print('generating 2D Halfar geometry on interval [%.2f,%.2f] km,'
                 % (-args.L/1000.0,args.L/1000.0))
 PETSc.Sys.Print('    with H0=%.2f m and R0=%.2f km, at t0=%.5f a,'
                 % (args.H0,args.R0/1000.0,t0/secpera))
-PETSc.Sys.Print('    as %d x %d node quadrilateral extruded mesh,'
-                % (args.nintervals,args.layers))
-PETSc.Sys.Print('    limited at Href=%.2f m'
-                % args.Href)
+PETSc.Sys.Print('    as %d x %d node quadrilateral extruded mesh limited at Href=%.2f m,'
+                % (args.nintervals,args.layers,args.Href))
+PETSc.Sys.Print('    reference elements: dx=%.2f m, dy=%.2f m, ratio=%.5f'
+                % (dxelem,dyrefelem,dyrefelem/dxelem))
 
 base_mesh = IntervalMesh(args.nintervals, length_or_left=-args.L, right=args.L)
-# temporary layer_height
+# note temporary layer_height:
 mesh = ExtrudedMesh(base_mesh, layers=args.layers, layer_height=1.0/args.layers)
 
-# deform y coordiante to match Halfar solution
+# deform y coordinate to match Halfar solution, but limited at Href
 x,y = SpatialCoordinate(mesh)
-Hlimited = max_value(args.Href, halfar2d(x))
+Hinitial = halfar2d(x)
+Hlimited = max_value(args.Href, Hinitial)
 Vc = mesh.coordinates.function_space()
 f = Function(Vc).interpolate(as_vector([x,Hlimited*y]))
 mesh.coordinates.assign(f)
 
-# visualize a function from this space with ParaView
+# space in which to solve Laplace equation (nabla^2 u = 0) with Dirichlet bcs
 V = FunctionSpace(mesh, "CG", 1)
-u = Function(V)
+
+# simulate surface kinematical condition value for top
+dt = secpera  # 1 year time steps
+a = Constant(0.0)
+smbref = conditional(Hinitial > args.Href, dt*a, dt*a - args.Href)  # FIXME actual surface kinematical
+bcs = [DirichletBC(V, smbref, 'top'),
+       DirichletBC(V, Constant(0.0), 'bottom')]
+
+# Laplace equation weak form
+u = Function(V, name='u')  # initialized to zero here
+v = TestFunction(V)
+F = dot(grad(u), grad(v)) * dx
+
+# Solve system as though it is nonlinear:  F(u) = 0
+solve(F == 0, u, bcs=bcs, options_prefix = 's')  # FIXME solver?
+
+# visualize a function from this space with ParaView
 PETSc.Sys.Print('writing ice geometry to %s ...' % (args.root+'.pvd'))
 File(args.root+'.pvd').write(u)
 
