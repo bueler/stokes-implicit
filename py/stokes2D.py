@@ -2,6 +2,8 @@
 
 # SHOWS EXTRUDED ORDERING:
 # ./stokes2D.py -s_ksp_view_mat draw -draw_pause -1 -draw_size 1000,1000 -nintervals 10 -layers 4
+# SHOWS MAT IN MATLAB:
+# ./stokes2D.py -s_ksp_view_mat :foo.m:ascii_matlab -nintervals 10 -layers 4
 
 from firedrake import *
 
@@ -104,9 +106,9 @@ PETSc.Sys.Print('    as %d x %d element quadrilateral extruded (fine) mesh, limi
 PETSc.Sys.Print('    reference element dimensions: dx=%.2f m, dy=%.2f m, ratio=%.5f'
                 % (dxelem,dyrefelem,dyrefelem/dxelem))
 
-# spaces
+# mixed spaces:  Q2 x dQ0 for Stokes problem, and Q1 for displacement
 Vu = VectorFunctionSpace(mesh, 'CG', degree=2)  # velocity  u = (u_0(x,y),u_1(x,y))
-Vp = FunctionSpace(mesh, 'CG', degree=1)        # pressure  p(x,y)
+Vp = FunctionSpace(mesh, 'DG', degree=0)        # pressure  p(x,y)
 Vc = FunctionSpace(mesh, 'CG', degree=1)        # displacement  c(x,y)
 Z = Vu * Vp * Vc
 
@@ -116,6 +118,8 @@ u,p,c = split(upc)
 v,q,e = TestFunctions(Z)
 Du = 0.5 * (grad(u)+grad(u).T)
 Dv = 0.5 * (grad(v)+grad(v).T)
+# FIXME this is a trivialized linear form for Stokes
+# FIXME put the displacement in as stretching coefficients
 F = (2.0 * inner(Du,Dv) - p * div(v) - div(u) * q) * dx \
      + inner(grad(c),grad(e)) * dx
 
