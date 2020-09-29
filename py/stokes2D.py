@@ -133,28 +133,31 @@ bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),
 parameters = {'snes_type': 'ksponly',
               'mat_type': 'aij',
               'pc_type': 'fieldsplit',
+              # (u,p)-(u,p) and c-c diagonal blocks are decoupled for now FIXME
               'pc_fieldsplit_type': 'additive',
               'pc_fieldsplit_0_fields': '0,1',
               'pc_fieldsplit_1_fields': '2',
+              # schur fieldsplit for (u,p)-(u,p) block
+              'fieldsplit_0_ksp_type': 'preonly',
               'fieldsplit_0_pc_type': 'fieldsplit',
-              'fieldsplit_0_pc_fieldsplit_type': 'multiplicative',
-              'fieldsplit_0_fieldsplit_0_pc_type': 'lu',
+              'fieldsplit_0_pc_fieldsplit_type': 'schur',
+              'fieldsplit_0_pc_fieldsplit_schur_fact_type': 'lower',
+              # selfp seems to be faster than a Mass object
+              'fieldsplit_0_pc_fieldsplit_schur_precondition': 'selfp',
+              # AMG on the u-u block; mg works but slower
+              'fieldsplit_0_fieldsplit_0_pc_type': 'gamg',
               'fieldsplit_0_fieldsplit_1_pc_type': 'jacobi',
-              'fieldsplit_1_pc_type': 'lu'}
-
-#              # schur fieldsplit for (u,p)-(u,p) diagonal block
-#              'fieldsplit_0_pc_type': 'fieldsplit',
-#              'fieldsplit_0_pc_fieldsplit_type': 'schur',
-#              'fieldsplit_0_pc_fieldsplit_schur_fact_type': 'full',
-#              'fieldsplit_0_fieldsplit_0_pc_type': 'lu',
-#              'fieldsplit_0_fieldsplit_1_pc_type': 'jacobi',
-#              # cholesky on the c-c diagonal block
-#              'fieldsplit_1_pc_type': 'cholesky'}
+              'fieldsplit_0_fieldsplit_1_pc_jacobi_type': 'diagonal',
+              'fieldsplit_1_ksp_type': 'preonly',
+              # AMG on the c-c block; mg fails with zero row msg; hypre (w/o tuning) seems slower
+              # classical few iters and faster than agg (but grid complexity better for agg)
+              'fieldsplit_1_pc_type': 'gamg',
+              'fieldsplit_1_pc_gamg_type': 'classical',
+              'fieldsplit_1_pc_gamg_square_graph': '1'}
 
 # Solve system as though it is nonlinear:  F(u) = 0
 solve(F == 0, upc, bcs=bcs, options_prefix = 's',
       solver_parameters=parameters)
-#solve(F == 0, upc, bcs=bcs, options_prefix = 's')
 
 # output ParaView-readable file
 if args.o:
