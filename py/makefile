@@ -14,6 +14,6 @@ test: runstokes2D_1 runstokes2D_2 runstokes2D_3
 .PHONY: clean test runstokes2D_1 runstokes2D_2 runstokes2D_3
 
 clean:
-	@rm -f *.pdf *.geo *.msh *.pvd *.vtu
+	@rm -f *.pdf *.geo *.msh *.pvd *.vtu *.m
 	@rm -f maketmp tmp difftmp
 
