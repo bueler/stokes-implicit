@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * switch all tests to using gravity
 #   * initialize with SIA velocity and hydrostatic pressure (and c=0)
 #   * compute surface kinematical field (a - u h_x + w) and apply using "equation boundary condition"
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
@@ -28,8 +27,8 @@ parser.add_argument('-Href', type=float, default=500.0, metavar='X',
                     help='minimum thickness in m of reference domain (default=500)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
-parser.add_argument('-layers', type=int, default=5, metavar='N',
-                    help='number of layers in each column (default=5)')
+parser.add_argument('-layers', type=int, default=10, metavar='N',
+                    help='number of layers in each column (default=10)')
 parser.add_argument('-linear', action='store_true', default=False,
                     help='use linear, trivialized Stokes problem')
 parser.add_argument('-nintervals', type=int, default=30, metavar='N',
@@ -134,16 +133,12 @@ u,p,c = split(upc)
 v,q,e = TestFunctions(Z)
 Du = 0.5 * (grad(u)+grad(u).T)
 Dv = 0.5 * (grad(v)+grad(v).T)
-#f_body = Constant((0.0, - rho * g))  # FIXME goes here
-if args.linear:
-    # a trivialized linear form for Stokes:
-    f_body = Constant((0.0, - rho * 0.0))  # FIXME
+f_body = Constant((0.0, - rho * g))
+if args.linear:   # linear Stokes with viscosity = 1.0
     F = 2.0 * inner(Du,Dv) * dx \
         + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
         + inner(grad(c),grad(e)) * dx
-else:
-    # n=3 Glen ice
-    f_body = Constant((0.0, - rho * g))  # FIXME
+else:             # n=3 Glen law Stokes
     Du2 = 0.5 * inner(Du, Du) + (args.eps * Dtyp)**2.0
     F = inner(B3 * Du2**(-1.0/3.0) * Du, Dv) * dx \
         + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
