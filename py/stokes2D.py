@@ -1,24 +1,30 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * initialize with SIA velocity and hydrostatic pressure (and c=0)
+#   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * compute surface kinematical field (a - u h_x + w) and apply using "equation boundary condition"
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
+#   * implement displacement stretching scheme
 
-# SHOWS EXTRUDED ORDERING:
-# ./stokes2D.py -s_ksp_view_mat draw -draw_pause -1 -draw_size 1000,1000 -nintervals 10 -layers 4
-# SHOWS MAT IN MATLAB:
-# ./stokes2D.py -s_ksp_view_mat :foo.m:ascii_matlab -nintervals 10 -layers 4
+# SHOWS MAT:
+# ./stokes2D.py -linear -s_snes_type ksponly -s_ksp_view_mat draw -draw_pause -1 -draw_size 1000,1000 -nintervals 10 -layers 4
+# ./stokes2D.py -linear -s_snes_type ksponly -s_ksp_view_mat :foo.m:ascii_matlab -nintervals 10 -layers 4
 
 from firedrake import *
 
 import argparse
 parser = argparse.ArgumentParser(description='''
-Generate 2D mesh from Halfar (1981) by extrusion of an equally-spaced
-interval mesh.  Solve Laplace equation for reference domain scheme for SMB.
+Solve coupled Glen-Stokes plus surface kinematical equation problem for an
+ice sheet on a flat bed.  Generates 2D mesh from Halfar (1981) by extrusion
+of an equally-spaced interval mesh.  The vertical displacement solve Laplace's
+equation. A reference domain with a minimum thickness is used.  Mixed space
+is quadrilaterals (tensor product), namely Q2 x dQ0 for Stokes problem and
+Q1 for displacement.  Default solver is additive fieldsplit between Stokes
+(u,p) problem and Laplace equation (c), with Stokes solved by Schur fieldsplit.
+The diagonal blocks are solved by AMG.
 ''',add_help=False)
 parser.add_argument('-Dtyp', type=float, default=2.0, metavar='X',
-                    help='typical strain rate in "+(eps Dtyp)^2" (default=2.0 a-1)') # (800 m a-1) / 400 m = 2 a-1
+                    help='typical strain rate in "+(eps Dtyp)^2" (default=2.0 a-1)')
 parser.add_argument('-eps', type=float, default=0.01, metavar='X',
                     help='to regularize viscosity by "+(eps Dtyp)^2" (default=0.01)')
 parser.add_argument('-H0', type=float, default=5000.0, metavar='X',
@@ -134,15 +140,14 @@ v,q,e = TestFunctions(Z)
 Du = 0.5 * (grad(u)+grad(u).T)
 Dv = 0.5 * (grad(v)+grad(v).T)
 f_body = Constant((0.0, - rho * g))
+# FIXME stretching in F; couples (u,p) and c problems
 if args.linear:   # linear Stokes with viscosity = 1.0
-    F = 2.0 * inner(Du,Dv) * dx \
-        + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
-        + inner(grad(c),grad(e)) * dx
+    F = 2.0 * inner(Du,Dv) * dx
 else:             # n=3 Glen law Stokes
     Du2 = 0.5 * inner(Du, Du) + (args.eps * Dtyp)**2.0
-    F = inner(B3 * Du2**(-1.0/3.0) * Du, Dv) * dx \
-        + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
-        + inner(grad(c),grad(e)) * dx
+    F = inner(B3 * Du2**(-1.0/3.0) * Du, Dv) * dx
+F += ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
+     + inner(grad(c),grad(e)) * dx
 
 # simulate surface kinematical condition value for top; FIXME actual!
 dt = secpera  # 1 year time steps
@@ -183,7 +188,7 @@ parameters = {'mat_type': 'aij',
 solve(F == 0, upc, bcs=bcs, options_prefix = 's',
       solver_parameters=parameters)
 
-# output ParaView-readable file
+# save ParaView-readable file
 if args.o:
     PETSc.Sys.Print('writing ice geometry and solution (u,p,c) to %s ...' % args.o)
     u,p,c = upc.split()
