@@ -1,5 +1,13 @@
 generating 2D Halfar geometry on interval [-60.00,60.00] km,
     with H0=5000.00 m and R0=50.00 km, at t0=0.00137 a,
-    as 6 x 2 element quadrilateral extruded (fine) mesh, limited at Href=500.00 m,
-    reference element dimensions: dx=20000.00 m, dy=250.00 m, ratio=0.01250
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 1
+    as 10 x 10 element quadrilateral extruded (fine) mesh, limited at Href=500.00 m,
+    reference element dimensions: dx=12000.00 m, dy=50.00 m, ratio=0.00417
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 3
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 3
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 3
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 3
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 2
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 2
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 3
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 2
+Nonlinear s_ solve converged due to CONVERGED_FNORM_RELATIVE iterations 8
