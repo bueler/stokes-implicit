@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+# TODO:
+#   * switch all tests to using gravity
+#   * initialize with SIA velocity and hydrostatic pressure (and c=0)
+#   * compute surface kinematical field (a - u h_x + w) and apply using "equation boundary condition"
+#   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
+
 # SHOWS EXTRUDED ORDERING:
 # ./stokes2D.py -s_ksp_view_mat draw -draw_pause -1 -draw_size 1000,1000 -nintervals 10 -layers 4
 # SHOWS MAT IN MATLAB:
@@ -12,6 +18,10 @@ parser = argparse.ArgumentParser(description='''
 Generate 2D mesh from Halfar (1981) by extrusion of an equally-spaced
 interval mesh.  Solve Laplace equation for reference domain scheme for SMB.
 ''',add_help=False)
+parser.add_argument('-Dtyp', type=float, default=2.0, metavar='X',
+                    help='typical strain rate in "+(eps Dtyp)^2" (default=2.0 a-1)') # (800 m a-1) / 400 m = 2 a-1
+parser.add_argument('-eps', type=float, default=0.01, metavar='X',
+                    help='to regularize viscosity by "+(eps Dtyp)^2" (default=0.01)')
 parser.add_argument('-H0', type=float, default=5000.0, metavar='X',
                     help='center height in m of ice sheet (default=5000)')
 parser.add_argument('-Href', type=float, default=500.0, metavar='X',
@@ -20,6 +30,8 @@ parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
 parser.add_argument('-layers', type=int, default=5, metavar='N',
                     help='number of layers in each column (default=5)')
+parser.add_argument('-linear', action='store_true', default=False,
+                    help='use linear, trivialized Stokes problem')
 parser.add_argument('-nintervals', type=int, default=30, metavar='N',
                     help='number of (equal) subintervals in computational domain (default=30)')
 parser.add_argument('-o', metavar='NAME', type=str, default='',
@@ -38,9 +50,13 @@ if args.stokes2Dhelp:
 g = 9.81             # m s-2; constants in SI units
 rho = 910.0          # kg
 secpera = 31556926.0
-n = 3.0
-A = 1.0e-16/secpera
-Gamma = 2.0 * A * (rho * g)**3.0 / 5.0   # see Bueler et al (2005)
+n = 3.0              # warning: this value is hardwired in some places below
+A3 = 1.0e-16/secpera
+
+# computed constants and regularization parameters
+Gamma = 2.0 * A3 * (rho * g)**3.0 / 5.0   # see Bueler et al (2005)
+B3 = A3**(-1.0/3.0)                       # Pa s(1/3);  ice hardness
+Dtyp = args.Dtyp / secpera
 
 # Halfar (1981) solution
 alpha = 1.0/11.0
@@ -112,16 +128,26 @@ Vp = FunctionSpace(mesh, 'DG', degree=0)        # pressure  p(x,y)
 Vc = FunctionSpace(mesh, 'CG', degree=1)        # displacement  c(x,y)
 Z = Vu * Vp * Vc
 
-# define weak form
+# define the nonlinear weak form F(u,p,c;v,q,e)
 upc = Function(Z)
 u,p,c = split(upc)
 v,q,e = TestFunctions(Z)
 Du = 0.5 * (grad(u)+grad(u).T)
 Dv = 0.5 * (grad(v)+grad(v).T)
-# FIXME this is a trivialized linear form for Stokes
-# FIXME put the displacement in as stretching coefficients
-F = (2.0 * inner(Du,Dv) - p * div(v) - div(u) * q) * dx \
-     + inner(grad(c),grad(e)) * dx
+#f_body = Constant((0.0, - rho * g))  # FIXME goes here
+if args.linear:
+    # a trivialized linear form for Stokes:
+    f_body = Constant((0.0, - rho * 0.0))  # FIXME
+    F = 2.0 * inner(Du,Dv) * dx \
+        + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
+        + inner(grad(c),grad(e)) * dx
+else:
+    # n=3 Glen ice
+    f_body = Constant((0.0, - rho * g))  # FIXME
+    Du2 = 0.5 * inner(Du, Du) + (args.eps * Dtyp)**2.0
+    F = inner(B3 * Du2**(-1.0/3.0) * Du, Dv) * dx \
+        + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
+        + inner(grad(c),grad(e)) * dx
 
 # simulate surface kinematical condition value for top; FIXME actual!
 dt = secpera  # 1 year time steps
@@ -134,8 +160,7 @@ bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),
        DirichletBC(Z.sub(2), Constant(0.0), 'bottom')]
 
 # solver parameters
-parameters = {'snes_type': 'ksponly',
-              'mat_type': 'aij',
+parameters = {'mat_type': 'aij',
               'pc_type': 'fieldsplit',
               # (u,p)-(u,p) and c-c diagonal blocks are decoupled for now FIXME
               'pc_fieldsplit_type': 'additive',
