@@ -101,6 +101,13 @@ figsave('currenttime.pdf')
 # reference domain figure
 plt.figure(figsize=(10,4))
 genbasicfig(icetext=r'$\Lambda$',reference=True)
+Href = 0.5
+Hrloc = 100
+plt.arrow(x[Hrloc],b[Hrloc],0.0,Href,lw=1.5,head_width=0.1,
+          length_includes_head=True,color='k')
+plt.arrow(x[Hrloc],b[Hrloc]+Href,0.0,-Href,lw=1.5,head_width=0.1,
+          length_includes_head=True,color='k')
+plt.text(x[Hrloc],b[Hrloc]+1.2*Href,r'$H_{\mathrm{ref}}$',fontsize=fsize)
 figsave('referencedomain.pdf')
 
 # next time figure

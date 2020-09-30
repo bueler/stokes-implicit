@@ -49,6 +49,8 @@ urlcolor=black     % only if colorlinks=true
 
 \newcommand{\bzero}{\bm{0}}
 
+\newcommand{\Href}{H_{\text{ref}}}
+
 \newtheorem{lemma}{Lemma}
 
 
@@ -166,12 +168,12 @@ At ice-free locations, where $\frac{\partial h}{\partial t}=0$ and $\bu=\bzero$,
 
 Informally, \eqref{surfacekinematical} describes how the ice surface elevation is updated.  The climatically added or removed ice $a\,\Delta t$, plus the component of the ice motion in the outward normal direction $\bn$, determines the vertical motion of the surface.  Note that the mass balance $a(x,y,z,t)$ is computed using a separate model for the dynamical state of the atmosphere, one which computes snow precipitation and atmospheric energy-driven melt at snow/ice surfaces.  While this topic is well beyond our scope, it is important in moving-margin glacier simulations that $a$ have a well-defined value both at the current ice surface and elsewhere, or at least nearby.  The simulated glacier can only move into new areas, while preserving mass conservation, if the source term at those new locations is well-defined.
 
-Numerical glacier models often evolve the time-dependent surface $z=h$ by explicit steps, i.e.~$\Delta h \approx \left(a + \bu\cdot \bn\right) \Delta t$ in the simplest forward-Euler case, based upon the current values of $a$, $\bu$, and $\grad h$ (thus $\bn$).  However, we will be solving \eqref{surfacekinematical} implicitly and coupled with the Glen-Stokes system \eqref{stokes}--\eqref{inflowbc}.
+Numerical glacier models often evolve the time-dependent surface $z=h$ by explicit steps, i.e.~$\Delta h \approx \left(a + \bu\cdot \bn\right) \Delta t$ in the simplest forward-Euler case, based upon the current values of $a$, $\bu$, and $\grad h$ (thus $\bn$).  However, we will be solving \eqref{surfacekinematical} implicitly and coupled with the Glen-Stokes system \eqref{stokes}--\eqref{incompagain}.
 
 
 \section{Decoupled Stokes weak form} \label{sec:weakstokes}
 
-Next we write the weak form for the decoupled problem \eqref{stokes}--\eqref{inflowbc}.  This will set notation, and provide a familiar starting point from which to state the coupled momentum and mass model in the next section; compare discussions of the Stokes weak form in  \cite{Bueler2021,Elmanetal2014,JouvetRappaz2011}.  Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocities with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For a fixed $t>0$ we will seek a solution from the following spaces:
+Next we write the weak form for the decoupled boundary value problem \eqref{stokes}--\eqref{inflowbc}.  This will set notation, and provide a familiar starting point from which to state the coupled momentum and mass model in the next section; compare discussions of the Stokes weak form in  \cite{Bueler2021,Elmanetal2014,JouvetRappaz2011}.  Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocities with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For a fixed $t>0$ we will seek a solution from the following spaces:
 \begin{align*}
 \bu &\in \bV = \left\{\bv \in W^{1,r}(\Omega^t)^d\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
 p &\in Q = L^{r'}(\Omega^t).
@@ -199,25 +201,15 @@ A related formulation of the same problem is proved in \cite[Theorem 3.8]{Jouvet
 
 \section{Implicit time-discretization and the icy domain update} \label{sec:implicitstep}
 
-As stated in the Introduction, the main purpose of this paper is to demonstrate an implicit scheme to simultaneously solve the Glen-Stokes equations \eqref{stokes}--\eqref{inflowbc} and the surface kinematical equation \eqref{surfacekinematical}.  At each time step of this proposed scheme we will compute a simplified surrogate for the ice strain field over the duration of the time step.  This surrogate, a vertical-only displacement defined everywhere within a reference domain, will be computed simultaneously with the velocity and pressure.  The reference domain is based on, and constructed from, the ice domain at the beginning of the step.  Thus we solve a coupled system consisting of mass and momentum conservation, including the surface kinematical equation, plus an additional equation for the vertical-only displacement.  In the current section we state this scheme using a discrete time, continuous space weak formulation.  Though more accurate implicit schemes exist, we implement the method using the first-order backward Euler time-stepping scheme.  (Later work will restate the problem as a differential algebraic equation (DAE) and apply suitable higher-order schemes.)  Looking ahead, after finite element discretization the discrete equations will compute a vertical-only mesh displacement simultaneously with the discrete velocity and pressure fields.
+As stated in the Introduction, the main purpose of this paper is to demonstrate an implicit scheme to simultaneously solve the Glen-Stokes equations \eqref{stokes}--\eqref{incompagain} and the surface kinematical equation \eqref{surfacekinematical}.  At each time step of this proposed scheme we will compute a simplified surrogate for the ice strain field over the duration of the time step.  This surrogate, a vertical-only displacement defined everywhere within a reference domain, will be computed simultaneously with the velocity and pressure.  The reference domain is constructed from the ice domain at the beginning of the step.  In other words we will solve a coupled system consisting of the stress balance \eqref{stokes}, incompressibility \eqref{incompagain}, and an additional equation for the vertical-only displacement such that \eqref{surfacekinematical} is also satisfied.
+
+We now state this scheme using a discrete-time, continuous-space weak formulation.  Though more accurate implicit schemes exist, we discretize time using the first-order backward Euler time-stepping scheme.  Later work will restate the problem as a differential algebraic equation (DAE) and apply suitable higher-order schemes.  Looking ahead, a finite element (spatial) discretization will convert \eqref{stokes}--\eqref{incompagain} and \eqref{surfacekinematical} into a system of nonlinear algebraic equations solvable with a Newton-Krylov method.
 
 %  Specifically, we will consider the second-order backward-differentiation formula (BDF2) \cite{AscherPetzold1998} and solver tools based on PETSc's \cite{Balayetal2020,BuelerBook} time-stepping TS object, possibly using \texttt{firedrake-ts}; https://github.com/IvanYashchuk/firedrake-ts.
 
-Let $t_{n-1}$ and $t_n$ be consecutive times with step $\Delta t = t_n - t_{n-1} > 0$.  Suppose the current model's state is known at time $t_{n-1}$, and denote the ice domain by $\Omega^{n-1} \subset \RR^d$.  We will approximate the updated (new) domain $\Omega^n \subset \RR^d$ using the coupled equations.
+Let $t_{n-1}$ and $t_n$ be consecutive times with step $\Delta t = t_n - t_{n-1} > 0$.  Suppose the current model's state is known at time $t_{n-1}$, and denote the ice domain by $\Omega^{n-1} \subset \RR^d$.
 
-FIXME describe how $\Lambda$ built
-
-The coordinates on the reference domain $\Lambda$ are denoted $\bxi=(\xi,\eta,\zeta)$.  We update the region by computing a change of coordinates $\bxi \mapsto \bx$,
-\begin{equation}
-x=\xi, \quad y=\eta, \quad z=\zeta+c(\xi,\eta,\zeta), \label{changecoords}
-\end{equation}
-or $\bx(\bxi) = \bxi + (0,0,c(\bxi))$.  Note that the horizontal coordinate does not change, but the $z$-coordinate is nontrivial.  The new scalar function $c(\bxi)$ will solve an equation which is coupled to the other equations (below).  In particular, it will solve an elliptic PDE and thus the new coordinates $\bx$ are smooth functions of $\bxi$ on $\Lambda$.  The new domain $\Omega^n$ is the interior of the image of $\Lambda$ under this map:
-\begin{equation}
-\Omega^n = \{\bx=\bxi + (0,0,c(\bxi)) \,\big|\, \bxi \in \Lambda\}^\circ. \label{updateddomain}
-\end{equation}
-This $\Lambda \stackrel{\Delta t}{\to} \Omega^n$ domain update is sketched in Figure \ref{fig:domainupdate}.  Furthermore this map is generally degenerate; it is not a diffeomorphism.  In particular the map takes the ice free areas of $\Lambda$ to zero height in the image; evaluating the interior of the set in \eqref{updateddomain} is important.
-
-\begin{figure}[h]
+\begin{figure}[ht]
 \begin{center}
 \includegraphics[width=0.6\textwidth]{currenttime.pdf}
 \vspace{-3mm}
@@ -226,19 +218,35 @@ This $\Lambda \stackrel{\Delta t}{\to} \Omega^n$ domain update is sketched in Fi
 
 \includegraphics[width=0.6\textwidth]{nexttime.pdf}
 \end{center}
-\caption{The current ice domain $\Omega^{n-1}$ is modified to be the reference domain $\Lambda$.  The coupled solution then includes a map from $\Lambda$ to the next ice domain $\Omega^n$, and either advance or retreat of the margin is allowed.  The mapping degenerates where the solution indicates no ice.}
+\caption{The current ice domain $\Omega^{n-1}$ is modified to a reference domain $\Lambda$.  The coupled solution includes a map from $\Lambda$ to the next domain $\Omega^n$; it degenerates where the solution indicates no ice.  Margin advance or retreat is allowed.}
 \label{fig:domainupdate}
 \end{figure}
 
-From \eqref{changecoords} the Jacobian of the coordinate change is
+The reference domain, denoted $\Lambda \subset \RR^d$, is constructed from $\Omega^{n-1}$ as follows.  We use a reference thickness $\Href>0$ which should have the property that grounded ice of uniform thickness $\Href$ will flow very slowly when draped over the bedrock topography.  For example, values in the range $50 \le \Href \le 500$ m would be appropriate for glaciers ranging from small mountain glaciers to large, cold, and low-angle ice sheets.  The chosen reference value should be small compared to observed glacier thicknesses, but, on the other hand, recall that the velocity Glen $n=3$ ice in a slab-on-slope geometry and/or the SIA goes as the $4$th power of the ice thickness \cite{GreveBlatter2009}, so $50$ m ice flows $10^4$ times slower than $500$ m ice.  From the chosen reference thickness value, denoting reference coordinates by $\bxi=(\xi,\eta,\zeta) \in \Lambda$, we define
+\begin{equation}
+\Lambda = \left\{\bxi\,\big|\,(\xi,\eta)\in R, \, b(\xi,\eta) < z < b(\xi,\eta) + \max\{\Href,h(\xi,\eta,t_{n-1})-b(\xi,\eta)\right\}.  \label{Lambda}
+\end{equation}
+Compare \eqref{Omegat} and see Figure \ref{fig:domainupdate}.  Note that $\Omega^{n-1} \subset \Lambda$.
+
+We will approximate the updated (new) domain $\Omega^n \subset \RR^d$ using the solution of the coupled equations, including a scalar function $c(\bxi)$ as we will describe.  The update is via a change of coordinates $\bxi \mapsto \bx$:
+\begin{equation*}
+z=\zeta+c(\xi,\eta,\zeta)
+\end{equation*}
+or
+\begin{equation}
+\bx(\bxi) = \bxi + (0,0,c(\bxi)). \label{changecoords}
+\end{equation}
+Thus the horizontal coordinate does not change, but the $z$-coordinate of the mapping is a nontrivial consequence of the coupled solution.  The new scalar function $c(\bxi)$ will solve an elliptic PDE and thus the new coordinates $\bx$ are smooth functions of $\bxi$ on $\Lambda$.  The new domain $\Omega^n$ is the interior of the image of $\Lambda$ under this map (Figure \ref{fig:domainupdate}):
+\begin{equation}
+\Omega^n = \{\bx=\bxi + (0,0,c(\bxi)) \,\big|\, \bxi \in \Lambda\}^\circ. \label{updateddomain}
+\end{equation}
+The map $\bxi \mapsto \bx$ is generally degenerate although it is smooth; it is not a diffeomorphism.  In particular the map takes the ice free areas of $\Lambda$ to ice of zero height in the image, and thus the computation of the \emph{interior} of the set in \eqref{updateddomain} is important.
+
+The coupled weak form will include derivatives of the change of coordinates.  First, the Jacobian is
 \begin{equation}
 J(\bxi) = \frac{\partial \bx}{\partial \bm{\xi}} = \begin{pmatrix} 1 & 0 & 0 \\  0 & 1 & 0 \\ \frac{\partial c}{\partial \xi} & \frac{\partial c}{\partial \eta} & 1+\frac{\partial c}{\partial \zeta} \end{pmatrix}, \label{jacchange}
 \end{equation}
-with determinant $\det(J)=1+\frac{\partial c}{\partial \zeta}$.
-
-For a generic, smooth function $f(\bx)$ defined on $\Omega^n$ the change of coordinates defines a function on $\Lambda$,
-    $$\tilde f(\bxi) = f(\xi,\eta,\zeta+c(\xi,\eta,\zeta)).$$
-The gradient transforms as
+with determinant $\det(J)=1+\frac{\partial c}{\partial \zeta}$.  Second, for a generic, smooth function $f(\bx)$ defined on $\Omega^n$ we define a function on $\Lambda$, $\tilde f(\bxi) = f(\bx(\bxi))$ whose gradient transforms as
 \begin{equation}
 \grad_{\bxi} \tilde f = J^\top \grad_{\bx} f
 \end{equation}
@@ -251,7 +259,9 @@ where
 j(\bxi) = -\frac{\frac{\partial c}{\partial \xi}}{1+\frac{\partial c}{\partial \zeta}}, \quad k(\bxi) = -\frac{\frac{\partial c}{\partial \eta}}{1+\frac{\partial c}{\partial \zeta}}, \quad \ell(\bxi) = \frac{1}{1+\frac{\partial c}{\partial \zeta}}. \label{definejkl}
 \end{equation}
 
-FIXME Let $\eta(r)$ denote the current surface elevation (i.e.~of $\Lambda$).  The new surface elevation, for the region $\Omega^n$, is
+FIXME regularize the denominator of the formulas for $j,k,\ell$
+
+FIXME use $\bxi$ notation: Let $\eta(r)$ denote the current surface elevation (i.e.~of $\Lambda$).  The new surface elevation, for the region $\Omega^n$, is
 \begin{equation}
 h(r) = \eta(r) + c(r,\eta(r)).  \label{newsurfaceelevation}
 \end{equation}
