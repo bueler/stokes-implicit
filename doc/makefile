@@ -1,6 +1,8 @@
 all: simp.pdf
 
-figures := cartoon.pdf domainnotation.pdf currenttime.pdf referencedomain.pdf nexttime.pdf
+cartoons := cartoon.pdf domainnotation.pdf currenttime.pdf referencedomain.pdf nexttime.pdf
+
+figures := $(cartoons) coarsespy.pdf
 
 simp.pdf: simp.tex simp.bib $(figures)
 	pdflatex simp
@@ -8,7 +10,7 @@ simp.pdf: simp.tex simp.bib $(figures)
 	pdflatex simp
 	pdflatex simp
 
-$(figures): cartoon.py
+$(cartoons): cartoon.py
 	python3 cartoon.py
 	for X in $(figures); do \
 	     (pdfcrop $$X $$X); \
@@ -17,6 +19,6 @@ $(figures): cartoon.py
 .PHONY: clean
 
 clean:
-	@rm -f $(figures)
+	@rm -f $(cartoons)
 	@rm -f *~ *.out *.aux *.log *.blg *.snm *.toc *.nav *.vrb *.synctex.gz *.bbl
 

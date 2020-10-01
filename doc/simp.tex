@@ -337,7 +337,19 @@ F(\bu,p,c;\bv,q,e) &= \int_\Lambda 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv\, j\,dr ds
 
 The solution of the weak form is a list of three functions, $\bu = \left<u_0,u_2\right> \in V_D$, $p\in L^{p'}(\Lambda)$, and $c\in W^{1,2}_0(\Lambda)$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all $\bv = \left<v_0,v_2\right> \in V_0$,  $q\in L^{p'}(\Lambda)$, and $e \in W^{1,2}_0(\Lambda)$.  Note that all trial and test functions are functions of $r$ and $s$ in $\Lambda$.
 
-FIXME result is following block structure
+FIXME Figure \ref{fig:blockstructure} shows block structure; DRAFT because it misses the effect of the stretching coefficients
+% ./stokes2D.py -s_snes_converged_reason -s_ksp_converged_reason -nintervals 3 -layer 3 -s_ksp_view_mat :coarsespy.m:ascii_matlab
+% >> spy(Mat_0x84000005_0,'k'), axis equal
+% >> print -dpdf coarsespy.pdf
+% pdfcrop
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=0.5\textwidth]{coarsespy.pdf}
+\end{center}
+\caption{FIXME block structure of coupled problem}
+\label{fig:blockstructure}
+\end{figure}
 
 
 \section{Inequality constraints and mass accounting} \label{sec:inequalities}
