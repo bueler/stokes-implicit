@@ -13,5 +13,5 @@ u,p,c = split(upc)
 v,q,e = TestFunctions(Z)
 
 smb = - u[0] * y.dx(0) + u[1]
-EquationBC(smb * e * ds(1) == 0, upc, 1)
+EquationBC(smb * e * ds(1) == 0, upc, 1, V=Z.sub(2))
 
