@@ -203,9 +203,29 @@ parameters = {'mat_type': 'aij',
               'fieldsplit_1_pc_gamg_type': 'classical',
               'fieldsplit_1_pc_gamg_square_graph': '1'}
 
-# Solve system as though it is nonlinear:  F(u) = 0
-solve(F == 0, upc, bcs=bcs, options_prefix = 's',
-      solver_parameters=parameters)
+# solve system as though it is nonlinear:  F(u) = 0
+if args.sia:
+    # use weak form for incompressible SIA velocity, hydrostatic pressure
+    f_body = Constant((0.0, - rho * g))
+    Du = 0.5 * grad(u)  #FIXME
+    Du2 = 0.5 * inner(Du, Du) + (args.eps * Dtyp)**2.0
+    tau = B3 * Du2**(-1.0/3.0) * Du
+    FSIA =  inner(tau, Dv) * dx \
+    #CSIA = - 2.0 * A3 * (rho * g)**3.0
+    #FSIA = inner(as_vector([,div(u)]),v) * dx \
+    #       + div(u) * v[1] * dx \
+    #       + p.dx(1) * q * dx \
+           # FIXME
+           + inner(grad(c),grad(e)) * dx
+    bcsSIA = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # u = 0 on base
+              DirichletBC(Z.sub(1), Constant(0.0), 'top'),            # p = 0 on top
+              DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),         # c = 0 on base
+              bctop]                                                  # SMB on top
+    solve(FSIA == 0, upc, bcs=bcsSIA, options_prefix = 's')  # command-line solver choice; try GS
+else:
+    # use coupled weak form
+    solve(F == 0, upc, bcs=bcs, options_prefix = 's',
+          solver_parameters=parameters)
 
 # save ParaView-readable file
 if args.o:
