@@ -137,20 +137,23 @@ Vp = FunctionSpace(mesh, 'DG', degree=0)        # pressure  p(x,y)
 Vc = FunctionSpace(mesh, 'CG', degree=1)        # displacement  c(x,y)
 Z = Vu * Vp * Vc
 
-# define the nonlinear weak form F(u,p,c;v,q,e)
+# trial and test functions
 upc = Function(Z)
 u,p,c = split(upc)
 v,q,e = TestFunctions(Z)
+
+# define the nonlinear weak form F(u,p,c;v,q,e)
 Du = 0.5 * (grad(u)+grad(u).T)
 Dv = 0.5 * (grad(v)+grad(v).T)
 f_body = Constant((0.0, - rho * g))
 # FIXME stretching in F; couples (u,p) and c problems
 if args.linear:   # linear Stokes with viscosity = 1.0
-    F = 2.0 * inner(Du,Dv) * dx
+    tau = 2.0 * Du
 else:             # n=3 Glen law Stokes
     Du2 = 0.5 * inner(Du, Du) + (args.eps * Dtyp)**2.0
-    F = inner(B3 * Du2**(-1.0/3.0) * Du, Dv) * dx
-F += ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
+    tau = B3 * Du2**(-1.0/3.0) * Du
+F =  inner(tau, Dv) * dx \
+     + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
      + inner(grad(c),grad(e)) * dx
 
 # surface kinematical boundary condition
