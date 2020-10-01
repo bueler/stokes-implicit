@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+# FIXME:  for right now, must run with -dirichletsmb
+
 # TODO:
-#   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * compute surface kinematical field (a - u h_x + w) and apply using "equation boundary condition"
+#   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
 
@@ -23,6 +25,8 @@ Q1 for displacement.  Default solver is additive fieldsplit between Stokes
 (u,p) problem and Laplace equation (c), with Stokes solved by Schur fieldsplit.
 The diagonal blocks are solved by AMG.
 ''',add_help=False)
+parser.add_argument('-dirichletsmb', action='store_true', default=False,
+                    help='apply simplified SMB condition on top of reference domain')
 parser.add_argument('-Dtyp', type=float, default=2.0, metavar='X',
                     help='typical strain rate in "+(eps Dtyp)^2" (default=2.0 a-1)')
 parser.add_argument('-eps', type=float, default=0.01, metavar='X',
@@ -149,15 +153,24 @@ else:             # n=3 Glen law Stokes
 F += ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
      + inner(grad(c),grad(e)) * dx
 
-# simulate surface kinematical condition value for top; FIXME actual!
+# surface kinematical boundary condition
 dt = secpera  # 1 year time steps
 a = Constant(0.0)
-smbref = conditional(y > args.Href, dt*a, dt*a - args.Href)  # FIXME
+if args.dirichletsmb:
+    smb = a
+else:
+    smb = a - u[0] * y.dx(0) + u[1]  #  a - u dh/dx + w
+smbref = conditional(y > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
+if args.dirichletsmb:
+    bctop = DirichletBC(Z.sub(2), smbref, 'top')
+else:
+    # in default coupled case, SMB is an equation
+    bctop = EquationBC(smbref * e * ds_t == 0, upc, 'top')  # FIXME throws AttributeError: 'MixedFunctionSpace' object has no attribute 'finat_element'
 
-# boundary conditions
+# list of boundary conditions
 bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),
-       DirichletBC(Z.sub(2), smbref, 'top'),
-       DirichletBC(Z.sub(2), Constant(0.0), 'bottom')]
+       DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),
+       bctop]
 
 # solver parameters
 parameters = {'mat_type': 'aij',
