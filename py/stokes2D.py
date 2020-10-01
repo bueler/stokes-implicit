@@ -5,22 +5,26 @@
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
 
-# SHOWS MAT:
-# ./stokes2D.py -linear -s_snes_type ksponly -s_ksp_view_mat draw -draw_pause -1 -draw_size 1000,1000 -nintervals 10 -layers 4
-# ./stokes2D.py -linear -s_snes_type ksponly -s_ksp_view_mat :foo.m:ascii_matlab -nintervals 10 -layers 4
-
 from firedrake import *
 
 import argparse
 parser = argparse.ArgumentParser(description='''
-Solve coupled Glen-Stokes plus surface kinematical equation problem for an
-ice sheet on a flat bed.  Generates 2D mesh from Halfar (1981) by extrusion
-of an equally-spaced interval mesh.  The vertical displacement solve Laplace's
-equation. A reference domain with a minimum thickness is used.  Mixed space
-is quadrilaterals (tensor product), namely Q2 x dQ0 for Stokes problem and
-Q1 for displacement.  Default solver is additive fieldsplit between Stokes
-(u,p) problem and Laplace equation (c), with Stokes solved by Schur fieldsplit.
-The diagonal blocks are solved by AMG.
+Solve coupled Glen-Stokes plus surface kinematical equation (SKE) problem for
+an ice sheet on a flat bed.  Generates 2D mesh from Halfar (1981) by extrusion
+of an equally-spaced interval mesh, thus the elements are quadrilaterals.
+A reference domain with a minimum thickness is used.  For velocity u,
+pressure p, and scalar vertical displacement c we set up a nonlinear system
+of three equations:
+   stress balance:       F_1(u,p)   = 0    FIXME: also c when stretched
+   incompressibility:    F_2(u)     = 0    FIXME: also c when stretched
+   Laplace/SKE:          F_3(u,c)   = 0
+The last equation is Laplace's equation for c in the domain interior but it
+is coupled to the first two through the top boundary condition which enforces
+the SKE.  The mixed space consists of (u,p) in Q2 x dQ0 for the Stokes problem
+and c in Q1 for displacement.  The default solver is multiplicative fieldsplit
+between the Stokes (u,p) block and the c block, with Stokes solved by Schur
+lower fieldsplit with selfp preconditioning on the Schur block.  The diagonal
+blocks are solved by AMG (-gamg).
 ''',add_help=False)
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
@@ -176,8 +180,9 @@ bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),
 # solver parameters
 parameters = {'mat_type': 'aij',
               'pc_type': 'fieldsplit',
-              # (u,p)-(u,p) and c-c diagonal blocks are decoupled for now FIXME
-              'pc_fieldsplit_type': 'additive',
+              # (u,p)-(u,p) and c-c diagonal blocks are coupled by (lower) c-u block
+              # FIXME: reconsider when stretching adds u-c and p-c blocks
+              'pc_fieldsplit_type': 'multiplicative',  # 'additive': more linear iters
               'pc_fieldsplit_0_fields': '0,1',
               'pc_fieldsplit_1_fields': '2',
               # schur fieldsplit for (u,p)-(u,p) block
