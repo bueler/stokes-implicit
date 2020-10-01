@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
-# FIXME:  for right now, must run with -dirichletsmb
-
 # TODO:
-#   * compute surface kinematical field (a - u h_x + w) and apply using "equation boundary condition"
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
@@ -156,21 +153,22 @@ F =  inner(tau, Dv) * dx \
      + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
      + inner(grad(c),grad(e)) * dx
 
-# surface kinematical boundary condition
+# construct equation for surface kinematical boundary condition
 dt = secpera  # 1 year time steps
-a = Constant(0.0)
+a = Constant(0.0) # correct for Halfar
 if args.dirichletsmb:
+    # artificial case: apply solution-independent smb as Dirichlet
     smb = a
-else:
-    smb = a - u[0] * y.dx(0) + u[1]  #  a - u dh/dx + w
-smbref = conditional(y > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
-if args.dirichletsmb:
+    smbref = conditional(y > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
     bctop = DirichletBC(Z.sub(2), smbref, 'top')
 else:
     # in default coupled case, SMB is an equation
-    bctop = EquationBC(smbref * e * ds_t == 0, upc, 'top')  # FIXME throws AttributeError: 'MixedFunctionSpace' object has no attribute 'finat_element'
+    smb = a - u[0] * y.dx(0) + u[1]  #  a - u dh/dx + w
+    smbref = conditional(y > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
+    Fsmb = (c - smbref) * e * ds_t
+    bctop = EquationBC(Fsmb == 0, upc, 'top', V=Z.sub(2))
 
-# list of boundary conditions
+# list boundary conditions
 bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),
        DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),
        bctop]
