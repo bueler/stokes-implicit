@@ -128,14 +128,15 @@ x,y = SpatialCoordinate(mesh)
 # report on generated geometry and fine mesh
 dxelem = 2.0 * args.L / (mx-1)
 dyrefelem = args.Href / (my-1)
-PETSc.Sys.Print('generating 2D Halfar geometry on interval [%.2f,%.2f] km,'
-                % (-args.L/1000.0,args.L/1000.0))
-PETSc.Sys.Print('    with H0=%.2f m and R0=%.2f km, at t0=%.5f a,'
+PETSc.Sys.Print('initial condition: 2D Halfar with H0=%.2f m and R0=%.2f km, at t0=%.5f a'
                 % (args.H0,args.R0/1000.0,t0/secpera))
-PETSc.Sys.Print('    as %d x %d element quadrilateral extruded (fine) mesh, limited at Href=%.2f m,'
-                % (mx-1,my-1,args.Href))
-PETSc.Sys.Print('    reference element dimensions: dx=%.2f m, dy=%.2f m, ratio=%.5f'
+PETSc.Sys.Print('domain: interval [%.2f,%.2f] km extruded to initial, limited at Href=%.2f m'
+                % (-args.L/1000.0,args.L/1000.0,args.Href))
+PETSc.Sys.Print('mesh: %d x %d element quadrilateral (fine) mesh'
+                % (mx-1,my-1))
+PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.5f'
                 % (dxelem,dyrefelem,dyrefelem/dxelem))
+PETSc.Sys.Print('computing one time step dt=%.5f a ...' % args.dta)
 
 # mixed spaces:  Q2 x dQ0 for Stokes problem, and Q1 for displacement
 Vu = VectorFunctionSpace(mesh, 'CG', degree=2)  # velocity  u = (u_0(x,y),u_1(x,y))
