@@ -175,9 +175,10 @@ else:
     bctop = EquationBC(Fsmb == 0, upc, 'top', V=Z.sub(2))
 
 # list boundary conditions
-bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),
-       DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),
-       bctop]
+bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # zero velocity on bottom
+       DirichletBC(Z.sub(0), Constant((0.0, 0.0)), (1,2)),     # zero velocity on the ends
+       DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),         # zero displacement on the bottom
+       bctop]                                                  # SKE equation on the top
 
 # solver parameters
 parameters = {'mat_type': 'aij',
