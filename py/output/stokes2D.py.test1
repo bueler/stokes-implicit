@@ -1,11 +1,12 @@
-generating 2D Halfar geometry on interval [-60.00,60.00] km,
-    with H0=5000.00 m and R0=50.00 km, at t0=0.00137 a,
-    as 30 x 10 element quadrilateral extruded (fine) mesh, limited at Href=500.00 m,
-    reference element dimensions: dx=4000.00 m, dy=50.00 m, ratio=0.01250
+initial condition: 2D Halfar with H0=3000.00 m and R0=50.00 km, at t0=0.04893 a
+domain: interval [-60.00,60.00] km extruded to initial, limited at Href=500.00 m
+mesh: 30 x 10 element quadrilateral (fine) mesh
+element dimensions: dx=4000.00 m, dy_min=50.00 m, ratio=0.01250
+computing one time step dt=1.00000 a ...
     Residual norms for s_ solve.
-    0 KSP Residual norm 8.82836e+11 
-    1 KSP Residual norm 4.19504e+10 
-    2 KSP Residual norm 3.70982e+07 
-    3 KSP Residual norm 7.52779e+06 
-    4 KSP Residual norm 258.187 
+    0 KSP Residual norm 3.17804e+11 
+    1 KSP Residual norm 9.69737e+09 
+    2 KSP Residual norm 1.16883e+07 
+    3 KSP Residual norm 2.60394e+06 
+    4 KSP Residual norm 128.914 
   Linear s_ solve converged due to CONVERGED_RTOL iterations 4
