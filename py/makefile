@@ -19,6 +19,6 @@ test: $(testlist)
 .PHONY: clean test $(testlist)
 
 clean:
-	@rm -f *.pdf *.geo *.msh *.pvd *.vtu *.m
+	@rm -f *.pdf *.geo *.msh *.pvd *.vtu *.pvtu *.m
 	@rm -f maketmp tmp difftmp
 

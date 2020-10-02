@@ -1,7 +1,8 @@
 /*.pdf
 /*.geo
 /*.msh
-/*.vtu
 /*.pvd
+/*.vtu
+/*.pvtu
 /*.m
 
