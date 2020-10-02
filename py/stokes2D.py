@@ -156,7 +156,12 @@ f_body = Constant((0.0, - rho * g))
 # FIXME stretching in F; couples (u,p) and c problems
 if args.linear:   # linear Stokes with viscosity = 1.0
     tau = 2.0 * Du
-else:             # n=3 Glen law Stokes
+else:
+    if args.sia:  # FIXME not sure if this is SIA!  TEST with -s_mat_type aij -s_pc_type svd -s_ksp_type preonly
+        Du = as_matrix([[0, 0.5*u[0].dx(1)], [0, 0]])
+        Dv = as_matrix([[v[0].dx(1), 0], [0, 0]])
+        #FIXME: add this?  DirichletBC(Z.sub(1), Constant(0.0), 'top'),         # SIA: zero pressure on top
+    # n=3 Glen law Stokes
     Du2 = 0.5 * inner(Du, Du) + (args.eps * Dtyp)**2.0
     tau = B3 * Du2**(-1.0/3.0) * Du
 F =  inner(tau, Dv) * dx \
@@ -210,28 +215,8 @@ parameters = {'mat_type': 'aij',
               'fieldsplit_1_pc_gamg_square_graph': '1'}
 
 # solve system as though it is nonlinear:  F(u) = 0
-if args.sia:
-    # use weak form for incompressible SIA velocity, hydrostatic pressure
-    f_body = Constant((0.0, - rho * g))
-    Du = 0.5 * grad(u)  #FIXME
-    Du2 = 0.5 * inner(Du, Du) + (args.eps * Dtyp)**2.0
-    tau = B3 * Du2**(-1.0/3.0) * Du
-    # FIXME
-    FSIA = inner(tau, Dv) * dx \
-           + inner(grad(c),grad(e)) * dx
-    #CSIA = - 2.0 * A3 * (rho * g)**3.0
-    #FSIA = inner(as_vector([,div(u)]),v) * dx \
-    #       + div(u) * v[1] * dx \
-    #       + p.dx(1) * q * dx \
-    bcsSIA = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # u = 0 on base
-              DirichletBC(Z.sub(1), Constant(0.0), 'top'),            # p = 0 on top
-              DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),         # c = 0 on base
-              bctop]                                                  # SMB on top
-    solve(FSIA == 0, upc, bcs=bcsSIA, options_prefix = 's')  # command-line solver choice; try GS
-else:
-    # use coupled weak form
-    solve(F == 0, upc, bcs=bcs, options_prefix = 's',
-          solver_parameters=parameters)
+solve(F == 0, upc, bcs=bcs, options_prefix = 's',
+      solver_parameters=parameters)
 
 # save ParaView-readable file
 if args.o:
