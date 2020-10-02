@@ -14,7 +14,7 @@ an ice sheet on a flat bed.  Generates 2D mesh from Halfar (1981) by extrusion
 of an equally-spaced interval mesh, thus the elements are quadrilaterals.
 A reference domain with a minimum thickness is used.  For velocity u,
 pressure p, and scalar vertical displacement c we set up a nonlinear system
-of three equations:
+of three equations corresponding to a single time step of -dta years:
    stress balance:       F_1(u,p)   = 0    FIXME: also c when stretched
    incompressibility:    F_2(u)     = 0    FIXME: also c when stretched
    Laplace/SKE:          F_3(u,c)   = 0
@@ -28,12 +28,14 @@ blocks are solved by AMG (-gamg).
 ''',add_help=False)
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
+parser.add_argument('-dta', type=float, default=1.0, metavar='X',
+                    help='length of time step in years')
 parser.add_argument('-Dtyp', type=float, default=2.0, metavar='X',
                     help='typical strain rate in "+(eps Dtyp)^2" (default=2.0 a-1)')
 parser.add_argument('-eps', type=float, default=0.01, metavar='X',
                     help='to regularize viscosity by "+(eps Dtyp)^2" (default=0.01)')
-parser.add_argument('-H0', type=float, default=5000.0, metavar='X',
-                    help='center height in m of ice sheet (default=5000)')
+parser.add_argument('-H0', type=float, default=3000.0, metavar='X',
+                    help='center height in m of ice sheet (default=3000)')
 parser.add_argument('-Href', type=float, default=500.0, metavar='X',
                     help='minimum thickness in m of reference domain (default=500)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
@@ -69,6 +71,7 @@ A3 = 1.0e-16/secpera
 Gamma = 2.0 * A3 * (rho * g)**3.0 / 5.0   # see Bueler et al (2005)
 B3 = A3**(-1.0/3.0)                       # Pa s(1/3);  ice hardness
 Dtyp = args.Dtyp / secpera
+dt = args.dta * secpera
 
 # Halfar (1981) solution
 alpha = 1.0/11.0
@@ -159,8 +162,7 @@ F =  inner(tau, Dv) * dx \
      + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
      + inner(grad(c),grad(e)) * dx
 
-# construct equation for surface kinematical boundary condition
-dt = secpera  # 1 year time steps
+# construct equation for surface kinematical equation (SKE) boundary condition
 a = Constant(0.0) # correct for Halfar
 if args.dirichletsmb:
     # artificial case: apply solution-independent smb as Dirichlet
