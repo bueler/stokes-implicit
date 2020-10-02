@@ -50,6 +50,8 @@ parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
 parser.add_argument('-refine', type=int, default=-1, metavar='X',
                     help='number of mesh refinement levels (e.g. for GMG)')
+parser.add_argument('-sia', action='store_true', default=False,
+                    help='use a coupled weak form corresponding to the SIA problem')
 parser.add_argument('-stokes2Dhelp', action='store_true', default=False,
                     help='help for stokes2D.py options')
 args, unknown = parser.parse_known_args()
@@ -210,13 +212,13 @@ if args.sia:
     Du = 0.5 * grad(u)  #FIXME
     Du2 = 0.5 * inner(Du, Du) + (args.eps * Dtyp)**2.0
     tau = B3 * Du2**(-1.0/3.0) * Du
-    FSIA =  inner(tau, Dv) * dx \
+    # FIXME
+    FSIA = inner(tau, Dv) * dx \
+           + inner(grad(c),grad(e)) * dx
     #CSIA = - 2.0 * A3 * (rho * g)**3.0
     #FSIA = inner(as_vector([,div(u)]),v) * dx \
     #       + div(u) * v[1] * dx \
     #       + p.dx(1) * q * dx \
-           # FIXME
-           + inner(grad(c),grad(e)) * dx
     bcsSIA = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # u = 0 on base
               DirichletBC(Z.sub(1), Constant(0.0), 'top'),            # p = 0 on top
               DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),         # c = 0 on base
