@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * add tau to output file
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
@@ -48,13 +47,15 @@ parser.add_argument('-linear', action='store_true', default=False,
 parser.add_argument('-nintervals', type=int, default=30, metavar='N',
                     help='number of (equal) subintervals in computational domain (default=30)')
 parser.add_argument('-o', metavar='NAME', type=str, default='',
-                    help='output file name ending with .pvd')
+                    help='save to output file name ending with .pvd')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
 parser.add_argument('-refine', type=int, default=-1, metavar='X',
                     help='number of mesh refinement levels (e.g. for GMG)')
 parser.add_argument('-save_rank', action='store_true',
-                    help='add element-wise MPI process rank to output file', default=False)
+                    help='save element-wise MPI process rank to output file', default=False)
+parser.add_argument('-save_tau', action='store_true',
+                    help='save deviatoric stress tensor to output file', default=False)
 parser.add_argument('-sia', action='store_true', default=False,
                     help='use a coupled weak form corresponding to the SIA problem')
 parser.add_argument('-stokes2Dhelp', action='store_true', default=False,
@@ -223,6 +224,12 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
 
 # save ParaView-readable file
 if args.o:
+    written = 'u,p,c'
+    if args.save_rank:
+         written += ',rank'
+    if args.save_tau:
+         written += ',tau'
+    PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' % (written,args.o))
     u,p,c = upc.split()
     u.rename('velocity')
     p.rename('pressure')
@@ -232,9 +239,19 @@ if args.o:
         rank = Function(FunctionSpace(mesh,'DG',0))
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
-        PETSc.Sys.Print('writing ice geometry and solution (u,p,c,rank) to %s ...' % args.o)
+    if args.save_tau:
+        # piecewise-constant tensor-valued field tau
+        TdP0 = TensorFunctionSpace(mesh, 'DG', 0)
+        Du = Function(TdP0).interpolate(0.5 * (grad(u)+grad(u).T))
+        Du2 = Function(Vp).interpolate(0.5 * inner(Du, Du) + (args.eps * args.Dtyp)**2.0)
+        tau = Function(TdP0).interpolate(B3 * Du2**(-1.0/3.0) * Du)
+        tau.rename('tau')
+    if args.save_rank and args.save_tau:
+        File(args.o).write(u,p,c,rank,tau)
+    elif args.save_rank:
         File(args.o).write(u,p,c,rank)
+    elif args.save_tau:
+        File(args.o).write(u,p,c,tau)
     else:
-        PETSc.Sys.Print('writing ice geometry and solution (u,p,c) to %s ...' % args.o)
         File(args.o).write(u,p,c)
 
