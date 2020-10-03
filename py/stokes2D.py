@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # TODO:
+#   * add tau to output file
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
@@ -52,6 +53,8 @@ parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
 parser.add_argument('-refine', type=int, default=-1, metavar='X',
                     help='number of mesh refinement levels (e.g. for GMG)')
+parser.add_argument('-save_rank', action='store_true',
+                    help='add element-wise MPI process rank to output file', default=False)
 parser.add_argument('-sia', action='store_true', default=False,
                     help='use a coupled weak form corresponding to the SIA problem')
 parser.add_argument('-stokes2Dhelp', action='store_true', default=False,
@@ -220,10 +223,18 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
 
 # save ParaView-readable file
 if args.o:
-    PETSc.Sys.Print('writing ice geometry and solution (u,p,c) to %s ...' % args.o)
     u,p,c = upc.split()
     u.rename('velocity')
     p.rename('pressure')
     c.rename('displacement')
-    File(args.o).write(u,p,c)
+    if args.save_rank:
+        # integer-valued element-wise process rank
+        rank = Function(FunctionSpace(mesh,'DG',0))
+        rank.dat.data[:] = mesh.comm.rank
+        rank.rename('rank')
+        PETSc.Sys.Print('writing ice geometry and solution (u,p,c,rank) to %s ...' % args.o)
+        File(args.o).write(u,p,c,rank)
+    else:
+        PETSc.Sys.Print('writing ice geometry and solution (u,p,c) to %s ...' % args.o)
+        File(args.o).write(u,p,c)
 
