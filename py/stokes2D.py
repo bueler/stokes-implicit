@@ -145,7 +145,8 @@ PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.5f'
                 % (dxelem,dyrefelem,dyrefelem/dxelem))
 PETSc.Sys.Print('computing one time step dt=%.5f a ...' % args.dta)
 
-# optionally do p-refinement in vertical; args.spectralvert in {0,1,2,3} is stage
+# optionally do p-refinement in vertical for (u,p)
+# args.spectralvert in {0,1,2,3} is stage
 degreexy = [(2,1),(3,2),(4,2),(5,3)]
 yudeg,ypdeg = degreexy[args.spectralvert]
 
@@ -162,7 +163,7 @@ pE = TensorProductElement(xpE,ypE)
 Vp = FunctionSpace(mesh, pE)
 # Q1 for displacement c(x,y)
 xcE = FiniteElement('CG',interval,1)
-ycE = FiniteElement('CG',interval,1)  # consider raising to 2: field "looks better"
+ycE = FiniteElement('CG',interval,1)  # consider raising to 2: field "looks better?"
 cE = TensorProductElement(xcE,ycE)
 Vc = FunctionSpace(mesh, cE)
 
@@ -248,7 +249,7 @@ if args.o:
     written = 'u,p,c'
     if mesh.comm.size > 1:
          written += ',rank'
-    if args.save_tau:
+    if args.savetau:
          written += ',tau'
     PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' % (written,args.o))
     u,p,c = upc.split()
@@ -267,7 +268,7 @@ if args.o:
         Du2 = Function(Vp).interpolate(0.5 * inner(Du, Du) + (args.eps * args.Dtyp)**2.0)
         tau = Function(TdP0).interpolate(B3 * Du2**(-1.0/3.0) * Du)
         tau.rename('tau')
-    if mesh.comm.size > 1 and args.save_tau:
+    if mesh.comm.size > 1 and args.savetau:
         File(args.o).write(u,p,c,rank,tau)
     elif mesh.comm.size > 1:
         File(args.o).write(u,p,c,rank)
