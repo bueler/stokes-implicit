@@ -230,12 +230,13 @@ parameters = {'mat_type': 'aij',
               # selfp seems to be faster than a Mass object
               'fieldsplit_0_pc_fieldsplit_schur_precondition': 'selfp',
               # AMG on the u-u block; mg works but slower
+              'fieldsplit_0_fieldsplit_0_ksp_type': 'preonly',
               'fieldsplit_0_fieldsplit_0_pc_type': 'gamg',
               'fieldsplit_0_fieldsplit_1_pc_type': 'jacobi',
               'fieldsplit_0_fieldsplit_1_pc_jacobi_type': 'diagonal',
-              'fieldsplit_1_ksp_type': 'preonly',
               # AMG on the c-c block; mg fails with zero row msg; hypre (w/o tuning) seems slower
               # classical few iters and faster than agg (but grid complexity better for agg)
+              'fieldsplit_1_ksp_type': 'preonly',
               'fieldsplit_1_pc_type': 'gamg',
               'fieldsplit_1_pc_gamg_type': 'classical',
               'fieldsplit_1_pc_gamg_square_graph': '1'}
