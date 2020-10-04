@@ -1,7 +1,7 @@
 initial condition: 2D Halfar with H0=3000.00 m and R0=50.00 km, at t0=0.04893 a
-domain: [-60.00,60.00] km extruded and limited at Href=500.00 m
+domain: [-60.00,60.00] km extruded and limited at Href=200.00 m
 mesh: 20 x 8 element quadrilateral (fine) mesh over 1 processes
-element dimensions: dx=6000.00 m, dy_min=62.50 m, ratio=0.01042
+element dimensions: dx=6000.00 m, dy_min=25.00 m, ratio=0.00417
 vector space dimensions : n_u=1394, n_p=189, n_c=189 ... N=1772
 computing one time step dt=1.00000 a ...
   Linear s_ solve converged due to CONVERGED_RTOL iterations 2

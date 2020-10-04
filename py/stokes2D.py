@@ -5,6 +5,9 @@
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
 
+# example: runs in about a minute with one-to-one element ratios and N=1.6e5
+# timer ./stokes2D.py -Href 500 -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -nintervals 960 -refine 1 -savetau -o foo.pvd
+
 from firedrake import *
 import sys
 
@@ -38,8 +41,8 @@ parser.add_argument('-eps', type=float, default=0.01, metavar='X',
                     help='to regularize viscosity by "+(eps Dtyp)^2" (default=0.01)')
 parser.add_argument('-H0', type=float, default=3000.0, metavar='X',
                     help='center height in m of ice sheet (default=3000)')
-parser.add_argument('-Href', type=float, default=500.0, metavar='X',
-                    help='minimum thickness in m of reference domain (default=500)')
+parser.add_argument('-Href', type=float, default=200.0, metavar='X',
+                    help='minimum thickness in m of reference domain (default=200)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
 parser.add_argument('-layers', type=int, default=4, metavar='N',
