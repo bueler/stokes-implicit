@@ -4,9 +4,55 @@ mesh: 30 x 10 element quadrilateral (fine) mesh over 1 processes
 element dimensions: dx=4000.00 m, dy_min=50.00 m, ratio=0.01250
 computing one time step dt=1.00000 a ...
     Residual norms for s_ solve.
-    0 KSP Residual norm 3.17804e+11 
-    1 KSP Residual norm 9.28929e+09 
-    2 KSP Residual norm 1.61044e+07 
-    3 KSP Residual norm 3.10663e+06 
-    4 KSP Residual norm 161.747 
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 4
+    0 KSP Residual norm 1.64388e+11 
+    1 KSP Residual norm 6.65183e+09 
+    2 KSP Residual norm 4.51376e+09 
+    3 KSP Residual norm 3.60328e+09 
+    4 KSP Residual norm 1.8076e+09 
+    5 KSP Residual norm 1.28092e+09 
+    6 KSP Residual norm 7.06112e+08 
+    7 KSP Residual norm 3.04519e+08 
+    8 KSP Residual norm 2.27088e+08 
+    9 KSP Residual norm 1.36167e+08 
+   10 KSP Residual norm 9.73416e+07 
+   11 KSP Residual norm 5.71658e+07 
+   12 KSP Residual norm 4.1015e+07 
+   13 KSP Residual norm 3.23326e+07 
+   14 KSP Residual norm 2.3293e+07 
+   15 KSP Residual norm 1.76978e+07 
+   16 KSP Residual norm 8.86744e+06 
+   17 KSP Residual norm 6.6515e+06 
+   18 KSP Residual norm 4.69815e+06 
+   19 KSP Residual norm 3.72884e+06 
+   20 KSP Residual norm 2.80233e+06 
+   21 KSP Residual norm 1.95988e+06 
+   22 KSP Residual norm 1.44462e+06 
+   23 KSP Residual norm 1.04498e+06 
+   24 KSP Residual norm 781313. 
+   25 KSP Residual norm 627482. 
+   26 KSP Residual norm 528772. 
+   27 KSP Residual norm 420812. 
+   28 KSP Residual norm 326906. 
+   29 KSP Residual norm 240155. 
+   30 KSP Residual norm 166374. 
+   31 KSP Residual norm 166335. 
+   32 KSP Residual norm 162441. 
+   33 KSP Residual norm 138976. 
+   34 KSP Residual norm 125080. 
+   35 KSP Residual norm 94547.8 
+   36 KSP Residual norm 79998.6 
+   37 KSP Residual norm 70334. 
+   38 KSP Residual norm 50113.9 
+   39 KSP Residual norm 41897. 
+   40 KSP Residual norm 29757.3 
+   41 KSP Residual norm 24719.7 
+   42 KSP Residual norm 18204.1 
+   43 KSP Residual norm 13758.7 
+   44 KSP Residual norm 9293.99 
+   45 KSP Residual norm 7032.94 
+   46 KSP Residual norm 5870.05 
+   47 KSP Residual norm 4069.37 
+   48 KSP Residual norm 3176.63 
+   49 KSP Residual norm 2019.46 
+   50 KSP Residual norm 1421.44 
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 50
