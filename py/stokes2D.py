@@ -54,7 +54,7 @@ parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
 parser.add_argument('-refine', type=int, default=-1, metavar='N',
                     help='number of mesh refinement levels (e.g. for GMG)')
-parser.add_argument('-save_tau', action='store_true',
+parser.add_argument('-savetau', action='store_true',
                     help='save deviatoric stress tensor to output file', default=False)
 parser.add_argument('-sia', action='store_true', default=False,
                     help='use a coupled weak form corresponding to the SIA problem')
@@ -260,7 +260,7 @@ if args.o:
         rank = Function(FunctionSpace(mesh,'DG',0))
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
-    if args.save_tau:
+    if args.savetau:
         # piecewise-constant tensor-valued field tau
         TdP0 = TensorFunctionSpace(mesh, 'DG', 0)
         Du = Function(TdP0).interpolate(0.5 * (grad(u)+grad(u).T))
@@ -271,7 +271,7 @@ if args.o:
         File(args.o).write(u,p,c,rank,tau)
     elif mesh.comm.size > 1:
         File(args.o).write(u,p,c,rank)
-    elif args.save_tau:
+    elif args.savetau:
         File(args.o).write(u,p,c,tau)
     else:
         File(args.o).write(u,p,c)
