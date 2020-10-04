@@ -132,19 +132,6 @@ for k in range(hierlevs):
 # fine mesh coordinates
 x,y = SpatialCoordinate(mesh)
 
-# report on generated geometry and fine mesh
-dxelem = 2.0 * args.L / (mx-1)
-dyrefelem = args.Href / (my-1)
-PETSc.Sys.Print('initial condition: 2D Halfar with H0=%.2f m and R0=%.2f km, at t0=%.5f a'
-                % (args.H0,args.R0/1000.0,t0/secpera))
-PETSc.Sys.Print('domain: [%.2f,%.2f] km extruded and limited at Href=%.2f m'
-                % (-args.L/1000.0,args.L/1000.0,args.Href))
-PETSc.Sys.Print('mesh: %d x %d element quadrilateral (fine) mesh over %d processes'
-                % (mx-1,my-1,mesh.comm.size))
-PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.5f'
-                % (dxelem,dyrefelem,dyrefelem/dxelem))
-PETSc.Sys.Print('computing one time step dt=%.5f a ...' % args.dta)
-
 # optionally do p-refinement in vertical for (u,p)
 # args.spectralvert in {0,1,2,3} is stage
 degreexy = [(2,1),(3,2),(4,2),(5,3)]
@@ -214,8 +201,26 @@ bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # zero velocity o
        DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),         # zero displacement on the bottom
        bctop]                                                  # SKE equation on the top
 
-# solver parameters
+# report on generated geometry and fine mesh
+dxelem = 2.0 * args.L / (mx-1)
+dyrefelem = args.Href / (my-1)
+PETSc.Sys.Print('initial condition: 2D Halfar with H0=%.2f m and R0=%.2f km, at t0=%.5f a'
+                % (args.H0,args.R0/1000.0,t0/secpera))
+PETSc.Sys.Print('domain: [%.2f,%.2f] km extruded and limited at Href=%.2f m'
+                % (-args.L/1000.0,args.L/1000.0,args.Href))
+PETSc.Sys.Print('mesh: %d x %d element quadrilateral (fine) mesh over %d processes'
+                % (mx-1,my-1,mesh.comm.size))
+PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.5f'
+                % (dxelem,dyrefelem,dyrefelem/dxelem))
+n_u,n_p,n_c,N = Vu.dim(),Vp.dim(),Vc.dim(),Z.dim()
+PETSc.Sys.Print('vector space dimensions : n_u=%d, n_p=%d, n_c=%d ... N=%d' \
+                % (n_u,n_p,n_c,N))
+PETSc.Sys.Print('computing one time step dt=%.5f a ...' % args.dta)
+
+# solver parameters; many are defaults which are deliberately made explicit here
 parameters = {'mat_type': 'aij',
+              'ksp_type': 'gmres',
+              'ksp_pc_side': 'left',
               'pc_type': 'fieldsplit',
               # (u,p)-(u,p) and c-c diagonal blocks are coupled by (lower) c-u block
               # FIXME: reconsider when stretching adds u-c and p-c blocks
@@ -232,6 +237,9 @@ parameters = {'mat_type': 'aij',
               # AMG on the u-u block; mg works but slower
               'fieldsplit_0_fieldsplit_0_ksp_type': 'preonly',
               'fieldsplit_0_fieldsplit_0_pc_type': 'gamg',
+              'fieldsplit_0_fieldsplit_0_pc_gamg_type': 'agg',
+              'fieldsplit_0_fieldsplit_0_mg_levels_ksp_type': 'chebyshev',
+              'fieldsplit_0_fieldsplit_0_mg_levels_pc_type': 'sor',
               'fieldsplit_0_fieldsplit_1_pc_type': 'jacobi',
               'fieldsplit_0_fieldsplit_1_pc_jacobi_type': 'diagonal',
               # AMG on the c-c block; mg fails with zero row msg; hypre (w/o tuning) seems slower
