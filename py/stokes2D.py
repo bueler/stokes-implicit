@@ -42,8 +42,8 @@ parser.add_argument('-Href', type=float, default=500.0, metavar='X',
                     help='minimum thickness in m of reference domain (default=500)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
-parser.add_argument('-layers', type=int, default=10, metavar='N',
-                    help='number of layers in each vertical column (default=10)')
+parser.add_argument('-layers', type=int, default=4, metavar='N',
+                    help='number of layers in each vertical column (default=4)')
 parser.add_argument('-linear', action='store_true', default=False,
                     help='use linear, trivialized Stokes problem')
 parser.add_argument('-nintervals', type=int, default=30, metavar='N',
