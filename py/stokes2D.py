@@ -143,10 +143,24 @@ PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.5f'
                 % (dxelem,dyrefelem,dyrefelem/dxelem))
 PETSc.Sys.Print('computing one time step dt=%.5f a ...' % args.dta)
 
-# mixed spaces:  Q2 x dQ0 for Stokes problem, and Q1 for displacement
-Vu = VectorFunctionSpace(mesh, 'CG', degree=2)  # velocity  u = (u_0(x,y),u_1(x,y))
-Vp = FunctionSpace(mesh, 'DG', degree=0)        # pressure  p(x,y)
-Vc = FunctionSpace(mesh, 'CG', degree=1)        # displacement  c(x,y)
+# construct component spaces by explicitly applying TensorProductElement()
+# Q2 for velocity
+xuE = FiniteElement('CG',interval,2)
+yuE = FiniteElement('CG',interval,2)
+uE = TensorProductElement(xuE,yuE)
+Vu = VectorFunctionSpace(mesh, uE)  # velocity  u = (u_0(x,y),u_1(x,y))
+# dQ0 for pressure
+xpE = FiniteElement('DG',interval,0)
+ypE = FiniteElement('DG',interval,0)
+pE = TensorProductElement(xpE,ypE)
+Vp = FunctionSpace(mesh, pE)        # pressure  p(x,y)
+# Q1 for displacement
+xcE = FiniteElement('CG',interval,1)
+ycE = FiniteElement('CG',interval,1)
+cE = TensorProductElement(xcE,ycE)
+Vc = FunctionSpace(mesh, cE)        # displacement  c(x,y)
+
+# construct mized space
 Z = Vu * Vp * Vc
 
 # trial and test functions
