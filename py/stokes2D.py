@@ -6,11 +6,12 @@
 #   * implement displacement stretching scheme
 
 from firedrake import *
+import sys
 
 import argparse
 parser = argparse.ArgumentParser(description='''
-Solve coupled Glen-Stokes plus surface kinematical equation (SKE) problem for
-an ice sheet on a flat bed.  Generates 2D mesh from Halfar (1981) by extrusion
+Solve coupled Glen-Stokes plus surface kinematical equation (SKE) for
+an ice sheet.  Generates flat-bed 2D mesh from Halfar (1981) by extrusion
 of an equally-spaced interval mesh, thus the elements are quadrilaterals.
 A reference domain with a minimum thickness is used.  For velocity u,
 pressure p, and scalar vertical displacement c we set up a nonlinear system
@@ -22,10 +23,11 @@ The last equation is Laplace's equation for c in the domain interior but it
 is coupled to the first two through the top boundary condition which enforces
 the SKE.  The mixed space consists of (u,p) in Q2 x dQ0 for the Stokes problem
 and c in Q1 for displacement.  The default solver is multiplicative fieldsplit
-between the Stokes (u,p) block and the c block, with Stokes solved by Schur
-lower fieldsplit with selfp preconditioning on the Schur block.  The diagonal
-blocks are solved by AMG (-gamg).
-''',add_help=False)
+between the Stokes (u,p) block and the c block.  The Stokes block is solved by
+Schur lower fieldsplit with selfp preconditioning on the Schur block.  The
+diagonal blocks are solved by AMG (-gamg).''',
+                                 formatter_class=argparse.RawTextHelpFormatter,
+                                 add_help=False)
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
 parser.add_argument('-dta', type=float, default=1.0, metavar='X',
@@ -41,28 +43,27 @@ parser.add_argument('-Href', type=float, default=500.0, metavar='X',
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
 parser.add_argument('-layers', type=int, default=10, metavar='N',
-                    help='number of layers in each column (default=10)')
+                    help='number of layers in each vertical column (default=10)')
 parser.add_argument('-linear', action='store_true', default=False,
                     help='use linear, trivialized Stokes problem')
 parser.add_argument('-nintervals', type=int, default=30, metavar='N',
-                    help='number of (equal) subintervals in computational domain (default=30)')
-parser.add_argument('-o', metavar='NAME', type=str, default='',
+                    help='number of equal subintervals in horizontal (default=30)')
+parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save to output file name ending with .pvd')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
-parser.add_argument('-refine', type=int, default=-1, metavar='X',
+parser.add_argument('-refine', type=int, default=-1, metavar='N',
                     help='number of mesh refinement levels (e.g. for GMG)')
-parser.add_argument('-save_rank', action='store_true',
-                    help='save element-wise MPI process rank to output file', default=False)
 parser.add_argument('-save_tau', action='store_true',
                     help='save deviatoric stress tensor to output file', default=False)
 parser.add_argument('-sia', action='store_true', default=False,
                     help='use a coupled weak form corresponding to the SIA problem')
 parser.add_argument('-stokes2Dhelp', action='store_true', default=False,
-                    help='help for stokes2D.py options')
+                    help='print help for stokes2D.py and quit')
 args, unknown = parser.parse_known_args()
 if args.stokes2Dhelp:
     parser.print_help()
+    sys.exit(0)
 
 # physical constants
 g = 9.81             # m s-2; constants in SI units
@@ -134,10 +135,10 @@ dxelem = 2.0 * args.L / (mx-1)
 dyrefelem = args.Href / (my-1)
 PETSc.Sys.Print('initial condition: 2D Halfar with H0=%.2f m and R0=%.2f km, at t0=%.5f a'
                 % (args.H0,args.R0/1000.0,t0/secpera))
-PETSc.Sys.Print('domain: interval [%.2f,%.2f] km extruded to initial, limited at Href=%.2f m'
+PETSc.Sys.Print('domain: [%.2f,%.2f] km extruded and limited at Href=%.2f m'
                 % (-args.L/1000.0,args.L/1000.0,args.Href))
-PETSc.Sys.Print('mesh: %d x %d element quadrilateral (fine) mesh'
-                % (mx-1,my-1))
+PETSc.Sys.Print('mesh: %d x %d element quadrilateral (fine) mesh over %d processes'
+                % (mx-1,my-1,mesh.comm.size))
 PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.5f'
                 % (dxelem,dyrefelem,dyrefelem/dxelem))
 PETSc.Sys.Print('computing one time step dt=%.5f a ...' % args.dta)
@@ -225,7 +226,7 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
 # save ParaView-readable file
 if args.o:
     written = 'u,p,c'
-    if args.save_rank:
+    if mesh.comm.size > 1:
          written += ',rank'
     if args.save_tau:
          written += ',tau'
@@ -234,7 +235,7 @@ if args.o:
     u.rename('velocity')
     p.rename('pressure')
     c.rename('displacement')
-    if args.save_rank:
+    if mesh.comm.size > 1:
         # integer-valued element-wise process rank
         rank = Function(FunctionSpace(mesh,'DG',0))
         rank.dat.data[:] = mesh.comm.rank
@@ -246,9 +247,9 @@ if args.o:
         Du2 = Function(Vp).interpolate(0.5 * inner(Du, Du) + (args.eps * args.Dtyp)**2.0)
         tau = Function(TdP0).interpolate(B3 * Du2**(-1.0/3.0) * Du)
         tau.rename('tau')
-    if args.save_rank and args.save_tau:
+    if mesh.comm.size > 1 and args.save_tau:
         File(args.o).write(u,p,c,rank,tau)
-    elif args.save_rank:
+    elif mesh.comm.size > 1:
         File(args.o).write(u,p,c,rank)
     elif args.save_tau:
         File(args.o).write(u,p,c,tau)

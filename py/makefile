@@ -7,7 +7,7 @@ runstokes2D_2:
 	-@./../testit.sh stokes2D.py "-dirichletsmb -linear -dta 1.0 -s_snes_type ksponly -nintervals 20 -layers 4 -refine 1" 1 2
 
 runstokes2D_3:
-	-@./../testit.sh stokes2D.py "-dirichletsmb -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -nintervals 10 -layer 10 -s_snes_rtol 1.0e-2" 1 3
+	-@./../testit.sh stokes2D.py "-dirichletsmb -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -nintervals 10 -layer 10 -s_snes_rtol 1.0e-2" 2 3
 
 runstokes2D_4:
 	-@./../testit.sh stokes2D.py "-dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -nintervals 10 -layer 10 -s_snes_rtol 1.0e-2" 1 4
