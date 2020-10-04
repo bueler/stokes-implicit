@@ -58,6 +58,8 @@ parser.add_argument('-save_tau', action='store_true',
                     help='save deviatoric stress tensor to output file', default=False)
 parser.add_argument('-sia', action='store_true', default=False,
                     help='use a coupled weak form corresponding to the SIA problem')
+parser.add_argument('-spectralvert', type=int, default=0, metavar='N',
+                    help='stages for p-refinement in vertical; use 0,1,2,3 only  (default=0)')
 parser.add_argument('-stokes2Dhelp', action='store_true', default=False,
                     help='print help for stokes2D.py and quit')
 args, unknown = parser.parse_known_args()
@@ -143,15 +145,19 @@ PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.5f'
                 % (dxelem,dyrefelem,dyrefelem/dxelem))
 PETSc.Sys.Print('computing one time step dt=%.5f a ...' % args.dta)
 
+# optionally do p-refinement in vertical; args.spectralvert in {0,1,2,3} is stage
+degreexy = [(2,1),(3,2),(4,2),(5,3)]
+yudeg,ypdeg = degreexy[args.spectralvert]
+
 # construct component spaces by explicitly applying TensorProductElement()
 # Q2 for velocity
 xuE = FiniteElement('CG',interval,2)
-yuE = FiniteElement('CG',interval,2)
+yuE = FiniteElement('CG',interval,yudeg)
 uE = TensorProductElement(xuE,yuE)
 Vu = VectorFunctionSpace(mesh, uE)  # velocity  u = (u_0(x,y),u_1(x,y))
 # Q1 for pressure
 xpE = FiniteElement('CG',interval,1)
-ypE = FiniteElement('CG',interval,1)
+ypE = FiniteElement('CG',interval,ypdeg)
 pE = TensorProductElement(xpE,ypE)
 Vp = FunctionSpace(mesh, pE)        # pressure  p(x,y)
 # Q1 for displacement
