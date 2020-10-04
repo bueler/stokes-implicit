@@ -221,9 +221,9 @@ PETSc.Sys.Print('computing one time step dt=%.5f a ...' % args.dta)
 parameters = {'mat_type': 'aij',
               'ksp_type': 'gmres',
               'ksp_pc_side': 'left',
-              'pc_type': 'fieldsplit',
               # (u,p)-(u,p) and c-c diagonal blocks are coupled by (lower) c-u block
               # FIXME: reconsider when stretching adds u-c and p-c blocks
+              'pc_type': 'fieldsplit',
               'pc_fieldsplit_type': 'multiplicative',  # 'additive': more linear iters
               'pc_fieldsplit_0_fields': '0,1',
               'pc_fieldsplit_1_fields': '2',
@@ -236,18 +236,20 @@ parameters = {'mat_type': 'aij',
               'fieldsplit_0_pc_fieldsplit_schur_precondition': 'selfp',
               # AMG on the u-u block; mg works but slower
               'fieldsplit_0_fieldsplit_0_ksp_type': 'preonly',
-              'fieldsplit_0_fieldsplit_0_pc_type': 'gamg',
-              'fieldsplit_0_fieldsplit_0_pc_gamg_type': 'agg',
-              'fieldsplit_0_fieldsplit_0_mg_levels_ksp_type': 'chebyshev',
-              'fieldsplit_0_fieldsplit_0_mg_levels_pc_type': 'sor',
+              'fieldsplit_0_fieldsplit_0_pc_type': 'lu',
+              #'fieldsplit_0_fieldsplit_0_pc_type': 'gamg',
+              #'fieldsplit_0_fieldsplit_0_pc_gamg_type': 'agg',
+              #'fieldsplit_0_fieldsplit_0_mg_levels_ksp_type': 'chebyshev',
+              #'fieldsplit_0_fieldsplit_0_mg_levels_pc_type': 'sor',
               'fieldsplit_0_fieldsplit_1_pc_type': 'jacobi',
               'fieldsplit_0_fieldsplit_1_pc_jacobi_type': 'diagonal',
               # AMG on the c-c block; mg fails with zero row msg; hypre (w/o tuning) seems slower
               # classical few iters and faster than agg (but grid complexity better for agg)
               'fieldsplit_1_ksp_type': 'preonly',
-              'fieldsplit_1_pc_type': 'gamg',
-              'fieldsplit_1_pc_gamg_type': 'classical',
-              'fieldsplit_1_pc_gamg_square_graph': '1'}
+              'fieldsplit_1_pc_type': 'lu'}
+              #'fieldsplit_1_pc_type': 'gamg',
+              #'fieldsplit_1_pc_gamg_type': 'classical',
+              #'fieldsplit_1_pc_gamg_square_graph': '1'}
 
 # solve system as though it is nonlinear:  F(u) = 0
 solve(F == 0, upc, bcs=bcs, options_prefix = 's',
