@@ -21,7 +21,7 @@ of three equations corresponding to a single time step of -dta years:
    Laplace/SKE:          F_3(u,c)   = 0
 The last equation is Laplace's equation for c in the domain interior but it
 is coupled to the first two through the top boundary condition which enforces
-the SKE.  The mixed space consists of (u,p) in Q2 x dQ0 for the Stokes problem
+the SKE.  The mixed space consists of (u,p) in Q2 x Q1 for the Stokes problem
 and c in Q1 for displacement.  The default solver is multiplicative fieldsplit
 between the Stokes (u,p) block and the c block.  The Stokes block is solved by
 Schur lower fieldsplit with selfp preconditioning on the Schur block.  The
@@ -149,9 +149,9 @@ xuE = FiniteElement('CG',interval,2)
 yuE = FiniteElement('CG',interval,2)
 uE = TensorProductElement(xuE,yuE)
 Vu = VectorFunctionSpace(mesh, uE)  # velocity  u = (u_0(x,y),u_1(x,y))
-# dQ0 for pressure
-xpE = FiniteElement('DG',interval,0)
-ypE = FiniteElement('DG',interval,0)
+# Q1 for pressure
+xpE = FiniteElement('CG',interval,1)
+ypE = FiniteElement('CG',interval,1)
 pE = TensorProductElement(xpE,ypE)
 Vp = FunctionSpace(mesh, pE)        # pressure  p(x,y)
 # Q1 for displacement

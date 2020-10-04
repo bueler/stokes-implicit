@@ -5,8 +5,8 @@ element dimensions: dx=4000.00 m, dy_min=50.00 m, ratio=0.01250
 computing one time step dt=1.00000 a ...
     Residual norms for s_ solve.
     0 KSP Residual norm 3.17804e+11 
-    1 KSP Residual norm 9.69737e+09 
-    2 KSP Residual norm 1.16883e+07 
-    3 KSP Residual norm 2.60394e+06 
-    4 KSP Residual norm 128.914 
+    1 KSP Residual norm 9.28929e+09 
+    2 KSP Residual norm 1.61044e+07 
+    3 KSP Residual norm 3.10663e+06 
+    4 KSP Residual norm 161.747 
   Linear s_ solve converged due to CONVERGED_RTOL iterations 4
