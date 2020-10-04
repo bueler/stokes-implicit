@@ -150,23 +150,23 @@ degreexy = [(2,1),(3,2),(4,2),(5,3)]
 yudeg,ypdeg = degreexy[args.spectralvert]
 
 # construct component spaces by explicitly applying TensorProductElement()
-# Q2 for velocity
+# Q2 for velocity u = (u_0(x,y),u_1(x,y))
 xuE = FiniteElement('CG',interval,2)
 yuE = FiniteElement('CG',interval,yudeg)
 uE = TensorProductElement(xuE,yuE)
-Vu = VectorFunctionSpace(mesh, uE)  # velocity  u = (u_0(x,y),u_1(x,y))
-# Q1 for pressure
+Vu = VectorFunctionSpace(mesh, uE)
+# Q1 for pressure p(x,y)
 xpE = FiniteElement('CG',interval,1)
 ypE = FiniteElement('CG',interval,ypdeg)
 pE = TensorProductElement(xpE,ypE)
-Vp = FunctionSpace(mesh, pE)        # pressure  p(x,y)
-# Q1 for displacement
+Vp = FunctionSpace(mesh, pE)
+# Q1 for displacement c(x,y)
 xcE = FiniteElement('CG',interval,1)
-ycE = FiniteElement('CG',interval,1)
+ycE = FiniteElement('CG',interval,1)  # consider raising to 2: field "looks better"
 cE = TensorProductElement(xcE,ycE)
-Vc = FunctionSpace(mesh, cE)        # displacement  c(x,y)
+Vc = FunctionSpace(mesh, cE)
 
-# construct mized space
+# construct mixed space
 Z = Vu * Vp * Vc
 
 # trial and test functions
