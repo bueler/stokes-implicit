@@ -5,11 +5,10 @@
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
 #   * make 3D or 2D according to options
-#   * replace -nintervals with -mx; -mx and -my refer to number of intervals
 #   * "aerogel mush" above current iterate surface in Href
 
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
-# timer ./stokes2D.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -nintervals 960 -refine 1 -savetau -o foo.pvd
+# timer ./stokes2D.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -refine 1 -savetau -o foo.pvd
 
 from firedrake import *
 import sys
@@ -54,8 +53,10 @@ parser.add_argument('-layers', type=int, default=4, metavar='N',
                     help='number of layers in each vertical column (default=4)')
 parser.add_argument('-linear', action='store_true', default=False,
                     help='use linear, trivialized Stokes problem')
-parser.add_argument('-nintervals', type=int, default=30, metavar='N',
-                    help='number of equal subintervals in horizontal (default=30)')
+parser.add_argument('-mx', type=int, default=30, metavar='N',
+                    help='number of equal subintervals in x-direction (default=30)')
+parser.add_argument('-my', type=int, default=30, metavar='N',
+                    help='number of equal subintervals in y-direction (default=30)')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save to output file name ending with .pvd')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
@@ -82,26 +83,24 @@ Dtyp = args.Dtyp / secpera
 dt = args.dta * secpera
 
 # set up base mesh, as hierarchy if requested
-mx = args.nintervals + 1
-base_mesh = IntervalMesh(args.nintervals, length_or_left=-args.L, right=args.L)
+mx = args.mx
+base_mesh = IntervalMesh(mx, length_or_left=-args.L, right=args.L)
 if args.refine > 0:
     base_hierarchy = MeshHierarchy(base_mesh, args.refine)
     base_mesh = base_hierarchy[-1]     # the fine mesh
-    mx = (mx-1) * 2**args.refine + 1
+    mx *= 2**args.refine
 
 # set up extruded mesh, as hierarchy if requested
-my = args.layers + 1
+mz = args.layers
 temporary_height = 1.0
 if args.refine > 0:
     hierarchy = ExtrudedMeshHierarchy(base_hierarchy, temporary_height, base_layer=args.layers)
     mesh = hierarchy[-1]     # the fine mesh
-    my = (my-1) * 2**args.refine + 1
+    mz *= 2**args.refine
 else:
     mesh = ExtrudedMesh(base_mesh, layers=args.layers, layer_height=temporary_height/args.layers)
 
-# note: At this point,  N = mx my  is the number of nodes in the extruded mesh,
-#       with mx-1 elements (subintervals) in the horizontal and my-1 elements
-#       in the vertical.
+# note: in 2D, mx mz  is the number of elements in the extruded mesh
 
 # deform y coordinate, in each level of hierarchy, to match Halfar solution, but limited at Href
 if args.refine > 0:
@@ -192,14 +191,14 @@ bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # zero velocity o
        bctop]                                                  # SKE equation on the top
 
 # report on generated geometry and fine mesh
-dxelem = 2.0 * args.L / (mx-1)
-dyrefelem = args.Href / (my-1)
+dxelem = 2.0 * args.L / mx
+dyrefelem = args.Href / mz
 PETSc.Sys.Print('initial condition: 2D Halfar with H0=%.2f m and R0=%.3f km, at t0=%.5f a'
                 % (args.H0,args.R0/1000.0,t0/secpera))
 PETSc.Sys.Print('domain: [%.2f,%.2f] km extruded and limited at Href=%.2f m'
                 % (-args.L/1000.0,args.L/1000.0,args.Href))
 PETSc.Sys.Print('mesh: %d x %d element quadrilateral (fine) mesh over %d processes'
-                % (mx-1,my-1,mesh.comm.size))
+                % (mx,mz,mesh.comm.size))
 PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.1f'
                 % (dxelem,dyrefelem,dxelem/dyrefelem))
 n_u,n_p,n_c,N = Vu.dim(),Vp.dim(),Vc.dim(),Z.dim()
