@@ -12,7 +12,7 @@
 from firedrake import *
 import sys
 from iceconstants import secpera,g,rho,n,A3,B3,Gamma
-from halfar import halfar2d, halfar3d
+from halfar import halfar2d,halfar3d
 
 import argparse
 parser = argparse.ArgumentParser(description='''
@@ -85,17 +85,22 @@ Dtyp = args.Dtyp / secpera
 dt = args.dta * secpera
 
 # set up base mesh, as hierarchy if requested
+PETSc.Sys.Print('**** SUMMARY OF SETUP ****')
 mx = args.mx
 if args.my > 0:
+    PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
+                    % (-args.L/1000.0,args.L/1000.0,-args.L/1000.0,args.L/1000.0))
     my = args.my
     base_mesh = RectangleMesh(mx, my, 2.0*args.L, 2.0*args.L, quadrilateral=True)
     base_mesh.coordinates.dat.data[:, 0] -= args.L
     base_mesh.coordinates.dat.data[:, 1] -= args.L
-    PETSc.Sys.Print('3D mode coarse base mesh: %d x %d element quadrilaterals over %d processes'
+    PETSc.Sys.Print('coarse base mesh:    %d x %d elements (quads) over %d processes'
                 % (mx,my,base_mesh.comm.size))
 else:
+    PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] km interval'
+                    % (-args.L/1000.0,args.L/1000.0))
     base_mesh = IntervalMesh(mx, length_or_left=-args.L, right=args.L)
-    PETSc.Sys.Print('2D mode coarse base mesh: %d element intervals over %d processes'
+    PETSc.Sys.Print('coarse base mesh:    %d elements (intervals) over %d processes'
                 % (mx,base_mesh.comm.size))
 
 if args.refine > 0:
@@ -104,6 +109,13 @@ if args.refine > 0:
     mx *= 2**args.refine
     if args.my > 0:
         my *= 2**args.refine
+
+# why is following needed?
+if args.refine > 0 and args.my > 0:
+    hierlevs = args.refine + 1
+    for k in range(hierlevs):
+        base_hierarchy[k].coordinates.dat.data[:, 0] -= args.L
+        base_hierarchy[k].coordinates.dat.data[:, 1] -= args.L
 
 # set up extruded mesh, as hierarchy if requested
 mz = args.layers
@@ -114,9 +126,6 @@ if args.refine > 0:
     mz *= 2**args.refine
 else:
     mesh = ExtrudedMesh(base_mesh, layers=args.layers, layer_height=temporary_height/args.layers)
-
-# note: in 2D,  mx mz     is the number of elements in the extruded mesh
-#       in 3D,  mx my mz  ...
 
 # deform z coordinate, in each level of hierarchy, to match Halfar solution, but limited at Href
 if args.refine > 0:
@@ -130,9 +139,10 @@ for k in range(hierlevs):
         kmesh = mesh
     if args.my > 0:
         x,y,z = SpatialCoordinate(kmesh)
+        t0, Hinitial = halfar3d(x,y,R0=args.R0,H0=args.H0)
     else:
         x,z = SpatialCoordinate(kmesh)
-    t0, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
+        t0, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
     Hlimited = max_value(args.Href, Hinitial)
     Vcoord = kmesh.coordinates.function_space()
     if args.my > 0:
@@ -160,12 +170,14 @@ else:
 zuE = FiniteElement('CG',interval,zudeg)
 uE = TensorProductElement(xuE,zuE)
 Vu = VectorFunctionSpace(mesh, uE)
-# Q1 for pressure p(x,y)
+# dQ1 for pressure p(x,y); note Isaac et al (2015) recommend discontinuous
+# pressure space for mass conservation; they recommend dQ0;  but I see
+# instability with dQ0 so using instead dQ1
 if args.my > 0:
-    xpE = FiniteElement('CG',quadrilateral,1)
+    xpE = FiniteElement('DG',quadrilateral,1)
 else:
-    xpE = FiniteElement('CG',interval,1)
-zpE = FiniteElement('CG',interval,zpdeg)
+    xpE = FiniteElement('DG',interval,1)
+zpE = FiniteElement('DG',interval,zpdeg)
 pE = TensorProductElement(xpE,zpE)
 Vp = FunctionSpace(mesh, pE)
 # Q1 for displacement c(x,y)
@@ -188,7 +200,10 @@ v,q,e = TestFunctions(Z)
 # define the nonlinear weak form F(u,p,c;v,q,e)
 Du = 0.5 * (grad(u)+grad(u).T)
 Dv = 0.5 * (grad(v)+grad(v).T)
-f_body = Constant((0.0, - rho * g))
+if args.my > 0:
+    f_body = Constant((0.0, 0.0, - rho * g))
+else:
+    f_body = Constant((0.0, - rho * g))
 # FIXME stretching in F; couples (u,p) and c problems
 if args.linear:   # linear Stokes with viscosity = 1.0
     tau = 2.0 * Du
@@ -213,36 +228,49 @@ if args.dirichletsmb:
     bctop = DirichletBC(Z.sub(2), smbref, 'top')
 else:
     # in default coupled case, SMB is an equation
-    smb = a - u[0] * z.dx(0) + u[1]  #  a - u dh/dx + w
+    if args.my > 0:
+        smb = a - u[0] * z.dx(0) - u[1] * z.dx(1) + u[2]  #  a - u dh/dx - v dh/dy + w
+    else:
+        smb = a - u[0] * z.dx(0) + u[1]  #  a - u dh/dx + w
     smbref = conditional(z > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
     Fsmb = (c - smbref) * e * ds_t
     bctop = EquationBC(Fsmb == 0, upc, 'top', V=Z.sub(2))
 
 # list boundary conditions
-bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # zero velocity on bottom
-       DirichletBC(Z.sub(0), Constant((0.0, 0.0)), (1,2)),     # zero velocity on the ends
-       DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),         # zero displacement on the bottom
-       bctop]                                                  # SKE equation on the top
+if args.my > 0:
+    bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0, 0.0)), 'bottom'),  # zero velocity on bottom
+           DirichletBC(Z.sub(0), Constant((0.0, 0.0, 0.0)), (1,2,3,4)), # zero velocity on the edges
+           DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),              # zero displacement on the bottom
+           bctop]                                                       # SKE equation on the top
+else:
+    bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # zero velocity on bottom
+           DirichletBC(Z.sub(0), Constant((0.0, 0.0)), (1,2)),     # zero velocity on the ends
+           DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),         # zero displacement on the bottom
+           bctop]                                                  # SKE equation on the top
 
 # report on generated geometry and fine mesh
 dxelem = 2.0 * args.L / mx
 dzrefelem = args.Href / mz
-PETSc.Sys.Print('initial condition: 2D Halfar with H0=%.2f m and R0=%.3f km, at t0=%.5f a'
-                % (args.H0,args.R0/1000.0,t0/secpera))
-PETSc.Sys.Print('domain: [%.2f,%.2f] km extruded and limited at Href=%.2f m'
-                % (-args.L/1000.0,args.L/1000.0,args.Href))
 if args.my > 0:
-    PETSc.Sys.Print('fine 3D extruded mesh: %d x %d element quadrilateral'
-                    % (mx,my,mz))
+    dyelem = 2.0 * args.L / my
+    PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
+                    % (args.H0,args.R0/1000.0,t0/secpera))
+    PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (hexahedra); limited at Href=%.2f m'
+                    % (mx,my,mz,args.Href))
+    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f'
+                    % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem))
 else:
-    PETSc.Sys.Print('fine 2D extruded mesh: %d x %d element quadrilateral'
-                    % (mx,mz))
-PETSc.Sys.Print('element dimensions: dx=%.2f m, dz_min=%.2f m, ratio=%.1f'
-                % (dxelem,dzrefelem,dxelem/dzrefelem))
+    PETSc.Sys.Print('initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
+                    % (args.H0,args.R0/1000.0,t0/secpera))
+    PETSc.Sys.Print('2D extruded mesh:    %d x %d elements (quads); limited at Href=%.2f m'
+                    % (mx,mz,args.Href))
+    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dz_min=%.2f m, ratio=%.1f'
+                    % (dxelem,dzrefelem,dxelem/dzrefelem))
 n_u,n_p,n_c,N = Vu.dim(),Vp.dim(),Vc.dim(),Z.dim()
-PETSc.Sys.Print('vector space dimensions : n_u=%d, n_p=%d, n_c=%d ... N=%d' \
+PETSc.Sys.Print('vector space dims:   n_u=%d, n_p=%d, n_c=%d  -->  N=%d' \
                 % (n_u,n_p,n_c,N))
-PETSc.Sys.Print('computing one time step dt=%.5f a ...' % args.dta)
+PETSc.Sys.Print('**** SOLVING ****')
+PETSc.Sys.Print('    ... one time step dt=%.5f a ...' % args.dta)
 
 # solver parameters; many are defaults which are deliberately made explicit here
 parameters = {'mat_type': 'aij',
