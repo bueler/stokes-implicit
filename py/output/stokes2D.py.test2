@@ -1,9 +1,12 @@
-initial condition: 2D Halfar with H0=3000.00 m and R0=50.000 km, at t0=0.04893 a
-domain: [-60.00,60.00] km extruded and limited at Href=200.00 m
-mesh: 30 x 4 element quadrilateral (fine) mesh over 2 processes
-element dimensions: dx=4000.00 m, dy_min=50.00 m, ratio=80.0
-vector space dimensions : n_u=1098, n_p=155, n_c=155 ... N=1408
-computing one time step dt=0.10000 a ...
+**** SUMMARY OF SETUP ****
+horizontal domain:   [-60.00,60.00] km interval
+coarse base mesh:    30 elements (intervals) over 2 processes
+initial condition:   2D Halfar, H0=3000.00 m, R0=50.000 km, t0=0.04893 a
+2D extruded mesh:    30 x 4 elements (quads); limited at Href=200.00 m
+element dimensions:  dx=4000.00 m, dz_min=50.00 m, ratio=80.0
+vector space dims:   n_u=1098, n_p=480, n_c=155  -->  N=1733
+**** SOLVING ****
+    ... one time step dt=0.10000 a ...
   Linear s_ solve converged due to CONVERGED_RTOL iterations 2
   Linear s_ solve converged due to CONVERGED_RTOL iterations 2
   Linear s_ solve converged due to CONVERGED_RTOL iterations 2
