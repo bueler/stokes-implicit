@@ -4,9 +4,12 @@
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
+#   * make 3D or 2D according to options
+#   * put halfar shapes in module
+#   * "gentle ice" above current iterate surface in Href
 
-# example: runs in about a minute with one-to-one element ratios and N=1.6e5
-# timer ./stokes2D.py -Href 500 -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -nintervals 960 -refine 1 -savetau -o foo.pvd
+# example: runs in about a minute with 5/2 element ratio and N=1.6e5
+# timer ./stokes2D.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -nintervals 960 -refine 1 -savetau -o foo.pvd
 
 from firedrake import *
 import sys
@@ -135,9 +138,8 @@ for k in range(hierlevs):
 # fine mesh coordinates
 x,y = SpatialCoordinate(mesh)
 
-# optionally do p-refinement in vertical for (u,p)
-# args.spectralvert in {0,1,2,3} is stage
-degreexy = [(2,1),(3,2),(4,2),(5,3)]
+# optional: p-refinement in vertical for (u,p); args.spectralvert in {0,1,2,3}
+degreexy = [(2,1),(3,2),(4,3),(5,4)]
 yudeg,ypdeg = degreexy[args.spectralvert]
 
 # construct component spaces by explicitly applying TensorProductElement()
@@ -207,14 +209,14 @@ bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # zero velocity o
 # report on generated geometry and fine mesh
 dxelem = 2.0 * args.L / (mx-1)
 dyrefelem = args.Href / (my-1)
-PETSc.Sys.Print('initial condition: 2D Halfar with H0=%.2f m and R0=%.2f km, at t0=%.5f a'
+PETSc.Sys.Print('initial condition: 2D Halfar with H0=%.2f m and R0=%.3f km, at t0=%.5f a'
                 % (args.H0,args.R0/1000.0,t0/secpera))
 PETSc.Sys.Print('domain: [%.2f,%.2f] km extruded and limited at Href=%.2f m'
                 % (-args.L/1000.0,args.L/1000.0,args.Href))
 PETSc.Sys.Print('mesh: %d x %d element quadrilateral (fine) mesh over %d processes'
                 % (mx-1,my-1,mesh.comm.size))
-PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.5f'
-                % (dxelem,dyrefelem,dyrefelem/dxelem))
+PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.1f'
+                % (dxelem,dyrefelem,dxelem/dyrefelem))
 n_u,n_p,n_c,N = Vu.dim(),Vp.dim(),Vc.dim(),Z.dim()
 PETSc.Sys.Print('vector space dimensions : n_u=%d, n_p=%d, n_c=%d ... N=%d' \
                 % (n_u,n_p,n_c,N))
@@ -276,11 +278,11 @@ if args.o:
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
     if args.savetau:
-        # piecewise-constant tensor-valued field tau
-        TdP0 = TensorFunctionSpace(mesh, 'DG', 0)
-        Du = Function(TdP0).interpolate(0.5 * (grad(u)+grad(u).T))
+        # tensor-valued deviatoric stress tau
+        TQ1 = TensorFunctionSpace(mesh, 'CG', 1)
+        Du = Function(TQ1).interpolate(0.5 * (grad(u)+grad(u).T))
         Du2 = Function(Vp).interpolate(0.5 * inner(Du, Du) + (args.eps * args.Dtyp)**2.0)
-        tau = Function(TdP0).interpolate(B3 * Du2**(-1.0/3.0) * Du)
+        tau = Function(TQ1).interpolate(B3 * Du2**(-1.0/3.0) * Du)
         tau.rename('tau')
     if mesh.comm.size > 1 and args.savetau:
         File(args.o).write(u,p,c,rank,tau)
