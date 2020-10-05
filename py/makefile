@@ -1,12 +1,12 @@
 # testing
 
-runstokes2D_1:
-	-@./../testit.sh stokes2D.py "-dirichletsmb -linear -dta 1.0 -s_snes_type ksponly -s_ksp_converged_reason -mx 10 -refine 1" 1 1
+runstokesi_1:
+	-@./../testit.sh stokesi.py "-dirichletsmb -linear -dta 1.0 -s_snes_type ksponly -s_ksp_converged_reason -mx 10 -refine 1" 1 1
 
-runstokes2D_2:
-	-@./../testit.sh stokes2D.py "-dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2" 2 2
+runstokesi_2:
+	-@./../testit.sh stokesi.py "-dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2" 2 2
 
-testlist := runstokes2D_1 runstokes2D_2
+testlist := runstokesi_1 runstokesi_2
 
 test: $(testlist)
 
