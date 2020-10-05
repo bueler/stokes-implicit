@@ -5,14 +5,16 @@
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
 #   * make 3D or 2D according to options
-#   * put halfar shapes in module
-#   * "gentle ice" above current iterate surface in Href
+#   * replace -nintervals with -mx; -mx and -my refer to number of intervals
+#   * "aerogel mush" above current iterate surface in Href
 
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
 # timer ./stokes2D.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -nintervals 960 -refine 1 -savetau -o foo.pvd
 
 from firedrake import *
 import sys
+from iceconstants import secpera,g,rho,n,A3,B3,Gamma
+from halfar import halfar2d, halfar3d
 
 import argparse
 parser = argparse.ArgumentParser(description='''
@@ -73,28 +75,11 @@ if args.stokes2Dhelp:
     parser.print_help()
     sys.exit(0)
 
-# physical constants
-g = 9.81             # m s-2; constants in SI units
-rho = 910.0          # kg
-secpera = 31556926.0
-n = 3.0              # warning: this value is hardwired in some places below
-A3 = 1.0e-16/secpera
-
-# computed constants and regularization parameters
-Gamma = 2.0 * A3 * (rho * g)**3.0 / 5.0   # see Bueler et al (2005)
-B3 = A3**(-1.0/3.0)                       # Pa s(1/3);  ice hardness
+# regularization constant
 Dtyp = args.Dtyp / secpera
-dt = args.dta * secpera
 
-# Halfar (1981) solution
-alpha = 1.0/11.0
-t0 = (alpha/Gamma) * (7.0/4.0)**3.0 * (args.R0**4.0 / args.H0**7.0)
-def halfar2d(x):
-    absx = sqrt(pow(x,2))
-    inpow = (n+1) / n
-    outpow = n / (2*n+1)
-    inside = max_value(0.0, 1.0 - pow(absx / args.R0,inpow))
-    return args.H0 * pow(inside,outpow)
+# timestep  FIXME need time-stepping loop
+dt = args.dta * secpera
 
 # set up base mesh, as hierarchy if requested
 mx = args.nintervals + 1
@@ -129,7 +114,7 @@ for k in range(hierlevs):
     else:
         kmesh = mesh
     x,y = SpatialCoordinate(kmesh)
-    Hinitial = halfar2d(x)
+    t0, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
     Hlimited = max_value(args.Href, Hinitial)
     Vcoord = kmesh.coordinates.function_space()
     f = Function(Vcoord).interpolate(as_vector([x,Hlimited*y]))
