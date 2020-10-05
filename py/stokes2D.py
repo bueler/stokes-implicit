@@ -4,7 +4,6 @@
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
-#   * make 3D or 2D according to options
 #   * "aerogel mush" above current iterate surface in Href
 
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
@@ -55,8 +54,8 @@ parser.add_argument('-linear', action='store_true', default=False,
                     help='use linear, trivialized Stokes problem')
 parser.add_argument('-mx', type=int, default=30, metavar='N',
                     help='number of equal subintervals in x-direction (default=30)')
-parser.add_argument('-my', type=int, default=30, metavar='N',
-                    help='number of equal subintervals in y-direction (default=30)')
+parser.add_argument('-my', type=int, default=-1, metavar='N',
+                    help='solve in 3D with this number of equal subintervals in y-direction (default=30)')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save to output file name ending with .pvd')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
@@ -84,11 +83,24 @@ dt = args.dta * secpera
 
 # set up base mesh, as hierarchy if requested
 mx = args.mx
-base_mesh = IntervalMesh(mx, length_or_left=-args.L, right=args.L)
+if args.my > 0:
+    my = args.my
+    base_mesh = RectangleMesh(mx, my, 2.0*args.L, 2.0*args.L, quadrilateral=True)
+    base_mesh.coordinates.dat.data[:, 0] -= args.L
+    base_mesh.coordinates.dat.data[:, 1] -= args.L
+    PETSc.Sys.Print('3D mode coarse base mesh: %d x %d element quadrilaterals over %d processes'
+                % (mx,my,base_mesh.comm.size))
+else:
+    base_mesh = IntervalMesh(mx, length_or_left=-args.L, right=args.L)
+    PETSc.Sys.Print('2D mode coarse base mesh: %d element intervals over %d processes'
+                % (mx,base_mesh.comm.size))
+
 if args.refine > 0:
     base_hierarchy = MeshHierarchy(base_mesh, args.refine)
     base_mesh = base_hierarchy[-1]     # the fine mesh
     mx *= 2**args.refine
+    if args.my > 0:
+        my *= 2**args.refine
 
 # set up extruded mesh, as hierarchy if requested
 mz = args.layers
@@ -100,9 +112,10 @@ if args.refine > 0:
 else:
     mesh = ExtrudedMesh(base_mesh, layers=args.layers, layer_height=temporary_height/args.layers)
 
-# note: in 2D, mx mz  is the number of elements in the extruded mesh
+# note: in 2D,  mx mz     is the number of elements in the extruded mesh
+#       in 3D,  mx my mz  ...
 
-# deform y coordinate, in each level of hierarchy, to match Halfar solution, but limited at Href
+# deform z coordinate, in each level of hierarchy, to match Halfar solution, but limited at Href
 if args.refine > 0:
     hierlevs = args.refine + 1
 else:
@@ -112,35 +125,46 @@ for k in range(hierlevs):
         kmesh = hierarchy[k]
     else:
         kmesh = mesh
-    x,y = SpatialCoordinate(kmesh)
+    if args.my > 0:
+        x,y,z = SpatialCoordinate(kmesh)
+    else:
+        x,z = SpatialCoordinate(kmesh)
     t0, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
     Hlimited = max_value(args.Href, Hinitial)
     Vcoord = kmesh.coordinates.function_space()
-    f = Function(Vcoord).interpolate(as_vector([x,Hlimited*y]))
+    if args.my > 0:
+        f = Function(Vcoord).interpolate(as_vector([x,y,Hlimited*z]))
+    else:
+        f = Function(Vcoord).interpolate(as_vector([x,Hlimited*z]))
     kmesh.coordinates.assign(f)
 
 # fine mesh coordinates
-x,y = SpatialCoordinate(mesh)
+if args.my > 0:
+    x,y,z = SpatialCoordinate(mesh)
+else:
+    x,z = SpatialCoordinate(mesh)
 
 # optional: p-refinement in vertical for (u,p); args.spectralvert in {0,1,2,3}
-degreexy = [(2,1),(3,2),(4,3),(5,4)]
-yudeg,ypdeg = degreexy[args.spectralvert]
+degreexz = [(2,1),(3,2),(4,3),(5,4)]
+zudeg,zpdeg = degreexz[args.spectralvert]
+
+#FIXME from here: to allow 3D, xuE is either interval or unitsquare (same for xpE, xcE)
 
 # construct component spaces by explicitly applying TensorProductElement()
 # Q2 for velocity u = (u_0(x,y),u_1(x,y))
 xuE = FiniteElement('CG',interval,2)
-yuE = FiniteElement('CG',interval,yudeg)
-uE = TensorProductElement(xuE,yuE)
+zuE = FiniteElement('CG',interval,zudeg)
+uE = TensorProductElement(xuE,zuE)
 Vu = VectorFunctionSpace(mesh, uE)
 # Q1 for pressure p(x,y)
 xpE = FiniteElement('CG',interval,1)
-ypE = FiniteElement('CG',interval,ypdeg)
-pE = TensorProductElement(xpE,ypE)
+zpE = FiniteElement('CG',interval,zpdeg)
+pE = TensorProductElement(xpE,zpE)
 Vp = FunctionSpace(mesh, pE)
 # Q1 for displacement c(x,y)
 xcE = FiniteElement('CG',interval,1)
-ycE = FiniteElement('CG',interval,1)  # consider raising to 2: field "looks better?"
-cE = TensorProductElement(xcE,ycE)
+zcE = FiniteElement('CG',interval,1)  # consider raising to 2: field "looks better?"
+cE = TensorProductElement(xcE,zcE)
 Vc = FunctionSpace(mesh, cE)
 
 # construct mixed space
@@ -160,27 +184,27 @@ if args.linear:   # linear Stokes with viscosity = 1.0
     tau = 2.0 * Du
 else:
     if args.sia:  # FIXME not sure if this is SIA!  TEST with -s_mat_type aij -s_pc_type svd -s_ksp_type preonly
-        Du = as_matrix([[0, 0.5*u[0].dx(1)], [0, 0]])
+        Du = as_matrix([[0, 0.5*u[0].dx(1)], [0, 0]])  # FIXME 2D only
         Dv = as_matrix([[v[0].dx(1), 0], [0, 0]])
         #FIXME: add this?  DirichletBC(Z.sub(1), Constant(0.0), 'top'),         # SIA: zero pressure on top
     # n=3 Glen law Stokes
     Du2 = 0.5 * inner(Du, Du) + (args.eps * Dtyp)**2.0
     tau = B3 * Du2**(-1.0/3.0) * Du
-F =  inner(tau, Dv) * dx \
-     + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
-     + inner(grad(c),grad(e)) * dx
+F = inner(tau, Dv) * dx \
+    + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
+    + inner(grad(c),grad(e)) * dx
 
 # construct equation for surface kinematical equation (SKE) boundary condition
 a = Constant(0.0) # correct for Halfar
 if args.dirichletsmb:
     # artificial case: apply solution-independent smb as Dirichlet
     smb = a
-    smbref = conditional(y > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
+    smbref = conditional(z > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
     bctop = DirichletBC(Z.sub(2), smbref, 'top')
 else:
     # in default coupled case, SMB is an equation
-    smb = a - u[0] * y.dx(0) + u[1]  #  a - u dh/dx + w
-    smbref = conditional(y > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
+    smb = a - u[0] * z.dx(0) + u[1]  #  a - u dh/dx + w
+    smbref = conditional(z > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
     Fsmb = (c - smbref) * e * ds_t
     bctop = EquationBC(Fsmb == 0, upc, 'top', V=Z.sub(2))
 
@@ -192,15 +216,19 @@ bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # zero velocity o
 
 # report on generated geometry and fine mesh
 dxelem = 2.0 * args.L / mx
-dyrefelem = args.Href / mz
+dzrefelem = args.Href / mz
 PETSc.Sys.Print('initial condition: 2D Halfar with H0=%.2f m and R0=%.3f km, at t0=%.5f a'
                 % (args.H0,args.R0/1000.0,t0/secpera))
 PETSc.Sys.Print('domain: [%.2f,%.2f] km extruded and limited at Href=%.2f m'
                 % (-args.L/1000.0,args.L/1000.0,args.Href))
-PETSc.Sys.Print('mesh: %d x %d element quadrilateral (fine) mesh over %d processes'
-                % (mx,mz,mesh.comm.size))
-PETSc.Sys.Print('element dimensions: dx=%.2f m, dy_min=%.2f m, ratio=%.1f'
-                % (dxelem,dyrefelem,dxelem/dyrefelem))
+if args.my > 0:
+    PETSc.Sys.Print('fine 3D extruded mesh: %d x %d element quadrilateral'
+                    % (mx,my,mz))
+else:
+    PETSc.Sys.Print('fine 2D extruded mesh: %d x %d element quadrilateral'
+                    % (mx,mz))
+PETSc.Sys.Print('element dimensions: dx=%.2f m, dz_min=%.2f m, ratio=%.1f'
+                % (dxelem,dzrefelem,dxelem/dzrefelem))
 n_u,n_p,n_c,N = Vu.dim(),Vp.dim(),Vc.dim(),Z.dim()
 PETSc.Sys.Print('vector space dimensions : n_u=%d, n_p=%d, n_c=%d ... N=%d' \
                 % (n_u,n_p,n_c,N))
