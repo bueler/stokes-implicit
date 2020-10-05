@@ -17,11 +17,14 @@ from halfar import halfar2d, halfar3d
 import argparse
 parser = argparse.ArgumentParser(description='''
 Solve coupled Glen-Stokes plus surface kinematical equation (SKE) for
-an ice sheet.  Generates flat-bed 2D mesh from Halfar (1981) by extrusion
-of an equally-spaced interval mesh, thus the elements are quadrilaterals.
-A reference domain with a minimum thickness is used.  For velocity u,
-pressure p, and scalar vertical displacement c we set up a nonlinear system
-of three equations corresponding to a single time step of -dta years:
+an ice sheet.  Generates flat-bed 2D or 3D mesh by extrusion
+of an equally-spaced interval or quadrilateral mesh in the map plane,
+respectively, and thus the elements are quadrilaterals or hexahedra,
+respectively.  Currently the generated mesh corresponds to the Halfar (1981)
+or Halfar (1983) geometry.  A reference domain with a minimum thickness is
+generated from the initial geometry.  We solve a nonlinear system for
+velocity u, pressure p, and scalar vertical displacement c.  The system
+of 3 PDEs corresponds to a single backward Euler time step of -dta years:
    stress balance:       F_1(u,p)   = 0    FIXME: also c when stretched
    incompressibility:    F_2(u)     = 0    FIXME: also c when stretched
    Laplace/SKE:          F_3(u,c)   = 0
@@ -148,21 +151,28 @@ else:
 degreexz = [(2,1),(3,2),(4,3),(5,4)]
 zudeg,zpdeg = degreexz[args.spectralvert]
 
-#FIXME from here: to allow 3D, xuE is either interval or unitsquare (same for xpE, xcE)
-
 # construct component spaces by explicitly applying TensorProductElement()
 # Q2 for velocity u = (u_0(x,y),u_1(x,y))
-xuE = FiniteElement('CG',interval,2)
+if args.my > 0:
+    xuE = FiniteElement('CG',quadrilateral,2)
+else:
+    xuE = FiniteElement('CG',interval,2)
 zuE = FiniteElement('CG',interval,zudeg)
 uE = TensorProductElement(xuE,zuE)
 Vu = VectorFunctionSpace(mesh, uE)
 # Q1 for pressure p(x,y)
-xpE = FiniteElement('CG',interval,1)
+if args.my > 0:
+    xpE = FiniteElement('CG',quadrilateral,1)
+else:
+    xpE = FiniteElement('CG',interval,1)
 zpE = FiniteElement('CG',interval,zpdeg)
 pE = TensorProductElement(xpE,zpE)
 Vp = FunctionSpace(mesh, pE)
 # Q1 for displacement c(x,y)
-xcE = FiniteElement('CG',interval,1)
+if args.my > 0:
+    xcE = FiniteElement('CG',quadrilateral,1)
+else:
+    xcE = FiniteElement('CG',interval,1)
 zcE = FiniteElement('CG',interval,1)  # consider raising to 2: field "looks better?"
 cE = TensorProductElement(xcE,zcE)
 Vc = FunctionSpace(mesh, cE)
