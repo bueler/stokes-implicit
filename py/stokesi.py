@@ -7,7 +7,7 @@
 #   * "aerogel mush" above current iterate surface in Href
 
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
-# timer ./stokes2D.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -refine 1 -savetau -o foo.pvd
+# timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -refine 1 -savetau -o foo.pvd
 
 from firedrake import *
 import sys
@@ -34,7 +34,7 @@ the SKE.  The mixed space consists of (u,p) in Q2 x Q1 for the Stokes problem
 and c in Q1 for displacement.  The default solver is multiplicative fieldsplit
 between the Stokes (u,p) block and the c block.  The Stokes block is solved by
 Schur lower fieldsplit with selfp preconditioning on the Schur block.  The
-diagonal blocks are solved by AMG (-gamg).''',
+diagonal blocks are solved by LU using MUMPS.''',
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  add_help=False)
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
@@ -272,7 +272,8 @@ PETSc.Sys.Print('vector space dims:   n_u=%d, n_p=%d, n_c=%d  -->  N=%d' \
 PETSc.Sys.Print('**** SOLVING ****')
 PETSc.Sys.Print('    ... one time step dt=%.5f a ...' % args.dta)
 
-# solver parameters; many are defaults which are deliberately made explicit here
+# solver parameters; some are defaults which are deliberately made explicit here
+# note 'lu' = mumps, both in serial and parallel (faster)
 parameters = {'mat_type': 'aij',
               'ksp_type': 'gmres',
               'ksp_pc_side': 'left',
@@ -289,19 +290,21 @@ parameters = {'mat_type': 'aij',
               'fieldsplit_0_pc_fieldsplit_schur_fact_type': 'lower',
               # selfp seems to be faster than a Mass object
               'fieldsplit_0_pc_fieldsplit_schur_precondition': 'selfp',
-              # AMG on the u-u block; mg works but slower
+              # LU on the u-u block  (neither AMG nor mg work anywhere near as fast for now)
               'fieldsplit_0_fieldsplit_0_ksp_type': 'preonly',
               'fieldsplit_0_fieldsplit_0_pc_type': 'lu',
+              'fieldsplit_0_fieldsplit_0_pc_factor_mat_solver_type': 'mumps',
               #'fieldsplit_0_fieldsplit_0_pc_type': 'gamg',
               #'fieldsplit_0_fieldsplit_0_pc_gamg_type': 'agg',
               #'fieldsplit_0_fieldsplit_0_mg_levels_ksp_type': 'chebyshev',
               #'fieldsplit_0_fieldsplit_0_mg_levels_pc_type': 'sor',
               'fieldsplit_0_fieldsplit_1_pc_type': 'jacobi',
               'fieldsplit_0_fieldsplit_1_pc_jacobi_type': 'diagonal',
-              # AMG on the c-c block; mg fails with zero row msg; hypre (w/o tuning) seems slower
+              # LU on the c-c block; AMG not great; mg fails with zero row msg; hypre (w/o tuning) seems slower
               # classical few iters and faster than agg (but grid complexity better for agg)
               'fieldsplit_1_ksp_type': 'preonly',
-              'fieldsplit_1_pc_type': 'lu'}
+              'fieldsplit_1_pc_type': 'lu',
+              'fieldsplit_1_pc_factor_mat_solver_type': 'mumps'}
               #'fieldsplit_1_pc_type': 'gamg',
               #'fieldsplit_1_pc_gamg_type': 'classical',
               #'fieldsplit_1_pc_gamg_square_graph': '1'}
