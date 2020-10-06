@@ -6,7 +6,10 @@ runstokesi_1:
 runstokesi_2:
 	-@./../testit.sh stokesi.py "-dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2" 2 2
 
-testlist := runstokesi_1 runstokesi_2
+runstokesi_3:
+	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -mx 4 -my 4 -s_snes_rtol 1.0e-2" 1 3
+
+testlist := runstokesi_1 runstokesi_2 runstokesi_3
 
 test: $(testlist)
 
