@@ -293,7 +293,6 @@ parameters = {'mat_type': 'aij',
               # LU on the u-u block  (neither AMG nor mg work anywhere near as fast for now)
               'fieldsplit_0_fieldsplit_0_ksp_type': 'preonly',
               'fieldsplit_0_fieldsplit_0_pc_type': 'lu',
-              'fieldsplit_0_fieldsplit_0_pc_factor_mat_solver_type': 'mumps',
               #'fieldsplit_0_fieldsplit_0_pc_type': 'gamg',
               #'fieldsplit_0_fieldsplit_0_pc_gamg_type': 'agg',
               #'fieldsplit_0_fieldsplit_0_mg_levels_ksp_type': 'chebyshev',
@@ -303,11 +302,16 @@ parameters = {'mat_type': 'aij',
               # LU on the c-c block; AMG not great; mg fails with zero row msg; hypre (w/o tuning) seems slower
               # classical few iters and faster than agg (but grid complexity better for agg)
               'fieldsplit_1_ksp_type': 'preonly',
-              'fieldsplit_1_pc_type': 'lu',
-              'fieldsplit_1_pc_factor_mat_solver_type': 'mumps'}
+              'fieldsplit_1_pc_type': 'lu'}
               #'fieldsplit_1_pc_type': 'gamg',
               #'fieldsplit_1_pc_gamg_type': 'classical',
               #'fieldsplit_1_pc_gamg_square_graph': '1'}
+
+# mumps seems to be slower than PETSc lu in serial (I'm confused) and this
+# conditional may just be the default
+if base_mesh.comm.size > 1:
+    parameters['fieldsplit_0_fieldsplit_0_pc_factor_mat_solver_type'] = 'mumps'
+    parameters['fieldsplit_1_pc_factor_mat_solver_type'] = 'mumps'
 
 # solve system as though it is nonlinear:  F(u) = 0
 solve(F == 0, upc, bcs=bcs, options_prefix = 's',
