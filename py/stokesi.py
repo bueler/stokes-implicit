@@ -19,12 +19,12 @@ parser = argparse.ArgumentParser(description='''
 Solve coupled Glen-Stokes plus surface kinematical equation (SKE) for
 an ice sheet.  Generates flat-bed 2D or 3D mesh by extrusion
 of an equally-spaced interval or quadrilateral mesh in the map plane,
-respectively, and thus the elements are quadrilaterals or hexahedra,
-respectively.  Currently the generated mesh corresponds to the Halfar (1981)
-or Halfar (1983) geometry.  A reference domain with a minimum thickness is
-generated from the initial geometry.  We solve a nonlinear system for
-velocity u, pressure p, and scalar vertical displacement c.  The system
-of 3 PDEs corresponds to a single backward Euler time step of -dta years:
+respectively, with quadrilateral or hexahedral elements.  Currently the
+initial geometry is from Halfar (1981) or Halfar (1983).  A reference
+domain with a minimum thickness is generated from the initial geometry.
+We solve a nonlinear system for velocity u, pressure p, and (scalar)
+vertical displacement c.  The system of 3 PDEs corresponds to a single
+backward Euler time step of -dta years:
    stress balance:       F_1(u,p)   = 0    FIXME: also c when stretched
    incompressibility:    F_2(u)     = 0    FIXME: also c when stretched
    Laplace/SKE:          F_3(u,c)   = 0
@@ -84,38 +84,54 @@ Dtyp = args.Dtyp / secpera
 # timestep  FIXME need time-stepping loop
 dt = args.dta * secpera
 
-# set up base mesh, as hierarchy if requested
-PETSc.Sys.Print('**** SUMMARY OF SETUP ****')
+# set up base mesh, with hierarchy if requested
 mx = args.mx
+# initial mesh is [0,2L] or [0,2L]x[0,2L]
 if args.my > 0:
-    PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
-                    % (-args.L/1000.0,args.L/1000.0,-args.L/1000.0,args.L/1000.0))
     my = args.my
     base_mesh = RectangleMesh(mx, my, 2.0*args.L, 2.0*args.L, quadrilateral=True)
-    base_mesh.coordinates.dat.data[:, 0] -= args.L
-    base_mesh.coordinates.dat.data[:, 1] -= args.L
-    PETSc.Sys.Print('coarse base mesh:    %d x %d elements (quads) over %d processes'
-                % (mx,my,base_mesh.comm.size))
 else:
-    PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] km interval'
-                    % (-args.L/1000.0,args.L/1000.0))
-    base_mesh = IntervalMesh(mx, length_or_left=-args.L, right=args.L)
-    PETSc.Sys.Print('coarse base mesh:    %d elements (intervals) over %d processes'
-                % (mx,base_mesh.comm.size))
-
+    base_mesh = IntervalMesh(mx, length_or_left=0.0, right=2.0*args.L)
 if args.refine > 0:
     base_hierarchy = MeshHierarchy(base_mesh, args.refine)
     base_mesh = base_hierarchy[-1]     # the fine mesh
     mx *= 2**args.refine
-    if args.my > 0:
+    if args.my > 0:  # MeshHierarchy sees RectangleMesh() with [0,2L] x [0,2L]
         my *= 2**args.refine
-
-# why is following needed?
-if args.refine > 0 and args.my > 0:
     hierlevs = args.refine + 1
     for k in range(hierlevs):
-        base_hierarchy[k].coordinates.dat.data[:, 0] -= args.L
-        base_hierarchy[k].coordinates.dat.data[:, 1] -= args.L
+        if args.my > 0:
+            base_hierarchy[k].coordinates.dat.data[:, 0] -= args.L
+            base_hierarchy[k].coordinates.dat.data[:, 1] -= args.L
+        else:
+            base_hierarchy[k].coordinates.dat.data[:] -= args.L
+        #print(base_hierarchy[k].coordinates.dat.data)
+else:
+    if args.my > 0:
+        base_mesh.coordinates.dat.data[:, 0] -= args.L
+        base_mesh.coordinates.dat.data[:, 1] -= args.L
+    else:
+        base_mesh.coordinates.dat.data[:] -= args.L
+    #print(base_mesh.coordinates.dat.data)
+
+# report on base mesh
+PETSc.Sys.Print('**** SUMMARY OF SETUP ****')
+if args.my > 0:
+    PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
+                    % (-args.L/1000.0,args.L/1000.0,-args.L/1000.0,args.L/1000.0))
+    if args.refine > 0:
+        PETSc.Sys.Print('coarse base mesh:    %d x %d elements (quads)' % (args.mx,args.my))
+        PETSc.Sys.Print('refined base mesh:   %d x %d elements (quads)' % (mx,my))
+    else:
+        PETSc.Sys.Print('base mesh:           %d x %d elements (quads)' % (mx,my))
+else:
+    PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] km interval'
+                    % (-args.L/1000.0,args.L/1000.0))
+    if args.refine > 0:
+        PETSc.Sys.Print('coarse base mesh:    %d elements (intervals)' % args.mx)
+        PETSc.Sys.Print('refined base mesh:   %d elements (intervals)' % mx)
+    else:
+        PETSc.Sys.Print('base mesh:           %d elements (intervals)' % mx)
 
 # set up extruded mesh, as hierarchy if requested
 mz = args.layers
