@@ -170,14 +170,14 @@ else:
 zuE = FiniteElement('CG',interval,zudeg)
 uE = TensorProductElement(xuE,zuE)
 Vu = VectorFunctionSpace(mesh, uE)
-# dQ1 for pressure p(x,y); note Isaac et al (2015) recommend discontinuous
-# pressure space for mass conservation; they recommend dQ0;  but I see
-# instability with dQ0 so using instead dQ1
+# Q1 for pressure p(x,y)
+# [note Isaac et al (2015) recommend discontinuous pressure space for mass
+#  conservation but using dQ0 seems unstable and dQ1 notably more expensive]
 if args.my > 0:
-    xpE = FiniteElement('DG',quadrilateral,1)
+    xpE = FiniteElement('CG',quadrilateral,1)
 else:
-    xpE = FiniteElement('DG',interval,1)
-zpE = FiniteElement('DG',interval,zpdeg)
+    xpE = FiniteElement('CG',interval,1)
+zpE = FiniteElement('CG',interval,zpdeg)
 pE = TensorProductElement(xpE,zpE)
 Vp = FunctionSpace(mesh, pE)
 # Q1 for displacement c(x,y)
