@@ -10,9 +10,7 @@ import sys
 import argparse
 parser = argparse.ArgumentParser(description='''
 Extrude a 1D mesh to a unit square and solve Poisson on it.  The purpose is to
-experiment with semicoarsening in extruded meshes.''',
-                                 formatter_class=argparse.RawTextHelpFormatter,
-                                 add_help=False)
+experiment with semicoarsening in extruded meshes.''',add_help=False)
 parser.add_argument('-refine', type=int, default=1, metavar='N',
                     help='number of times to refine')
 parser.add_argument('-semirefine', action='store_true', default=False,
@@ -31,34 +29,27 @@ if args.semirefine:
     hierarchy = ExtrudedMeshHierarchy(base_hierarchy, 1.0, base_layer=(2**args.refine)*N, refinement_ratio=1)
 else:
     hierarchy = ExtrudedMeshHierarchy(base_hierarchy, 1.0, base_layer=N)
-for k in range(2):
+for k in range(args.refine+1):
     print(hierarchy[k].coordinates.dat.data)
 mesh = hierarchy[-1]
-
-P1 = FiniteElement("CG", interval, 1)
-H1_element = TensorProductElement(P1, P1)
-H1 = FunctionSpace(mesh, H1_element)
-
 x, y = SpatialCoordinate(mesh)
+
+H1 = FunctionSpace(mesh, 'CG', 1)
 f = Function(H1)
-f.interpolate(8.0 * pi * pi * cos(x * pi * 2)*cos(y * pi * 2))
+f.interpolate(8.0 * pi * pi * cos(2 * pi * x) * cos(2 * pi * y))
 
-# boundary condition and exact solution
 g = Function(H1)
-g.interpolate(cos(2 * pi * x) * cos(2 * pi * y))
-bc1 = DirichletBC(H1,g,1)
+g.interpolate(cos(2 * pi * x) * cos(2 * pi * y))  # boundary condition and exact solution
 
-u = Function(H1)   # initialized to zero
+u = Function(H1)
 v = TestFunction(H1)
 F = (dot(grad(v), grad(u)) - f * v) * dx
 
 params = {'snes_type': 'ksponly',
           'ksp_type': 'cg'}
-solve(F == 0, u, bcs=[bc1], solver_parameters=params,
+solve(F == 0, u, bcs=[DirichletBC(H1,g,1)], solver_parameters=params,
       options_prefix='s')
 
-filename = 'ep.pvd'
-print('writing file %s ...' % filename)
 u.rename('u')
-File(filename).write(u)
+File('ep.pvd').write(u)
 
