@@ -6,4 +6,5 @@
 /*.pvtu
 /*.m
 /*tmp
+__pycache__
 
