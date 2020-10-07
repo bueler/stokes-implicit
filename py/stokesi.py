@@ -290,7 +290,8 @@ PETSc.Sys.Print('    ... one time step dt=%.5f a ...' % args.dta)
 
 # solver parameters; some are defaults which are deliberately made explicit here
 # note 'lu' = mumps, both in serial and parallel (faster)
-parameters = {'mat_type': 'aij',
+parameters = {'snes_linesearch_type': 'bt',  # new firedrake default is "basic", i.e. NO linesearch
+              'mat_type': 'aij',
               'ksp_type': 'gmres',
               'ksp_pc_side': 'left',
               # (u,p)-(u,p) and c-c diagonal blocks are coupled by (lower) c-u block
