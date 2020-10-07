@@ -26,11 +26,11 @@ N = 2
 base_coarse = UnitIntervalMesh(N)
 base_hierarchy = MeshHierarchy(base_coarse, args.refine)
 if args.semirefine:
-    hierarchy = ExtrudedMeshHierarchy(base_hierarchy, 1.0, base_layer=(2**args.refine)*N, refinement_ratio=1)
+    hierarchy = SemiCoarsenedExtrudedHierarchy(base_coarse, 1.0, base_layer=1, nref=args.refine)
 else:
     hierarchy = ExtrudedMeshHierarchy(base_hierarchy, 1.0, base_layer=N)
-for k in range(args.refine+1):
-    print(hierarchy[k].coordinates.dat.data)
+#for k in range(args.refine+1):
+#    print(hierarchy[k].coordinates.dat.data)
 mesh = hierarchy[-1]
 x, y = SpatialCoordinate(mesh)
 
