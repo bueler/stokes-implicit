@@ -5,9 +5,10 @@
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
 #   * "aerogel mush" above current iterate surface in Href
+#   * try to get semicoarsening to work with mg
 
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
-# timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -refine 1 -savetau -o foo.pvd
+# timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -baserefine 1 -vertrefine 1 -savetau -o foo.pvd
 
 from firedrake import *
 import sys
@@ -37,6 +38,8 @@ Schur lower fieldsplit with selfp preconditioning on the Schur block.  The
 diagonal blocks are solved by LU using MUMPS.''',
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  add_help=False)
+parser.add_argument('-baserefine', type=int, default=-1, metavar='N',
+                    help='number of base (x,y) mesh refinement levels')
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
 parser.add_argument('-dta', type=float, default=1.0, metavar='X',
@@ -51,20 +54,18 @@ parser.add_argument('-Href', type=float, default=200.0, metavar='X',
                     help='minimum thickness in m of reference domain (default=200)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
-parser.add_argument('-layers', type=int, default=4, metavar='N',
-                    help='number of layers in each vertical column (default=4)')
 parser.add_argument('-linear', action='store_true', default=False,
                     help='use linear, trivialized Stokes problem')
 parser.add_argument('-mx', type=int, default=30, metavar='N',
                     help='number of equal subintervals in x-direction (default=30)')
 parser.add_argument('-my', type=int, default=-1, metavar='N',
                     help='solve in 3D with this number of equal subintervals in y-direction (default=30)')
+parser.add_argument('-mz', type=int, default=4, metavar='N',
+                    help='number of layers in each vertical column (default=4)')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save to output file name ending with .pvd')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
-parser.add_argument('-refine', type=int, default=-1, metavar='N',
-                    help='number of mesh refinement levels (e.g. for GMG)')
 parser.add_argument('-savetau', action='store_true',
                     help='save deviatoric stress tensor to output file', default=False)
 parser.add_argument('-sia', action='store_true', default=False,
@@ -73,6 +74,8 @@ parser.add_argument('-spectralvert', type=int, default=0, metavar='N',
                     help='stages for p-refinement in vertical; use 0,1,2,3 only  (default=0)')
 parser.add_argument('-stokes2Dhelp', action='store_true', default=False,
                     help='print help for stokes2D.py and quit')
+parser.add_argument('-vertrefine', type=int, default=-1, metavar='N',
+                    help='number of vertical (z) mesh refinement levels')
 args, unknown = parser.parse_known_args()
 if args.stokes2Dhelp:
     parser.print_help()
@@ -92,13 +95,13 @@ if args.my > 0:
     base_mesh = RectangleMesh(mx, my, 2.0*args.L, 2.0*args.L, quadrilateral=True)
 else:
     base_mesh = IntervalMesh(mx, length_or_left=0.0, right=2.0*args.L)
-if args.refine > 0:
-    base_hierarchy = MeshHierarchy(base_mesh, args.refine)
+if args.baserefine > 0:
+    base_hierarchy = MeshHierarchy(base_mesh, args.baserefine)
     base_mesh = base_hierarchy[-1]     # the fine mesh
-    mx *= 2**args.refine
+    mx *= 2**args.baserefine
     if args.my > 0:  # MeshHierarchy sees RectangleMesh() with [0,2L] x [0,2L]
-        my *= 2**args.refine
-    hierlevs = args.refine + 1
+        my *= 2**args.baserefine
+    hierlevs = args.baserefine + 1
     for k in range(hierlevs):
         if args.my > 0:
             base_hierarchy[k].coordinates.dat.data[:, 0] -= args.L
@@ -119,7 +122,7 @@ PETSc.Sys.Print('**** SUMMARY OF SETUP ****')
 if args.my > 0:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
                     % (-args.L/1000.0,args.L/1000.0,-args.L/1000.0,args.L/1000.0))
-    if args.refine > 0:
+    if args.baserefine > 0:
         PETSc.Sys.Print('coarse base mesh:    %d x %d elements (quads)' % (args.mx,args.my))
         PETSc.Sys.Print('refined base mesh:   %d x %d elements (quads)' % (mx,my))
     else:
@@ -127,29 +130,40 @@ if args.my > 0:
 else:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] km interval'
                     % (-args.L/1000.0,args.L/1000.0))
-    if args.refine > 0:
+    if args.baserefine > 0:
         PETSc.Sys.Print('coarse base mesh:    %d elements (intervals)' % args.mx)
         PETSc.Sys.Print('refined base mesh:   %d elements (intervals)' % mx)
     else:
         PETSc.Sys.Print('base mesh:           %d elements (intervals)' % mx)
 
-# set up extruded mesh, as hierarchy if requested
-mz = args.layers
+# extrude mesh; use SemiCoarsenedExtrudedHierarchy() if base mesh is NOT refined,
+# otherwise use ExtrudedMeshHierarchy() and require equal refinement ratios
+mz = args.mz
 temporary_height = 1.0
-if args.refine > 0:
-    hierarchy = ExtrudedMeshHierarchy(base_hierarchy, temporary_height, base_layer=args.layers)
+if args.baserefine > 0:
+    if args.vertrefine != args.baserefine:
+        raise ValueError('if base is refined then vertical direction must be refined the same amount')
+    hierarchy = ExtrudedMeshHierarchy(base_hierarchy, temporary_height, base_layer=args.mz)
     mesh = hierarchy[-1]     # the fine mesh
-    mz *= 2**args.refine
+    mz *= 2**args.vertrefine
 else:
-    mesh = ExtrudedMesh(base_mesh, layers=args.layers, layer_height=temporary_height/args.layers)
+    if args.vertrefine > 0:
+        hierarchy = SemiCoarsenedExtrudedHierarchy(base_mesh, temporary_height, base_layer=args.mz,
+                                                   nref=args.vertrefine)
+        mesh = hierarchy[-1]     # the fine mesh
+        mz *= 2**args.vertrefine
+    else:
+        mesh = ExtrudedMesh(base_mesh, layers=args.mz, layer_height=temporary_height/args.mz)
+if args.vertrefine > 0:
+    PETSc.Sys.Print('vertical mesh:       %d coarse layers refined to %d fine layers' % (args.mz,mz))
 
 # deform z coordinate, in each level of hierarchy, to match Halfar solution, but limited at Href
-if args.refine > 0:
-    hierlevs = args.refine + 1
+if args.vertrefine > 0:
+    hierlevs = args.vertrefine + 1
 else:
     hierlevs = 1
 for k in range(hierlevs):
-    if args.refine > 0:
+    if args.vertrefine > 0:
         kmesh = hierarchy[k]
     else:
         kmesh = mesh
@@ -323,6 +337,16 @@ parameters = {'snes_linesearch_type': 'bt',  # new firedrake default is "basic",
               #'fieldsplit_1_pc_type': 'gamg',
               #'fieldsplit_1_pc_gamg_type': 'classical',
               #'fieldsplit_1_pc_gamg_square_graph': '1'}
+
+## PLAYING AROUND:
+#              'fieldsplit_1_pc_type': 'mg',
+#              'fieldsplit_1_pc_mg_levels': args.vertrefine+1,
+#              'fieldsplit_1_pc_mg_galerkin': None,
+#              'fieldsplit_1_mg_levels_ksp_type': 'richardson',
+#              'fieldsplit_1_mg_levels_ksp_max_it': 2,
+#              'fieldsplit_1_mg_levels_pc_type': 'lu',
+#              'fieldsplit_1_mg_coarse_ksp_type': 'preonly',
+#              'fieldsplit_1_mg_coarse_pc_type': 'lu'}
 
 # mumps seems to be slower than PETSc lu in serial (I'm confused) and this
 # conditional may just be the default

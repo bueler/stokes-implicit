@@ -2,6 +2,7 @@
 horizontal domain:   [-60.00,60.00] km interval
 coarse base mesh:    10 elements (intervals)
 refined base mesh:   20 elements (intervals)
+vertical mesh:       4 coarse layers refined to 8 fine layers
 initial condition:   2D Halfar, H0=3000.00 m, R0=50.000 km, t0=0.04893 a
 2D extruded mesh:    20 x 8 elements (quads); limited at Href=200.00 m
 element dimensions:  dx=6000.00 m, dz_min=25.00 m, ratio=240.0
