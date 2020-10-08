@@ -72,12 +72,12 @@ parser.add_argument('-sia', action='store_true', default=False,
                     help='use a coupled weak form corresponding to the SIA problem')
 parser.add_argument('-spectralvert', type=int, default=0, metavar='N',
                     help='stages for p-refinement in vertical; use 0,1,2,3 only  (default=0)')
-parser.add_argument('-stokes2Dhelp', action='store_true', default=False,
-                    help='print help for stokes2D.py and quit')
+parser.add_argument('-stokesihelp', action='store_true', default=False,
+                    help='print help for stokesi.py and quit')
 parser.add_argument('-vertrefine', type=int, default=-1, metavar='N',
                     help='number of vertical (z) mesh refinement levels')
 args, unknown = parser.parse_known_args()
-if args.stokes2Dhelp:
+if args.stokesihelp:
     parser.print_help()
     sys.exit(0)
 
