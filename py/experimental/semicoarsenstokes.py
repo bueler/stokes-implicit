@@ -54,6 +54,8 @@ params = {'snes_type': 'ksponly',
           #'fieldsplit_0_mg_coarse_ksp_max_it': 2,
           #'fieldsplit_0_mg_coarse_pc_type': 'ilu',
           'fieldsplit_1_ksp_type': 'preonly',
+          #'fieldsplit_1_ksp_type': 'gmres',
+          #'fieldsplit_1_ksp_rtol': 1.0e-1,
           'fieldsplit_1_pc_type': 'jacobi',
           'fieldsplit_1_pc_jacobi_type': 'diagonal'}
 solve(F == 0, up, bcs=bcs, nullspace=nullspace, solver_parameters=params,
