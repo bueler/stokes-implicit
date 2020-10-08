@@ -4,8 +4,8 @@
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
-#   * "aerogel mush" above current iterate surface in Href
-#   * try to get semicoarsening to work with mg
+#   * "aerogel mush" above current iterate surface in Href area
+#   * try to get semicoarsening to work with mg; start with high aspect lid-driven linear Stokes
 
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
 # timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -baserefine 1 -vertrefine 1 -savetau -o foo.pvd
