@@ -1,0 +1,4 @@
+mesh:                2 x 2 x 2 elements (hexs)
+element dims:        5.000 x 5.000 x 0.500 with ratiox=10.00, ratioy=10.00
+vector space dims:   n_u=375, n_p=27  -->  N=402
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 20
