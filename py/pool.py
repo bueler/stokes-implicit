@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# TODO: * add gravity and viscosity and scale to ice sheet size (but keep linear)
+#       * add bumpy lid (with -flatlid as option)
+#       * add Glen law ice (with -linear as option)
+
 # preliminary success 1: constant iterations and sublinear time:
 #   for X in 2 3 4 5 6; do tmpg -n 6 ./pool.py -s_ksp_rtol 1.0e-4 -mx 20 -my 20 -refine $X -s_ksp_converged_reason; done
 
