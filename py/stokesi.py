@@ -46,8 +46,8 @@ parser.add_argument('-dta', type=float, default=1.0, metavar='X',
                     help='length of time step in years')
 parser.add_argument('-Dtyp', type=float, default=2.0, metavar='X',
                     help='typical strain rate in "+(eps Dtyp)^2" (default=2.0 a-1)')
-parser.add_argument('-eps', type=float, default=0.01, metavar='X',
-                    help='to regularize viscosity by "+(eps Dtyp)^2" (default=0.01)')
+parser.add_argument('-eps', type=float, default=0.0001, metavar='X',
+                    help='to regularize viscosity by "+eps Dtyp^2" (default=0.0001)')
 parser.add_argument('-H0', type=float, default=3000.0, metavar='X',
                     help='center height in m of ice sheet (default=3000)')
 parser.add_argument('-Href', type=float, default=200.0, metavar='X',
@@ -243,7 +243,7 @@ else:
         Dv = as_matrix([[v[0].dx(1), 0], [0, 0]])
         #FIXME: add this?  DirichletBC(Z.sub(1), Constant(0.0), 'top'),         # SIA: zero pressure on top
     # n=3 Glen law Stokes
-    Du2 = 0.5 * inner(Du, Du) + (args.eps * Dtyp)**2.0
+    Du2 = 0.5 * inner(Du, Du) + args.eps * Dtyp**2.0
     tau = B3 * Du2**(-1.0/3.0) * Du
 F = inner(tau, Dv) * dx \
     + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
@@ -379,7 +379,7 @@ if args.o:
         # tensor-valued deviatoric stress tau
         TQ1 = TensorFunctionSpace(mesh, 'CG', 1)
         Du = Function(TQ1).interpolate(0.5 * (grad(u)+grad(u).T))
-        Du2 = Function(Vp).interpolate(0.5 * inner(Du, Du) + (args.eps * args.Dtyp)**2.0)
+        Du2 = Function(Vp).interpolate(0.5 * inner(Du, Du) + args.eps * args.Dtyp**2.0)
         tau = Function(TQ1).interpolate(B3 * Du2**(-1.0/3.0) * Du)
         tau.rename('tau')
     if mesh.comm.size > 1 and args.savetau:
