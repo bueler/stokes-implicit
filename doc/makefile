@@ -12,7 +12,7 @@ simp.pdf: simp.tex simp.bib $(figures)
 
 $(cartoons): cartoon.py
 	python3 cartoon.py
-	for X in $(figures); do \
+	for X in $(cartoons); do \
 	     (pdfcrop $$X $$X); \
 	done
 
