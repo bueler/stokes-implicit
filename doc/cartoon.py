@@ -7,7 +7,8 @@ from sys import exit
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "cm"
 
-fsize = 20.0
+fsize = 18.0
+smallfsize = 14.0
 
 def genbasicfig(icetext='', bedtext='', perturb=False, reference=False):
     if perturb and reference:
@@ -42,7 +43,7 @@ def genbasicfig(icetext='', bedtext='', perturb=False, reference=False):
     return x, s, b
 
 def drawclimate(x,s,mycolor,climatetext=''):
-    plt.text(x[0]-0.2,s.max()-0.7,climatetext,fontsize=fsize)
+    plt.text(x[0]+4.0,s.max()+0.5,climatetext,fontsize=fsize)
     for j in range(10):
         xarr = x[50+100*j]
         if j>0:
@@ -63,6 +64,15 @@ def figsave(name):
 plt.figure(figsize=(10,4))
 x, s, b = genbasicfig(icetext='ice',bedtext='bedrock')
 drawclimate(x,s,'k',climatetext='surface mass balance')
+plt.annotate('free to move',fontsize=smallfsize,
+             xy=(x[300], s[300]),
+             xytext=(x[300]-2.3,s[300]+0.5),
+             arrowprops=dict(facecolor='black', width=0.5, headwidth=5.0, shrink=0.1))
+margin = 792
+plt.annotate('free to move',fontsize=smallfsize,
+             xy=(x[margin], s[margin]-0.1),
+             xytext=(x[margin]-1.0,s[margin]-1.5),
+             arrowprops=dict(facecolor='black', width=0.5, headwidth=5.0, shrink=0.1))
 figsave('cartoon.pdf')
 
 # domain notation figure
