@@ -203,9 +203,29 @@ We say $\bu\in \bV$ and $p\in Q$ solve the Glen-Stokes weak formulation at $t>0$
 \end{equation}
 A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data.  Note that if the inflow velocity is zero ($\bu_{\text{in}}=\bzero$) or absent ($\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupled} is $\bu=\bzero$ and $p=0$.
 
-Now, the use of thin-layer (shallow) approximations for modeling glaciers and ice sheets is well-established \cite{SchoofHewitt2013}, and the simplest of these models is the SIA.  It is appropriate to our grounded, non-sliding context.  Following Chapter 18 in \cite{Fowler1997}, we summarize the small-parameter argument which leads to the SIA strong form, and then convert it to a weak form with maximum analogy to \eqref{weakdecoupled} above.
+As noted in the Introduction, the use of thin-layer (shallow) approximations for modeling glaciers and ice sheets is well-established \cite{SchoofHewitt2013}.  The simplest of these models, the SIA, is appropriate to our grounded, non-sliding context.  We summarize a small-parameter argument, following Chapter 18 of \cite{Fowler1997} but noting that equivalent arguments are found in other sources \cite[for example]{GreveBlatter2009}, which leads to the SIA strong form.  Then we convert it to a weak form in analogy to \eqref{weakdecoupled} above.
 
-FIXME
+Let $[H]$, $[L]$, $[U]$, and $[\tau]$ denote typical thickness, horizontal extent, horizontal velocity, and vertical-plane shear stress values, respectively.  We consider $\eps = [H]/[L]$ as the small parameter; for a mountain glacier we might have $\eps \approx 0.1$ but for the Greenland ice sheet $\eps \in (10^{-3},10^{-2})$ is reasonable.  We scale the kinematic variables $x,y \sim [L]$, $z \sim [H] = \eps [L]$, $u,v \sim [U]$, and $w \sim \eps [U]$.  The stresses are scaled $\tau_{xz},\tau_{yz}\sim [\tau]$, $\tau_{xx},\tau_{yy},\tau_{xy}\sim \eps[\tau]$, and $p-\rho g (h - z) \sim \eps [\tau]$; the pressure perturbation from the hydrostatic condition is small.
+
+With these scaled variables, plus certain additional relationships among the scalings \cite[Chapter 18]{Fowler1997}, in the scaled variables equations \eqref{stokes} and \eqref{incompagain} become
+\begin{align*}
+\frac{\partial\tau_{xz}}{\partial z} + \eps^2\left[\frac{\partial\tau_{xx}}{\partial x} +\frac{\partial\tau_{xy}}{\partial y} - \frac{\partial p}{\partial x}\right] &= \frac{\partial h}{\partial x} \\
+\frac{\partial\tau_{yz}}{\partial z} + \eps^2\left[\frac{\partial\tau_{xy}}{\partial x} +\frac{\partial\tau_{yy}}{\partial y} - \frac{\partial p}{\partial y}\right] &= \frac{\partial h}{\partial y} \\
+\frac{\partial\tau_{xz}}{\partial x} + \frac{\partial\tau_{yz}}{\partial y} -\frac{\partial\tau_{xx}}{\partial z} - \frac{\partial\tau_{yy}}{\partial z} - \frac{\partial p}{\partial z} &= 0 \\
+\frac{\partial u}{\partial x} + \frac{\partial v}{\partial y} + \frac{\partial w}{\partial z} &= 0.
+\end{align*}
+Also, the norm of the deviatoric stress satisfies
+    $$|\tau|^2 = \tau_{xz}^2 + \tau_{yz}^2 + \eps^2 \left[\tau_{xy}^2 + \frac{1}{2} \left(\tau_{xx}^2 + \tau_{yy}^2 + (\tau_{xx} + \tau_{yy})^2\right)\right]$$
+and the stress-free surface condition becomes
+\begin{align*}
+\tau_{xz} - \eps^2\left[(\tau_{xx}-p) \frac{\partial h}{\partial x} + \tau_{xy} \frac{\partial h}{\partial y} \right] &= 0 \\
+\tau_{yz} - \eps^2\left[\tau_{xy} \frac{\partial h}{\partial x} + (\tau_{yy}-p) \frac{\partial h}{\partial y}\right] &= 0 \\
+p + \tau_{xx} + \tau_{yy} + \tau_{xz} \frac{\partial h}{\partial x} + \tau_{yz} \frac{\partial h}{\partial y} &= 0.
+\end{align*}
+
+The SIA drops terms of order $O(\eps^2)$ from these equations.  Converting back to statements using the strain rates this corresponds to the approximation
+    $$D\bu \approx \begin{pmatrix} 0 & 0 & \frac{1}{2} \frac{\partial u}{\partial z} \\  0 & 0 & \frac{1}{2} \frac{\partial v}{\partial z} \\ \frac{1}{2} \frac{\partial u}{\partial z} & \frac{1}{2} \frac{\partial u}{\partial z} & 0 \end{pmatrix}$$
+in the Stokes equation \eqref{stokes}, and $|D\bu|^2\approx $ FIXME
 
 
 \section{Implicit time-discretization and the icy domain update} \label{sec:implicitstep}
