@@ -389,13 +389,20 @@ if args.o:
         rank.rename('rank')
     if args.savetau:
         tau, nu = getstresses(mesh,u)
+        zrE = FiniteElement(family='R')
+        constantE = TensorProductElement(xpE,zrE)
+        constantV = FunctionSpace(mesh,constantE)
+        bc = DirichletBC(Vp, 1.0, 'top')
+        h = Function(constantV).interpolate(z).dat.data[bc.nodes]
+        phydrostatic = Function(Vp).interpolate(rho * g * (h-z))
+        phydrostatic.rename('hydrostatic pressure')
         # FIXME also save pminushydrostatic
     if mesh.comm.size > 1 and args.savetau:
-        File(args.o).write(u,p,c,rank,tau,nu)
+        File(args.o).write(u,p,c,rank,tau,nu,phydrostatic)
     elif mesh.comm.size > 1:
         File(args.o).write(u,p,c,rank)
     elif args.savetau:
-        File(args.o).write(u,p,c,tau,nu)
+        File(args.o).write(u,p,c,tau,nu,phydrostatic)
     else:
         File(args.o).write(u,p,c)
 
