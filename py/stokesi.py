@@ -389,7 +389,7 @@ if args.o:
         rank.rename('rank')
     if args.savetau:
         tau, nu = getstresses(mesh,u)
-        zrE = FiniteElement(family='R')
+        zrE = FiniteElement('R',interval)
         constantE = TensorProductElement(xpE,zrE)
         constantV = FunctionSpace(mesh,constantE)
         bc = DirichletBC(Vp, 1.0, 'top')
