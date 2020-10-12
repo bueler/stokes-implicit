@@ -5,7 +5,8 @@
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
 #   * "aerogel mush" above current iterate surface in Href area
-#   * try to get semicoarsening to work with mg; start with high aspect lid-driven linear Stokes
+#   * get semicoarsening to work with mg; use pool.py as testing ground
+#   * add options something like solver packages in mccarthy/stokes/
 
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
 # timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -baserefine 1 -vertrefine 1 -savetau -o foo.pvd
@@ -67,7 +68,7 @@ parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
 parser.add_argument('-savetau', action='store_true',
-                    help='save deviatoric stress tensor to output file', default=False)
+                    help='save stresses (tau,nu) to output file', default=False)
 parser.add_argument('-sia', action='store_true', default=False,
                     help='use a coupled weak form corresponding to the SIA problem')
 parser.add_argument('-spectralvert', type=int, default=0, metavar='N',
@@ -358,13 +359,24 @@ if base_mesh.comm.size > 1:
 solve(F == 0, upc, bcs=bcs, options_prefix = 's',
       solver_parameters=parameters)
 
+# compute tensor-valued deviatoric stress tau and effective viscosity from the velocity solution
+def getstresses(mesh,u):
+    TQ1 = TensorFunctionSpace(mesh, 'CG', 1)
+    Du = Function(TQ1).interpolate(0.5 * (grad(u)+grad(u).T))
+    Du2 = Function(Vp).interpolate(0.5 * inner(Du, Du) + args.eps * Dtyp**2.0)
+    nu = Function(Vp).interpolate(0.5 * B3 * Du2**(-1.0/3.0))
+    nu.rename('effective viscosity')
+    tau = Function(TQ1).interpolate(2.0 * nu * Du)
+    tau.rename('tau')
+    return tau, nu
+
 # save ParaView-readable file
 if args.o:
     written = 'u,p,c'
     if mesh.comm.size > 1:
          written += ',rank'
     if args.savetau:
-         written += ',tau'
+         written += ',tau,nu'
     PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' % (written,args.o))
     u,p,c = upc.split()
     u.rename('velocity')
@@ -376,18 +388,14 @@ if args.o:
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
     if args.savetau:
-        # tensor-valued deviatoric stress tau
-        TQ1 = TensorFunctionSpace(mesh, 'CG', 1)
-        Du = Function(TQ1).interpolate(0.5 * (grad(u)+grad(u).T))
-        Du2 = Function(Vp).interpolate(0.5 * inner(Du, Du) + args.eps * args.Dtyp**2.0)
-        tau = Function(TQ1).interpolate(B3 * Du2**(-1.0/3.0) * Du)
-        tau.rename('tau')
+        tau, nu = getstresses(mesh,u)
+        # FIXME also save pminushydrostatic
     if mesh.comm.size > 1 and args.savetau:
-        File(args.o).write(u,p,c,rank,tau)
+        File(args.o).write(u,p,c,rank,tau,nu)
     elif mesh.comm.size > 1:
         File(args.o).write(u,p,c,rank)
     elif args.savetau:
-        File(args.o).write(u,p,c,tau)
+        File(args.o).write(u,p,c,tau,nu)
     else:
         File(args.o).write(u,p,c)
 
