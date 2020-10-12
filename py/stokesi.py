@@ -360,15 +360,31 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
       solver_parameters=parameters)
 
 # compute tensor-valued deviatoric stress tau and effective viscosity from the velocity solution
-def getstresses(mesh,u):
+def getstresses(mesh,Vscalar,u):
     TQ1 = TensorFunctionSpace(mesh, 'CG', 1)
     Du = Function(TQ1).interpolate(0.5 * (grad(u)+grad(u).T))
-    Du2 = Function(Vp).interpolate(0.5 * inner(Du, Du) + args.eps * Dtyp**2.0)
-    nu = Function(Vp).interpolate(0.5 * B3 * Du2**(-1.0/3.0))
+    Du2 = Function(Vscalar).interpolate(0.5 * inner(Du, Du) + args.eps * Dtyp**2.0)
+    nu = Function(Vscalar).interpolate(0.5 * B3 * Du2**(-1.0/3.0))
     nu.rename('effective viscosity')
     tau = Function(TQ1).interpolate(2.0 * nu * Du)
     tau.rename('tau')
     return tau, nu
+
+# get difference between pressure and hydrostatic pressure
+def getpdifference(mesh,base_mesh,Vscalar,p,z):
+    # first get function h, defined on base_mesh, which contains surface elevation
+    Vbase = FunctionSpace(base_mesh, 'CG', 1)
+    hbase = Function(Vbase)
+    bc = DirichletBC(Vscalar, 1.0, 'top')
+    # z itself is an 'Indexed' object, so use a Function with .dat attribute
+    hbase.dat.data[:] = Function(Vscalar).interpolate(z).dat.data_ro[bc.nodes]
+    # now extend to h defined on the extruded mesh using the 'R' space
+    h = Function(FunctionSpace(mesh, 'CG', 1, vfamily='R', vdegree=0))
+    h.dat.data[:] = hbase.dat.data_ro[:]
+    # finally, compute difference with pressure
+    pdiff = Function(Vscalar).interpolate(p - rho * g * (h - z))
+    pdiff.rename('pressure minus hydrostatic pressure')
+    return pdiff
 
 # save ParaView-readable file
 if args.o:
@@ -376,7 +392,7 @@ if args.o:
     if mesh.comm.size > 1:
          written += ',rank'
     if args.savetau:
-         written += ',tau,nu'
+         written += ',tau,nu,pdiff'
     PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' % (written,args.o))
     u,p,c = upc.split()
     u.rename('velocity')
@@ -388,21 +404,14 @@ if args.o:
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
     if args.savetau:
-        tau, nu = getstresses(mesh,u)
-        zrE = FiniteElement('R',interval)
-        constantE = TensorProductElement(xpE,zrE)
-        constantV = FunctionSpace(mesh,constantE)
-        bc = DirichletBC(Vp, 1.0, 'top')
-        h = Function(constantV).interpolate(z).dat.data[bc.nodes]
-        phydrostatic = Function(Vp).interpolate(rho * g * (h-z))
-        phydrostatic.rename('hydrostatic pressure')
-        # FIXME also save pminushydrostatic
+        tau, nu = getstresses(mesh,Vp,u)
+        pdiff = getpdifference(mesh,base_mesh,Vp,p,z)
     if mesh.comm.size > 1 and args.savetau:
-        File(args.o).write(u,p,c,rank,tau,nu,phydrostatic)
+        File(args.o).write(u,p,c,rank,tau,nu,pdiff)
     elif mesh.comm.size > 1:
         File(args.o).write(u,p,c,rank)
     elif args.savetau:
-        File(args.o).write(u,p,c,tau,nu,phydrostatic)
+        File(args.o).write(u,p,c,tau,nu,pdiff)
     else:
         File(args.o).write(u,p,c)
 
