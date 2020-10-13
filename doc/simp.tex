@@ -203,29 +203,23 @@ We say $\bu\in \bV$ and $p\in Q$ solve the Glen-Stokes weak formulation at $t>0$
 \end{equation}
 A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data.  Note that if the inflow velocity is zero ($\bu_{\text{in}}=\bzero$) or absent ($\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupled} is $\bu=\bzero$ and $p=0$.
 
-As noted in the Introduction, the use of thin-layer (shallow) approximations for modeling glaciers and ice sheets is well-established \cite{SchoofHewitt2013}.  The simplest of these models, the SIA, is appropriate to our grounded, non-sliding context.  We summarize a small-parameter argument, following Chapter 18 of \cite{Fowler1997} but noting that equivalent arguments are found in other sources \cite[for example]{GreveBlatter2009}, which leads to the SIA strong form.  Then we convert it to a weak form in analogy to \eqref{weakdecoupled} above.
+The SIA, a widely-used model for grounded, non-sliding as considered here \cite{SchoofHewitt2013}, is derived by a small-parameter argument.  Following Chapter 18 of \cite{Fowler1997}, but noting that equivalent arguments are found in other sources \cite[for example]{GreveBlatter2009}, we recall this argument to derived the SIA strong form, which is then converted to weak form in analogy to \eqref{weakdecoupled} above.
 
-Let $[H]$, $[L]$, $[U]$, and $[\tau]$ denote typical thickness, horizontal extent, horizontal velocity, and vertical-plane shear stress values, respectively.  We consider $\eps = [H]/[L]$ as the small parameter; for a mountain glacier we might have $\eps \approx 0.1$ but for the Greenland ice sheet $\eps \in (10^{-3},10^{-2})$ is reasonable.  We scale the kinematic variables $x,y \sim [L]$, $z \sim [H] = \eps [L]$, $u,v \sim [U]$, and $w \sim \eps [U]$.  The stresses are scaled $\tau_{xz},\tau_{yz}\sim [\tau]$, $\tau_{xx},\tau_{yy},\tau_{xy}\sim \eps[\tau]$, and $p-\rho g (h - z) \sim \eps [\tau]$; the pressure perturbation from the hydrostatic condition is small.
+Let $[H]$, $[L]$, $[U]$, and $[\tau]$ denote typical thickness, horizontal extent, horizontal velocity, and vertical-plane shear stress values, respectively.  We consider $\eps = [H]/[L]$ as the small parameter; for a mountain glacier we might have $\eps \approx 0.1$ but for the Greenland ice sheet $\eps \in (10^{-3},10^{-2})$ is reasonable.  We scale the kinematic variables $x,y \sim [L]$, $z \sim [H] = \eps [L]$, $u,v \sim [U]$, and $w \sim \eps [U]$.\footnote{Recall this means, for example, that we introduce new ``hatted'' variables via $x=[L]\hat x$, $y=[L]\hat y$, and $z=[H] \hat z$.  The equations are rewritten in the new variables and then the hats are removed.}  We suppose the stress components $\tau_{xz},\tau_{yz}$ scale with $[\tau]$ and components $\tau_{xx},\tau_{yy},\tau_{xy}$ with $\eps[\tau]$.   The pressure perturbation from the hydrostatic condition, namely $p-\rho g (h - z)$, is scaled with $\eps [\tau]$ also; this means that $p-\rho g (h - z)=\eps[\tau]\hat{\delta p}$.
 
-With these scaled variables, plus certain additional relationships among the scalings \cite[Chapter 18]{Fowler1997}, in the scaled variables equations \eqref{stokes} and \eqref{incompagain} become
-\begin{align*}
-\frac{\partial\tau_{xz}}{\partial z} + \eps^2\left[\frac{\partial\tau_{xx}}{\partial x} +\frac{\partial\tau_{xy}}{\partial y} - \frac{\partial p}{\partial x}\right] &= \frac{\partial h}{\partial x} \\
-\frac{\partial\tau_{yz}}{\partial z} + \eps^2\left[\frac{\partial\tau_{xy}}{\partial x} +\frac{\partial\tau_{yy}}{\partial y} - \frac{\partial p}{\partial y}\right] &= \frac{\partial h}{\partial y} \\
-\frac{\partial\tau_{xz}}{\partial x} + \frac{\partial\tau_{yz}}{\partial y} -\frac{\partial\tau_{xx}}{\partial z} - \frac{\partial\tau_{yy}}{\partial z} - \frac{\partial p}{\partial z} &= 0 \\
-\frac{\partial u}{\partial x} + \frac{\partial v}{\partial y} + \frac{\partial w}{\partial z} &= 0.
-\end{align*}
-Also, the norm of the deviatoric stress satisfies
-    $$|\tau|^2 = \tau_{xz}^2 + \tau_{yz}^2 + \eps^2 \left[\tau_{xy}^2 + \frac{1}{2} \left(\tau_{xx}^2 + \tau_{yy}^2 + (\tau_{xx} + \tau_{yy})^2\right)\right]$$
-and the stress-free surface condition becomes
-\begin{align*}
-\tau_{xz} - \eps^2\left[(\tau_{xx}-p) \frac{\partial h}{\partial x} + \tau_{xy} \frac{\partial h}{\partial y} \right] &= 0 \\
-\tau_{yz} - \eps^2\left[\tau_{xy} \frac{\partial h}{\partial x} + (\tau_{yy}-p) \frac{\partial h}{\partial y}\right] &= 0 \\
-p + \tau_{xx} + \tau_{yy} + \tau_{xz} \frac{\partial h}{\partial x} + \tau_{yz} \frac{\partial h}{\partial y} &= 0.
-\end{align*}
+With these scalings, plus certain additional relationships among the scale factors \cite[Chapter 18]{Fowler1997}, equations \eqref{forcebalance} and \eqref{incompressible} become
+    $$\frac{\partial\tau_{xz}}{\partial z} + O(\eps^2) = \frac{\partial h}{\partial x}, \qquad \frac{\partial\tau_{yz}}{\partial z} + O(\eps^2) = \frac{\partial h}{\partial y}, \qquad \frac{\partial u}{\partial x} + \frac{\partial v}{\partial y} + \frac{\partial w}{\partial z} = 0.$$
+(An additional equation, which we will not need, determines $\delta p$ \cite{Fowler1997}.)  The norm of the deviatoric stress satisfies $|\tau|^2 = \tau_{xz}^2 + \tau_{yz}^2 + O(\eps^2)$ and $\tau_{xz} = \nu(\frac{\partial u}{\partial z} + \eps^2 \frac{\partial w}{\partial z}),\tau_{yz} = \nu(\frac{\partial v}{\partial z} + \eps^2 \frac{\partial w}{\partial y})$.  The stress-free surface condition at $z=h$ becomes $\tau_{xz} = O(\eps^2)$ and $\tau_{yz} = O(\eps^2)$.
 
-The SIA drops terms of order $O(\eps^2)$ from these equations.  Converting back to statements using the strain rates this corresponds to the approximation
+The strong form of the SIA arises from dropping terms of order $O(\eps^2)$ from these equations (and returning to the original, unscaled variables).  Let $\bm{\tau}=\left<\tau_{xz},\tau_{yz}\right>$ denote the remaining (dominant) shear stress components and $\bm{\omega}=\left<\frac{1}{2} \frac{\partial u}{\partial z},\frac{1}{2} \frac{\partial v}{\partial z}\right>$ the corresponding strain rates.  We are left with the following strong form equations for the velocity and shear stresses,
+\begin{equation}
+\frac{\partial\bm{\tau}}{\partial z} = \grad h, \qquad \Div \bu = 0, \qquad \bm{\tau} = B_n |\bm{\omega}|^{r-2} \bm{\omega}, \label{siastrong}
+\end{equation}
+analogous to \eqref{forcebalance}--\eqref{viscflowlaw}, subject to $\bm{\tau}=0$ at the surface $z=h$ and $\bu=0$ on the base $z=b$, where $|\bm{\omega}|$ now denotes the ordinary Euclidean norm on $\RR^2$.  Note this essentially corresponds to the approximation
     $$D\bu \approx \begin{pmatrix} 0 & 0 & \frac{1}{2} \frac{\partial u}{\partial z} \\  0 & 0 & \frac{1}{2} \frac{\partial v}{\partial z} \\ \frac{1}{2} \frac{\partial u}{\partial z} & \frac{1}{2} \frac{\partial u}{\partial z} & 0 \end{pmatrix}$$
-in the Stokes equation \eqref{stokes}, and $|D\bu|^2\approx $ FIXME
+in \eqref{stokes}, only balancing the $z$ derivative of the stresses against the surface gradient.
+
+FIXME which leads to SIA weak form
 
 
 \section{Implicit time-discretization and the icy domain update} \label{sec:implicitstep}
