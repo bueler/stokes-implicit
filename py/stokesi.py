@@ -9,7 +9,7 @@
 #   * add options something like solver packages in mccarthy/stokes/
 
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
-# timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -baserefine 1 -vertrefine 1 -savetau -o foo.pvd
+# timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -baserefine 1 -vertrefine 1 -savestresses -o foo.pvd
 
 from firedrake import *
 import sys
@@ -67,8 +67,8 @@ parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save to output file name ending with .pvd')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
-parser.add_argument('-savetau', action='store_true',
-                    help='save stresses (tau,nu) to output file', default=False)
+parser.add_argument('-savestresses', action='store_true', default=False,
+                    help='save stresses (tau,nu,pminushydrostatic) to output file')
 parser.add_argument('-sia', action='store_true', default=False,
                     help='use a coupled weak form corresponding to the SIA problem')
 parser.add_argument('-spectralvert', type=int, default=0, metavar='N',
@@ -391,27 +391,28 @@ if args.o:
     written = 'u,p,c'
     if mesh.comm.size > 1:
          written += ',rank'
-    if args.savetau:
+    if args.savestresses:
          written += ',tau,nu,pdiff'
     PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' % (written,args.o))
     u,p,c = upc.split()
     u.rename('velocity')
     p.rename('pressure')
     c.rename('displacement')
+    if args.savestresses:
+        tau, nu = getstresses(mesh,Vp,u)
+        pdiff = getpdifference(mesh,base_mesh,Vp,p,z)
     if mesh.comm.size > 1:
         # integer-valued element-wise process rank
         rank = Function(FunctionSpace(mesh,'DG',0))
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
-    if args.savetau:
-        tau, nu = getstresses(mesh,Vp,u)
-        pdiff = getpdifference(mesh,base_mesh,Vp,p,z)
-    if mesh.comm.size > 1 and args.savetau:
-        File(args.o).write(u,p,c,rank,tau,nu,pdiff)
-    elif mesh.comm.size > 1:
-        File(args.o).write(u,p,c,rank)
-    elif args.savetau:
-        File(args.o).write(u,p,c,tau,nu,pdiff)
+        if args.savestresses:
+            File(args.o).write(u,p,c,rank,tau,nu,pdiff)
+        else:
+            File(args.o).write(u,p,c,rank)
     else:
-        File(args.o).write(u,p,c)
+        if args.savestresses:
+            File(args.o).write(u,p,c,tau,nu,pdiff)
+        else:
+            File(args.o).write(u,p,c)
 
