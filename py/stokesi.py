@@ -377,7 +377,7 @@ def getpdifference(mesh,base_mesh,Vscalar,p,z):
     hbase = Function(Vbase)
     bc = DirichletBC(Vscalar, 1.0, 'top')
     # z itself is an 'Indexed' object, so use a Function with .dat attribute
-    hbase.dat.data[:] = Function(Vscalar).interpolate(z).dat.data_ro[bc.nodes]
+    hbase.dat.data_with_halos[:] = Function(Vscalar).interpolate(z).dat.data_with_halos[bc.nodes]
     # now extend to h defined on the extruded mesh using the 'R' space
     h = Function(FunctionSpace(mesh, 'CG', 1, vfamily='R', vdegree=0))
     h.dat.data[:] = hbase.dat.data_ro[:]
