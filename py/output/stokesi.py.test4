@@ -1,0 +1,10 @@
+**** SUMMARY OF SETUP ****
+horizontal domain:   [-60.00,60.00] km interval
+base mesh:           5 elements (intervals)
+initial condition:   2D Halfar, H0=3000.00 m, R0=50.000 km, t0=0.04893 a
+2D extruded mesh:    5 x 4 elements (quads); limited at Href=200.00 m
+element dimensions:  dx=24000.00 m, dz_min=50.00 m, ratio=480.0
+vector space dims:   n_u=198, n_p=30, n_c=30  -->  N=258
+**** SOLVING ****
+    ... one time step dt=1.00000 a ...
+writing solution variables (u,p,c,rank,tau,nu,pdiff) to output file test4.pvd ... 

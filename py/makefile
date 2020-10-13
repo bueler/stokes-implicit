@@ -12,13 +12,16 @@ runstokesi_2:
 runstokesi_3:
 	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -mx 4 -my 4 -s_snes_rtol 1.0e-2" 1 3
 
+runstokesi_4:
+	-@./../testit.sh stokesi.py "-mx 5 -savestresses -o test4.pvd" 2 4
+
 test_pool: runpool_1
 
-test_stokesi: runstokesi_1 runstokesi_2 runstokesi_3
+test_stokesi: runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4
 
 test: test_pool test_stokesi
 
-.PHONY: clean runpool_1 runstokesi_1 runstokesi_2 runstokesi_3 test_pool test_stokesi test
+.PHONY: clean runpool_1 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 test_pool test_stokesi test
 
 clean:
 	@rm -f *.pdf *.geo *.msh *.pvd *.vtu *.pvtu *.m
