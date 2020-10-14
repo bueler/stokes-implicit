@@ -193,30 +193,30 @@ degreexz = [(2,1),(3,2),(4,3),(5,4)]
 zudeg,zpdeg = degreexz[args.spectralvert]
 
 # construct component spaces by explicitly applying TensorProductElement()
-# Q2 for velocity u = (u_0(x,y),u_1(x,y))
+# velocity u
 if args.my > 0:
-    xuE = FiniteElement('CG',quadrilateral,2)
+    xuE = FiniteElement('Q',quadrilateral,2)
 else:
-    xuE = FiniteElement('CG',interval,2)
-zuE = FiniteElement('CG',interval,zudeg)
+    xuE = FiniteElement('P',interval,2)
+zuE = FiniteElement('P',interval,zudeg)
 uE = TensorProductElement(xuE,zuE)
 Vu = VectorFunctionSpace(mesh, uE)
-# Q1 for pressure p(x,y)
+# pressure p
 # [note Isaac et al (2015) recommend discontinuous pressure space for mass
 #  conservation but using dQ0 seems unstable and dQ1 notably more expensive]
 if args.my > 0:
-    xpE = FiniteElement('CG',quadrilateral,1)
+    xpE = FiniteElement('Q',quadrilateral,1)
 else:
-    xpE = FiniteElement('CG',interval,1)
-zpE = FiniteElement('CG',interval,zpdeg)
+    xpE = FiniteElement('P',interval,1)
+zpE = FiniteElement('P',interval,zpdeg)
 pE = TensorProductElement(xpE,zpE)
 Vp = FunctionSpace(mesh, pE)
-# Q1 for displacement c(x,y)
+# displacement c
 if args.my > 0:
-    xcE = FiniteElement('CG',quadrilateral,1)
+    xcE = FiniteElement('Q',quadrilateral,1)
 else:
-    xcE = FiniteElement('CG',interval,1)
-zcE = FiniteElement('CG',interval,1)  # consider raising to 2: field "looks better?"
+    xcE = FiniteElement('P',interval,1)
+zcE = FiniteElement('P',interval,1)  # consider raising to 2: field "looks better?"
 cE = TensorProductElement(xcE,zcE)
 Vc = FunctionSpace(mesh, cE)
 
@@ -288,8 +288,8 @@ if args.my > 0:
                     % (args.H0,args.R0/1000.0,t0/secpera))
     PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (hexahedra); limited at Href=%.2f m'
                     % (mx,my,mz,args.Href))
-    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f'
-                    % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem))
+    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f, ratioy=%.1f'
+                    % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem,dyelem/dzrefelem))
 else:
     PETSc.Sys.Print('initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0/secpera))
