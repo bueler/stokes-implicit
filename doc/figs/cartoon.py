@@ -7,10 +7,7 @@ from sys import exit
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "cm"
 
-fsize = 18.0
-smallfsize = 14.0
-
-def genbasicfig(icetext='', bedtext='', perturb=False, reference=False):
+def genbasicfig(icetext='', bedtext='', perturb=False, reference=False, fsize=18.0):
     if perturb and reference:
         print('not set up for both')
         sys.exit(1)
@@ -42,7 +39,7 @@ def genbasicfig(icetext='', bedtext='', perturb=False, reference=False):
     plt.axis('off')
     return x, s, b
 
-def drawclimate(x,s,mycolor,climatetext=''):
+def drawclimate(x,s,mycolor,climatetext='', fsize=18.0):
     plt.text(x[0]+4.0,s.max()+0.5,climatetext,fontsize=fsize)
     for j in range(10):
         xarr = x[50+100*j]
@@ -61,6 +58,7 @@ def figsave(name):
         plt.savefig(name,bbox_inches='tight',transparent=True)
 
 # basic figure
+smallfsize=14.0
 plt.figure(figsize=(10,4))
 x, s, b = genbasicfig(icetext='ice',bedtext='bedrock')
 drawclimate(x,s,'k',climatetext='surface mass balance')
@@ -76,6 +74,7 @@ plt.annotate('free to move',fontsize=smallfsize,
 figsave('cartoon.pdf')
 
 # domain notation figure
+fsize=18.0
 plt.figure(figsize=(10,5.5))
 genbasicfig(icetext=r'$\Omega^t$')
 drawclimate(x,s,'k')
@@ -105,23 +104,23 @@ figsave('domainnotation.pdf')
 
 # current time figure
 plt.figure(figsize=(10,4))
-genbasicfig(icetext=r'$\Omega^{n-1}$')
+genbasicfig(icetext=r'$\Omega^{n-1}$',fsize=24.0)
 figsave('currenttime.pdf')
 
 # reference domain figure
 plt.figure(figsize=(10,4))
-genbasicfig(icetext=r'$\Lambda$',reference=True)
+genbasicfig(icetext=r'$\Lambda$',reference=True,fsize=24.0)
 Href = 0.5
 Hrloc = 100
 plt.arrow(x[Hrloc],b[Hrloc],0.0,Href,lw=1.5,head_width=0.1,
           length_includes_head=True,color='k')
 plt.arrow(x[Hrloc],b[Hrloc]+Href,0.0,-Href,lw=1.5,head_width=0.1,
           length_includes_head=True,color='k')
-plt.text(x[Hrloc],b[Hrloc]+1.2*Href,r'$H_{\mathrm{ref}}$',fontsize=fsize)
+plt.text(x[Hrloc],b[Hrloc]+1.2*Href,r'$H_{\mathrm{ref}}$',fontsize=24.0)
 figsave('referencedomain.pdf')
 
 # next time figure
 plt.figure(figsize=(10,4))
-genbasicfig(icetext=r'$\Omega^{n}$',perturb=True)
+genbasicfig(icetext=r'$\Omega^{n}$',perturb=True,fsize=24.0)
 figsave('nexttime.pdf')
 

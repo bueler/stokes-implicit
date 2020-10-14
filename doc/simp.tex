@@ -55,7 +55,7 @@ urlcolor=black     % only if colorlinks=true
 
 
 \begin{document}
-\title[Performance of evolving-geometry glacier flow simulations]{Performance of evolving-geometry glacier flow simulations using Stokes dynamics}
+\title[Performance of evolving-geometry simulations using Stokes dynamics]{Performance of evolving-geometry glacier and ice sheet simulations using Stokes dynamics}
 
 \author{Ed Bueler}
 
@@ -70,7 +70,7 @@ The most important questions in glaciology concern how the climate around a glac
 
 A variety of methodologies for such numerical simulations are seen in practice, with most of the well-established schemes involving shallowness approximations of the continuum equations \cite[for example]{Hoffmanetal2018,Lipscombetal2019,Winkelmannetal2011}.  Furthermore, most methods use explicit or semi-implicit time-stepping \cite{HindmarshPayne1996,Hoffmanetal2018,Lipscombetal2019,Winkelmannetal2011}, with small stability-imposed time steps at high spatial resolution, though fully-implicit exceptions exist \cite{Brinkerhoffetal2017,Bueler2016}.  The performance properties of current numerical models limit either the physical modeling authenticity (due to shallowness and other approximations) or the spatial resolution (due to time-stepping and solver performance limitations).  In particular, the quality of ensemble simulations, regarding both the number of ensemble members and the quality of the individual simulations, is directly limited by numerical model performance.
 
-This paper\footnote{version: \today} addresses an important, but also restricted, class of numerical glacier and ice sheet models, based on conservation of momentum and mass and without shallowness assumptions.  For conservation of momentum we use the standard shear-thinning (Glen) power-law Stokes model.  Noting that ``mass conservation'' properly refers both to fluid incompressibility and to conservation at the ice surface, we solve both the divergence-free equation for bulk ice and the surface kinematical equation (or kinematic boundary condition \cite{GreveBlatter2009}) with the surface mass balance is an input.  We model three-dimensional (3D) grounded glaciers and ice sheets for which there is a well-defined ice thickness; overhanging ice is not modeled.  The ice thickness is defined at all map-plane points but it is zero in those locations where the (coupled and solved) surface balance and ice flow do not determine the presence of glacier ice, and the solution process also determines the location of the free boundary at the ice margin \cite{SchoofHewitt2013} (Figure \ref{fig:cartoon}).
+This paper\footnote{version: \today.  Co-author thoughts: L.~Mitchell because of \texttt{SemiCoarsened...()} etc.~ code (actual).  C.~Khrulev because of implementation and analysis help (prospect).  R.~Sayag because of validation experiment (prospect).  M.~Knepley because of performance help and analysis (prospect).} addresses an important, but also restricted, class of numerical glacier and ice sheet models, based on conservation of momentum and mass and without shallowness assumptions.  For conservation of momentum we use the standard shear-thinning (Glen) power-law Stokes model.  Noting that ``mass conservation'' properly refers both to fluid incompressibility and to conservation at the ice surface, we solve both the divergence-free equation for bulk ice and the surface kinematical equation (or kinematic boundary condition \cite{GreveBlatter2009}) with the surface mass balance is an input.  We model three-dimensional (3D) grounded glaciers and ice sheets for which there is a well-defined ice thickness; overhanging ice is not modeled.  The ice thickness is defined at all map-plane points but it is zero in those locations where the (coupled and solved) surface balance and ice flow do not determine the presence of glacier ice, and the solution process also determines the location of the free boundary at the ice margin \cite{SchoofHewitt2013} (Figure \ref{fig:cartoon}).
 
 \begin{figure}[h]
 \begin{center}
@@ -131,15 +131,17 @@ Assuming the well-posedness of the above model \eqref{stokes}--\eqref{basebc}, a
 
 The SIA, a widely-used simplified model for the flow of grounded, non-sliding ice \cite{SchoofHewitt2013}, is used in this paper for comparison purposes.  It is derived by a small-parameter argument which we recall now by following Chapter 18 of \cite{Fowler1997}; note similar arguments in other sources e.g.~\cite{GreveBlatter2009}.  Let $[H]$, $[L]$, $[U]$, and $[\tau]$ denote typical thickness, horizontal extent, horizontal velocity, and vertical-plane shear stress values, respectively.  We consider $\eps = [H]/[L]$ as the small parameter; for a mountain glacier we might have $\eps \approx 0.1$ but for the Greenland ice sheet $\eps \in (10^{-3},10^{-2})$ is reasonable.  We scale the kinematic variables $x,y \sim [L]$, $z \sim [H] = \eps [L]$, $u,v \sim [U]$, and $w \sim \eps [U]$.\footnote{Recall this means, for example, that we introduce new ``hatted'' variables via $x=[L]\hat x$, $y=[L]\hat y$, and $z=[H] \hat z$.  The equations are rewritten in the new variables and then the hats are removed.}  We suppose the stress components $\tau_{xz},\tau_{yz}$ scale with $[\tau]$ and components $\tau_{xx},\tau_{yy},\tau_{xy}$ with $\eps[\tau]$.   The pressure perturbation from the hydrostatic condition, namely $p-\rho g (h - z)$, is scaled with $\eps [\tau]$ also; this means that $p-\rho g (h - z)=\eps[\tau]\hat{\delta p}$.  With these scalings, plus certain additional relationships among the scale factors \cite[Chapter 18]{Fowler1997}, equations \eqref{forcebalance} yield
     $$\frac{\partial\tau_{xz}}{\partial z} + O(\eps^2) = \frac{\partial h}{\partial x}, \qquad \frac{\partial\tau_{yz}}{\partial z} + O(\eps^2) = \frac{\partial h}{\partial y}.$$
-Also, the norm of the deviatoric stress satisfies $|\tau|^2 = \tau_{xz}^2 + \tau_{yz}^2 + O(\eps^2)$, the shear stresses are dominated by the $z$ derivatives of the horizontal velocity, that is, $\tau_{xz} = \nu(\frac{\partial u}{\partial z} + \eps^2 \frac{\partial w}{\partial z})$ and $\tau_{yz} = \nu(\frac{\partial v}{\partial z} + \eps^2 \frac{\partial w}{\partial y})$, the stress-free condition at the surface $z=h$ becomes $\tau_{xz} = O(\eps^2)$ and $\tau_{yz} = O(\eps^2)$, and incompressibility \eqref{incompressible} is unaltered by the scaling.
+The shear stresses are dominated by the $z$ derivatives of the horizontal velocity, that is,
+    $$\tau_{xz} = \nu\left(\frac{\partial u}{\partial z} + \eps^2 \frac{\partial w}{\partial z}\right), \qquad \tau_{yz} = \nu\left(\frac{\partial v}{\partial z} + \eps^2 \frac{\partial w}{\partial y}\right).$$
+Also, the norm of the deviatoric stress satisfies $|\tau|^2 = \tau_{xz}^2 + \tau_{yz}^2 + O(\eps^2)$ and the stress-free condition at the surface $z=h$ becomes $\tau_{xz} = O(\eps^2)$ and $\tau_{yz} = O(\eps^2)$.  Note that incompressibility \eqref{incompressible} is unaltered by the scaling.
 
-The strong form of the SIA arises from dropping terms of order $O(\eps^2)$ from these equations and returning to the original, unscaled variables.  Let $\bm{\tau}=\left<\tau_{xz},\tau_{yz}\right>$ denote the remaining shear stress components and $\bm{\omega}=\left<\frac{1}{2} \frac{\partial u}{\partial z},\frac{1}{2} \frac{\partial v}{\partial z}\right>$ the corresponding strain rates.  Note that \eqref{viscflowlaw} implies $|\bm{\tau}|=B_n |\bm{\omega}|^{1/n}$, where $|\cdot|$ denotes the ordinary Euclidean norm on $\RR^2$, and thus that $\bm{\omega} = A_n |\bm{\tau}|^{n-1} \bm{\tau}$ where $A_n=(B_n)^{-n}$.  We now have the following equations for the shear stresses and the velocity:
+The strong form of the SIA arises from dropping terms of order $O(\eps^2)$ from these equations and returning to the original, unscaled variables.  Let $\bm{\tau}=\left<\tau_{xz},\tau_{yz}\right>$ denote the remaining shear stress components and $\bm{\omega}=\left<\frac{1}{2} \frac{\partial u}{\partial z},\frac{1}{2} \frac{\partial v}{\partial z}\right>$ the corresponding strain rates.  Note that \eqref{viscflowlaw} implies $|\bm{\tau}|=B_n |\bm{\omega}|^{1/n}$, where $|\cdot|$ denotes the ordinary Euclidean norm on $\RR^2$, and thus that $\bm{\omega} = A_n |\bm{\tau}|^{n-1} \bm{\tau}$ where $A_n=(B_n)^{-n}$.  We now have the following equations for the shear stresses and the velocity,
 \begin{equation}
-\frac{\partial\bm{\tau}}{\partial z} = \rho g \grad h, \qquad \Div \bu = 0, \qquad \bm{\omega} = A_n |\bm{\tau}|^{n-1} \bm{\tau}. \label{siavectorized}
+\frac{\partial\bm{\tau}}{\partial z} = \rho g \grad h, \qquad \Div \bu = 0, \qquad \bm{\omega} = A_n |\bm{\tau}|^{n-1} \bm{\tau}, \label{siavectorized}
 \end{equation}
-These subject to $\bm{\tau}=0$ at the surface $z=h$ and $\bu=0$ on the base $z=b$.  Note that equations \eqref{siavectorized} essentially use the approximation
+subject to $\bm{\tau}=0$ at the surface $z=h$ and $\bu=0$ on the base $z=b$.  Note that equations \eqref{siavectorized} essentially use the approximation
     $$D\bu \approx \begin{pmatrix} 0 & 0 & \frac{1}{2} \frac{\partial u}{\partial z} \\  0 & 0 & \frac{1}{2} \frac{\partial v}{\partial z} \\ \frac{1}{2} \frac{\partial u}{\partial z} & \frac{1}{2} \frac{\partial u}{\partial z} & 0 \end{pmatrix}$$
-in \eqref{stokes}, but then we only balance the $z$ derivative of the stresses against the surface gradient, and we need not compute the pressure simultaneously with the velocity.
+in \eqref{stokes}, and then balance the $z$ derivative of the stresses against the surface gradient.  Note that we need not compute the pressure simultaneously with the velocity.
 
 The SIA stress equations \eqref{siavectorized} can be vertically-integrated to give a formulas for the horizontal velocity.  By a first integral, $\bm{\tau} = \rho g (h-z) \grad h$, thus
     $$\left<\frac{\partial u}{\partial z},\frac{\partial v}{\partial z}\right> = 2 A_n (\rho g)^n (h-z)^n |\grad h|^{n-1} \grad h.$$
@@ -154,7 +156,7 @@ The result in \eqref{siavelocity} will not be used in this paper as an actual mo
 
 \section{Ice geometry and its evolution} \label{sec:stronggeometry}
 
-The above equations do not describe how the glacier changes shape or extent.  This process, which is coupled to the ice flow, is described by an additional equation which states conservation of mass on the top boundary $\overline{\partial} \Omega^t$.  To present this equation we first assume a larger map-plane computational domain $R\subset \RR^{d-1}$ on which the input surface mass balance and bedrock elevation data of the problem are defined; see Figure \ref{fig:domainnotation}.  The ice-covered area is then a subset of the interior of $R$; that is, we require that ice is not present on, nor does it flow across, the boundary of $R$.
+The above equations do not describe how the glacier changes shape or extent.  This process, which is of course coupled to the ice flow velocity, is described by an additional equation which states conservation of mass on the top boundary $\overline{\partial} \Omega^t$.  To present this equation we first assume a larger map-plane computational domain $R\subset \RR^{d-1}$ on which the input surface mass balance and bedrock elevation data of the problem are defined; see Figure \ref{fig:domainnotation}.  The ice-covered area is then a subset of the interior of $R$; that is, we require that ice is not present on, nor does it flow across, the boundary of $R$.
 
 Let $z=b(x,y)$ be the bedrock elevation, assumed continuously-differentiable and time-independent for simplicity, and $z=h(x,y,t)$ be the ice surface elevation; note that both functions are defined for all $(x,y)\in R$.  The surface elevation function, a part of the solution, will be continuous and piecewise differentiable.  The following form for the time-dependent and open ice domain is now assumed:
 \begin{equation}
@@ -198,36 +200,6 @@ Informally, \eqref{surfacekinematical} describes how the ice surface elevation i
 Numerical glacier models often evolve the time-dependent surface $z=h$ by explicit steps, i.e.~$\Delta h \approx \left(a + \bu\cdot \bn\right) \Delta t$ in the simplest forward-Euler case, based upon the current values of $a$, $\bu$, and $\bn$ (i.e.~$\grad h$).  However, we will be solving \eqref{surfacekinematical}, more precisely \eqref{stronginequality} and \eqref{strongcomplementarity}, implicitly and coupled with the Glen-Stokes system \eqref{stokes}--\eqref{basebc}.
 
 
-\section{The weak form of the decoupled Stokes model} \label{sec:weakdecoupled}
-
-In order to implement FE solutions we will need the weak form for the velocity-pressure boundary value problem.  We recall this well-known weak form of the Glen-Stokes problem \eqref{stokes}--\eqref{basebc} \cite{JouvetRappaz2011}; compare the even better-known weak form of the linear Stokes problem \cite{Bueler2021,Elmanetal2014}.  Furthermore this section sets notation and provides a starting point from which to state the coupled model, i.e.~including the surface kinematical equation, in the next section.
-
-Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocity fields with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For a fixed $t>0$ we will seek a solution from the following spaces:
-\begin{align*}
-\bu &\in \bV = \left\{\bv \in W^{1,r}(\Omega^t)^d\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
-p &\in Q = L^{r'}(\Omega^t).
-\end{align*}
-Test functions $\bv \in \bV_0$ and $q\in Q$ will come from nearly the same spaces, but with $\bv=\bzero$ also on the inflow boundary.  Note that velocities in $V$ are not (generally) twice differentiable, and that pressures in $Q$ need not even be continuous.
-
-To derive the weak form we multiply \eqref{stokes} by $\bv\in \bV_0$ and \eqref{incompagain} by $q\in Q$, then add these and integrate-by-parts:
-\begin{equation}
--\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds + \int_{\Omega^t} \tau \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx = 0. \label{nonfunctwo}
-\end{equation}
-Here $ds$ is the area element along $\partial\Omega^t$.  Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ appear without derivatives.
-
-Because $\bv\in \bV_0$, portions of the integral over $\partial\Omega^t$ are zero, and then the stress-free surface condition \eqref{topbc} eliminates the remaining boundary integral.  Thus we have the following functional $\tilde F$ which is nonlinear in $\bu,p$ and linear in $\bv,q$:
-\begin{equation}
-\tilde F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx. \label{definetildeF}
-\end{equation}
-The final integral in \eqref{definetildeF} can be regarded as the source term.
-
-We say $\bu\in \bV$ and $p\in Q$ solve the Glen-Stokes weak formulation at $t>0$ if
-\begin{equation}
-\tilde F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in \bV_0 \text{ and } q\in Q.  \label{weakdecoupled}
-\end{equation}
-A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  Note that if the inflow velocity is zero ($\bu_{\text{in}}=\bzero$) or absent ($\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupled} is $\bu=\bzero$ and $p=0$.
-
-
 \section{Implicit time-discretization and the domain update} \label{sec:implicitstep}
 
 As stated in the Introduction, the main purpose of this paper is to demonstrate an implicit scheme to simultaneously solve the Glen-Stokes equations \eqref{stokes}--\eqref{incompagain} and the surface kinematical equation \eqref{surfacekinematical}.  At each time step this scheme will compute a surrogate for the ice strain field over the duration of the time step.  This vertical-only displacement, defined everywhere within a reference domain (below), will be computed simultaneously with the velocity and pressure.  In other words we will solve a coupled system consisting of the stress balance \eqref{stokes}, incompressibility \eqref{incompagain}, and an additional vertical displacement equation such that \eqref{surfacekinematical} is also satisfied.
@@ -238,13 +210,13 @@ We will state this scheme using a discrete-time and continuous-space formulation
 
 \begin{figure}[ht]
 \begin{center}
-\includegraphics[width=0.75\textwidth]{figs/currenttime.pdf}
+\includegraphics[width=0.6\textwidth]{figs/currenttime.pdf}
 \vspace{-6mm}
 
-\includegraphics[width=0.75\textwidth]{figs/referencedomain.pdf}
+\includegraphics[width=0.6\textwidth]{figs/referencedomain.pdf}
 \vspace{-1mm}
 
-\includegraphics[width=0.75\textwidth]{figs/nexttime.pdf}
+\includegraphics[width=0.6\textwidth]{figs/nexttime.pdf}
 \end{center}
 \caption{The current ice domain $\Omega^{n-1}$ is modified to a reference domain $\Lambda$.  The coupled solution includes a map from $\Lambda$ to the next domain $\Omega^n$; it degenerates where the solution indicates no ice.  Margin advance or retreat is allowed.}
 \label{fig:domainupdate}
@@ -330,13 +302,36 @@ The integral along $\overline{\partial} \Lambda$, with length element $d\sigma$,
 
 Assuming that $\Lambda$ is a well-behaved domain, this boundary-value problem, which is linear under choice A above, is expected to be well-posed if $u,w$ are given functions.  However, we intend to solve \eqref{claplace} in a coupled context, whether in choice A or B, where the Dirichlet condition on the top couples the computation of $c$ with the nonlinear Glen-Stokes model.  The well-posedness of the coupled equations is not resolved in this paper.
 
-
-
 \section{Weak form of the coupled equations} \label{sec:weakformcoupled}
 
-FIXME everything in this section
+In order to implement FE solutions we will need the weak form of our coupled system.  We first recall the well-known weak form of the decoupled Glen-Stokes problem \eqref{stokes}--\eqref{basebc} \cite{JouvetRappaz2011} for velocity and pressures, separately from the surface kinematical equation.  (Compare the even better-known weak form of the linear Stokes problem \cite{Bueler2021,Elmanetal2014}.)  This sets notation and provides a starting point from which to state the weak form of the coupled model.
 
-The change of variables defined in the last section requires us to rewrite the weak form integrals of the Glen-Stokes model.  For a generic scalar-valued $L^1$ function $\tilde f(x,z)$ defined on $\Omega^n$, by the change of variables theorem we have
+Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocity fields with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For a fixed $t>0$ we will seek a solution from the following spaces:
+\begin{align*}
+\bu &\in \bV = \left\{\bv \in W^{1,r}(\Omega^t)^d\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
+p &\in Q = L^{r'}(\Omega^t).
+\end{align*}
+Test functions $\bv \in \bV_0$ and $q\in Q$ will come from nearly the same spaces, but with $\bv=\bzero$ also on the inflow boundary.  Note that velocities in $V$ are not (generally) twice differentiable, and that pressures in $Q$ need not even be continuous.
+
+To derive the weak form we multiply \eqref{stokes} by $\bv\in \bV_0$ and \eqref{incompagain} by $q\in Q$, then add these and integrate-by-parts:
+\begin{equation}
+-\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds + \int_{\Omega^t} \tau \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx = 0. \label{nonfunctwo}
+\end{equation}
+Here $ds$ is the area element along $\partial\Omega^t$.  Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ appear without derivatives.
+
+Because $\bv\in \bV_0$, portions of the integral over $\partial\Omega^t$ are zero, and then the stress-free surface condition \eqref{topbc} eliminates the remaining boundary integral.  Thus we have the following functional $\tilde F$ which is nonlinear in $\bu,p$ and linear in $\bv,q$:
+\begin{equation}
+\tilde F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx. \label{definetildeF}
+\end{equation}
+The final integral in \eqref{definetildeF} can be regarded as the source term.
+
+We say $\bu\in \bV$ and $p\in Q$ solve the decoupled Glen-Stokes weak formulation at $t>0$ if
+\begin{equation}
+\tilde F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in \bV_0 \text{ and } q\in Q.  \label{weakdecoupled}
+\end{equation}
+A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  Note that if the inflow velocity is zero ($\bu_{\text{in}}=\bzero$) or absent ($\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupled} is $\bu=\bzero$ and $p=0$.
+
+FIXME The change of variables defined in the last section requires us to rewrite the weak form integrals of the Glen-Stokes model.  For a generic scalar-valued $L^1$ function $\tilde f(x,z)$ defined on $\Omega^n$, by the change of variables theorem we have
 \begin{equation}
 \int_{\Omega^n} \tilde f(x,z)\,dx dz = \int_\Lambda f(r,s) \, j(r,s)\,dr ds, \label{changeintegral}
 \end{equation}
@@ -363,6 +358,13 @@ F(\bu,p,c;\bv,q,e) &= \int_\Lambda 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv\, j\,dr ds
 
 The solution of the weak form is a list of three functions, $\bu = \left<u_0,u_2\right> \in V_D$, $p\in L^{p'}(\Lambda)$, and $c\in W^{1,2}_0(\Lambda)$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all $\bv = \left<v_0,v_2\right> \in V_0$,  $q\in L^{p'}(\Lambda)$, and $e \in W^{1,2}_0(\Lambda)$.  Note that all trial and test functions are functions of $r$ and $s$ in $\Lambda$.
 
+
+\section{Finite element approximation}  \label{sec:finiteelement}
+
+FIXME: numerical solver should check element orientation under change of coordinates (above); if the solver flips an element then it is bad; also check new element aspect ratio and (presumably) remesh if that is bad; the initial iterate for the (SNES-based) solver is clear: $\bu,p$ come from solution of previous time step, and $b$ starts at zero
+
+FIXME cite \cite{Tuminaroetal2016} re preconditioning for thin-film extruded meshes, and \cite{IsaacStadlerGhattas2015} for existing optimal Stokes solver for ice sheets
+
 FIXME Figure \ref{fig:blockstructure} shows block structure; DRAFT because it misses the effect of the stretching coefficients
 % ./stokes2D.py -s_snes_converged_reason -s_ksp_converged_reason -nintervals 3 -layer 3 -s_ksp_view_mat :coarsespy.m:ascii_matlab
 % >> spy(Mat_0x84000005_0,'k'), axis equal
@@ -377,16 +379,6 @@ FIXME Figure \ref{fig:blockstructure} shows block structure; DRAFT because it mi
 \label{fig:blockstructure}
 \end{figure}
 
-
-\section{Finite element approximation}  \label{sec:finiteelement}
-
-FIXME: numerical solver should check element orientation under change of coordinates (above); if the solver flips an element then it is bad; also check new element aspect ratio and (presumably) remesh if that is bad; the initial iterate for the (SNES-based) solver is clear: $\bu,p$ come from solution of previous time step, and $b$ starts at zero
-
-FIXME cite \cite{Tuminaroetal2016} re preconditioning for thin-film extruded meshes, and \cite{IsaacStadlerGhattas2015} for existing optimal Stokes solver for ice sheets
-
-FIXME look back at Figure \ref{fig:blockstructure}
-
-
 \section{Results}
 
 FIXME among many things cite \cite{LeysingerGudmundsson2004} regarding earlier comparison of stokes to Halfar
@@ -397,23 +389,19 @@ FIXME among many things cite \cite{LeysingerGudmundsson2004} regarding earlier c
 FIXME not appreciated that, while for explicit time-stepping schemes the surface mass balance need only be computed at the current ice surface, and at neighboring ice-free locations, in implicit time stepping the surface mass balance must be available to the evolving-geometry model (specifically to the residual-evaluation code) at every location in a 3D neighborhood of the ice surface, and indeed at all 3D locations above the bedrock elevation; a ``potential ice surface mass balance'' is needed at all such locations
 
 \appendix
-\section{The shallow ice approximation and its Halfar solutions}
+\section{Halfar solution to the shallow ice approximation}
 
-In section FIXME, states of a certain similarity solution to an approximation of the Stokes problem are used as synthetic geometries for testing.  They arise from the $n=3$, isothermal, flat-bed ($b=0$), and zero surface mass balance ($a=0$) case of the shallow ice approximation.  This model, derived by \cite{GreveBlatter2009} among other sources, determines an evolving ice thickness function $H(t,x,y)$ according to a nonlinear, free-boundary diffusion which applies on the set where $H>0$:
+In section FIXME, states of a certain similarity solution to an approximation of the Stokes problem are used as synthetic geometries for testing.  They arise from the $n=3$, isothermal, flat-bed ($b=0$), and zero surface mass balance ($a=0$) case of the shallow ice approximation (SIA).  This model, whose derivation is summarized in section \ref{sec:strongform}, determines an evolving ice thickness function $H(t,x,y)$ according to a nonlinear, free-boundary diffusion which applies on the set where $H>0$ \cite{Fowler1997}:
 \begin{equation}
 \frac{\partial H}{\partial t} = \Gamma \Div \left(H^5 |\grad H|^2 \grad H\right). \label{sia}
 \end{equation}
-(References \cite{Bueler2016} and \cite{JouvetBueler2012} consider the rigorous meaning of this free boundary problem.)  In this equation we define $\Gamma = \frac{2}{5} A_3 (\rho g)^n$; constants $A_3,\rho,g$ have the same meaning and values as in the body of the paper.
+(References \cite{Bueler2016,JouvetBueler2012} consider the rigorous meaning of this free boundary problem.)  In this equation we define $\Gamma = \frac{2}{5} A_3 (\rho g)^n$; constants $A_3,\rho,g$ have the same meaning and values as in the body of the paper.
 
-P.~Halfar \cite{Halfar1981,Halfar1983} seems to have been the first to observe that \eqref{sia} has a similarity solution with $\lim_{t\to 0} H$ equal to a multiple of the Dirac delta function, and he observed that this solution is asymptotically stable.  This solution exactly solves the shallow approximation of no-slip flow.  Informally, the solution is a circular dome which spreads radially while thinning, with constant-in-time total volume.
-
-In more detail, denoting the usual radial coordinate as $r=(x^2+y^2)^{1/2}$, the Halfar solution \cite{Halfar1983} is of the form $H(t,r) = t^{-\alpha} \varphi(s)$ with similarity variable $s=t^{-\beta} r$ and $\alpha=1/9$ and $\beta=1/18$.  If $H_0$ is a given central thickness value at a time $t_0$, and $R_0$ is a given radius, then the solution is
-    $$H(t,x,y) = H_0 \left(\frac{t}{t_0}\right)^{-\alpha} \left\{1 - \left[\left(\frac{t}{t_0}\right)^{-\beta} \frac{r}{R_0}\right]^{4/3}\right\}^{3/7}.$$
-This formula applies where the resulting value is positive, and $H=0$ otherwise; see \cite{Bueleretal2005}.  The characteristic time can by found by $\displaystyle t_0 = \frac{\beta}{\Gamma} \left(\frac{7}{4}\right)^3 \frac{R_0^4}{H_0^7}$.
-
-The corresponding $d=2$ Halfar solution \cite{Halfar1981}, namely in one horizontal dimension, is of the form $H(t,x) = t^{-\alpha} \varphi(s)$ with similarity variable $s=t^{-\alpha} x$ and $\alpha=1/11$.  The solution is
-    $$H(t,x) = H_0 \left(\frac{t}{t_0}\right)^{-\alpha} \left\{1 - \left[\left(\frac{t}{t_0}\right)^{-\alpha} \frac{x}{R_0}\right]^{4/3}\right\}^{3/7},$$
-with characteristic time $\displaystyle t_0 = \frac{\alpha}{\Gamma} \left(\frac{7}{4}\right)^3 \frac{R_0^4}{H_0^7}$.
+P.~Halfar \cite{Halfar1981} observed that \eqref{sia} has an exact similarity solution with $\lim_{t\to 0} H$ equal to a multiple of the Dirac delta function, and that this solution is asymptotically stable.  In 3D \cite{Halfar1983} the solution is a circular dome which spreads radially while thinning, with constant-in-time total volume.  Denoting the usual radial coordinate as $r=(x^2+y^2)^{1/2}$, the solution is of the form $H(t,r) = t^{-\alpha} \varphi(s)$ with similarity variable $s=t^{-\beta} r$ and $\alpha=1/9$ and $\beta=1/18$.  If $H_0$ is a given central thickness value at a time $t_0$, and $R_0$ is a given radius, then the solution is
+\begin{equation}
+H(t,x,y) = H_0 \left(\frac{t}{t_0}\right)^{-\alpha} \left\{1 - \left[\left(\frac{t}{t_0}\right)^{-\beta} \frac{r}{R_0}\right]^{4/3}\right\}^{3/7}. \label{halfar}
+\end{equation}
+This formula applies where the resulting value is positive, and $H=0$ otherwise; see \cite{Bueleretal2005}.  The characteristic time can by found by $t_0 = (\beta/\Gamma) (7/4)^3 R_0^4 H_0^{-7}$.  The corresponding 2D Halfar solution $H(t,x)$ \cite{Halfar1981}, in one horizontal dimension, is of the same form as \eqref{halfar}, but with $r$ replaced by $x$ and with $\alpha=\beta=1/11$.
 
 \small
 
