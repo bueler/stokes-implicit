@@ -84,7 +84,7 @@ We do not, however, consider the conservation of energy, and neither thermomecha
 
 To discretize the continuum equations we apply the finite element (FE) method \cite{Elmanetal2014} by using the Firedrake library \cite{Rathgeberetal2016} in Python.\footnote{These Python programs are open-source at \href{https://github.com/bueler/stokes-implicit}{\texttt{github.com/bueler/stokes-implicit}}.  FIXME: MAKE REPO PUBLIC.}  We use meshes which are unstructured in the map-plane but which are extruded \cite{Gibsonetal2019} in the vertical direction.  As discussed below, mixed elements for velocity, pressure, and vertical ice strain are used, with stable and aspect-ratio robust choices for the velocity-pressure (i.e.~Stokes) block \cite{Elmanetal2014}.  Solutions of the resulting nonlinear discrete equations apply multigrid-preconditioned Newton-Krylov methods \cite{Bueler2021} via PETSc \cite{Balayetal2020}, and all computations are parallelized.
 
-The model performance metric introduced here is a natural one for glacier modeling.  Namely, we measure the run time of our coupled Glen-Stokes simulations relative to the well-understood computation of ice velocity in the shallow ice approximation (SIA) \cite{Fowler1997} on the same mesh.  That is, we define a glacier model ``work unit'' as the time needed for a diagnostic computation of the Glen-law SIA velocity solution, a vertical integration of simple power functions \cite{SchoofHewitt2013}.
+The model performance metric introduced here is a natural one for glacier modeling.  Namely, we measure the run time of our coupled Glen-Stokes simulations relative to the well-understood computation of ice velocity in the shallow ice approximation (SIA) \cite{Fowler1997} on the same mesh.  That is, we define a glacier model ``work unit'' as the time needed for a diagnostic computation of the SIA velocity solution.
 
 FIXME compare the literature of existing glacier Stokes solvers including \cite{Gudmundsson1999,Jouvetetal2008,Larouretal2012,LeysingerGudmundsson2004,PralongFunk2004,Seddiketal2012,Zwingeretal2007}
 
@@ -122,12 +122,34 @@ Glacier-suitable dynamic boundary conditions will be used, with an emphasis on i
 \begin{align}
 \left(2 \nu_\eps(|D\bu|) D\bu - pI\right) \bn &= \bzero  &&\text{\emph{top}: } \overline{\partial} \Omega^t \label{topbc} \\
 \intertext{where $\bn$ is normal to the surface.  On the base we require no slip:}
-\bu &= \bzero  &&\text{\emph{base}: } \underline{\partial} \Omega^t \label{basebc} \\
-\intertext{Optionally, to allow simulation of a certain laboratory experiment \cite{SayagWorster2013} (below), we also allow an inflow boundary on which a prescribed velocity $\bu_{\text{in}}$ is applied, subject to $\bu_{\text{in}}\cdot \bn \le 0$ where $\bn$ is an outward normal:}
-\bu &= \bu_{\text{in}}  &&\text{\emph{inflow}: } \partial_{\text{in}} \Omega^t. \label{inflowbc}
+\bu &= \bzero  &&\text{\emph{base}: } \underline{\partial} \Omega^t \label{basebc}
 \end{align}
 
-Assuming the well-posedness of the above model \eqref{stokes}--\eqref{inflowbc}, as is proven by \cite{JouvetRappaz2011}, if the ice geometry $\Omega^t$ is known then the solution is a unique pair $(\bu,p)$.  Note that the slowness of the fluid, i.e.~zero Reynolds number, implies that the given boundary stresses and body forces determine velocity and pressure fields without any ``memory'' of prior states or influence from inertia, as would arise in the Navier-Stokes equations \cite{Fowler1997}.
+Optionally, to allow simulation of a certain laboratory experiment \cite{SayagWorster2013} (below), we also allow inflow.  Here a prescribed velocity is applied, $\bu = \bu_{\text{in}}$ on an inflow boundary $\partial_{\text{in}} \Omega^t$, subject to $\bu_{\text{in}}\cdot \bn \le 0$ where $\bn$ is an outward normal.
+
+Assuming the well-posedness of the above model \eqref{stokes}--\eqref{basebc}, as is proven by \cite{JouvetRappaz2011}, if the ice geometry $\Omega^t$ is known then the solution is a unique pair $(\bu,p)$.  Note that the slowness of the fluid, i.e.~zero Reynolds number, implies that the given boundary stresses and body forces determine velocity and pressure fields without any ``memory'' of prior states or influence from inertia, as would arise in the Navier-Stokes equations \cite{Fowler1997}.
+
+The SIA, a widely-used simplified model for the flow of grounded, non-sliding ice \cite{SchoofHewitt2013}, is used in this paper for comparison purposes.  It is derived by a small-parameter argument which we recall now by following Chapter 18 of \cite{Fowler1997}; note similar arguments in other sources e.g.~\cite{GreveBlatter2009}.  Let $[H]$, $[L]$, $[U]$, and $[\tau]$ denote typical thickness, horizontal extent, horizontal velocity, and vertical-plane shear stress values, respectively.  We consider $\eps = [H]/[L]$ as the small parameter; for a mountain glacier we might have $\eps \approx 0.1$ but for the Greenland ice sheet $\eps \in (10^{-3},10^{-2})$ is reasonable.  We scale the kinematic variables $x,y \sim [L]$, $z \sim [H] = \eps [L]$, $u,v \sim [U]$, and $w \sim \eps [U]$.\footnote{Recall this means, for example, that we introduce new ``hatted'' variables via $x=[L]\hat x$, $y=[L]\hat y$, and $z=[H] \hat z$.  The equations are rewritten in the new variables and then the hats are removed.}  We suppose the stress components $\tau_{xz},\tau_{yz}$ scale with $[\tau]$ and components $\tau_{xx},\tau_{yy},\tau_{xy}$ with $\eps[\tau]$.   The pressure perturbation from the hydrostatic condition, namely $p-\rho g (h - z)$, is scaled with $\eps [\tau]$ also; this means that $p-\rho g (h - z)=\eps[\tau]\hat{\delta p}$.  With these scalings, plus certain additional relationships among the scale factors \cite[Chapter 18]{Fowler1997}, equations \eqref{forcebalance} yield
+    $$\frac{\partial\tau_{xz}}{\partial z} + O(\eps^2) = \frac{\partial h}{\partial x}, \qquad \frac{\partial\tau_{yz}}{\partial z} + O(\eps^2) = \frac{\partial h}{\partial y}.$$
+Also, the norm of the deviatoric stress satisfies $|\tau|^2 = \tau_{xz}^2 + \tau_{yz}^2 + O(\eps^2)$, the shear stresses are dominated by the $z$ derivatives of the horizontal velocity, that is, $\tau_{xz} = \nu(\frac{\partial u}{\partial z} + \eps^2 \frac{\partial w}{\partial z})$ and $\tau_{yz} = \nu(\frac{\partial v}{\partial z} + \eps^2 \frac{\partial w}{\partial y})$, the stress-free condition at the surface $z=h$ becomes $\tau_{xz} = O(\eps^2)$ and $\tau_{yz} = O(\eps^2)$, and incompressibility \eqref{incompressible} is unaltered by the scaling.
+
+The strong form of the SIA arises from dropping terms of order $O(\eps^2)$ from these equations and returning to the original, unscaled variables.  Let $\bm{\tau}=\left<\tau_{xz},\tau_{yz}\right>$ denote the remaining shear stress components and $\bm{\omega}=\left<\frac{1}{2} \frac{\partial u}{\partial z},\frac{1}{2} \frac{\partial v}{\partial z}\right>$ the corresponding strain rates.  Note that \eqref{viscflowlaw} implies $|\bm{\tau}|=B_n |\bm{\omega}|^{1/n}$, where $|\cdot|$ denotes the ordinary Euclidean norm on $\RR^2$, and thus that $\bm{\omega} = A_n |\bm{\tau}|^{n-1} \bm{\tau}$ where $A_n=(B_n)^{-n}$.  We now have the following equations for the shear stresses and the velocity:
+\begin{equation}
+\frac{\partial\bm{\tau}}{\partial z} = \rho g \grad h, \qquad \Div \bu = 0, \qquad \bm{\omega} = A_n |\bm{\tau}|^{n-1} \bm{\tau}. \label{siavectorized}
+\end{equation}
+These subject to $\bm{\tau}=0$ at the surface $z=h$ and $\bu=0$ on the base $z=b$.  Note that equations \eqref{siavectorized} essentially use the approximation
+    $$D\bu \approx \begin{pmatrix} 0 & 0 & \frac{1}{2} \frac{\partial u}{\partial z} \\  0 & 0 & \frac{1}{2} \frac{\partial v}{\partial z} \\ \frac{1}{2} \frac{\partial u}{\partial z} & \frac{1}{2} \frac{\partial u}{\partial z} & 0 \end{pmatrix}$$
+in \eqref{stokes}, but then we only balance the $z$ derivative of the stresses against the surface gradient, and we need not compute the pressure simultaneously with the velocity.
+
+The SIA stress equations \eqref{siavectorized} can be vertically-integrated to give a formulas for the horizontal velocity.  By a first integral, $\bm{\tau} = \rho g (h-z) \grad h$, thus
+    $$\left<\frac{\partial u}{\partial z},\frac{\partial v}{\partial z}\right> = 2 A_n (\rho g)^n (h-z)^n |\grad h|^{n-1} \grad h.$$
+Integrating again we determine the horizontal velocity at any point within the ice:
+\begin{equation}
+\left<u,v\right> = \frac{2 A_n (\rho g)^n}{n+1} \left((h-b)^{n+1} - (h-z)^{n+1}\right) |\grad h|^{n-1} \grad h.  \label{siavelocity}
+\end{equation}
+The incompressibility equation can then be used to compute the vertical velocity component $w$ by an additional vertical integration of \eqref{siavelocity}, but we have no need for this result.
+
+The result in \eqref{siavelocity} will not be used in this paper as an actual model for ice flow.  Rather it has three ancillary purposes.  First, in combination with the hydrostatic pressure computation $p=\rho g (h-z)$, and the above-mentioned application of incompressibility to find $w$, it provides a fast computation of an initial iterate in a nonlinear Stokes solver.  Second, computing \eqref{siavelocity} on a given mesh defines our ``work unit'' when evaluating Stokes solver performance on that mesh.  Third and finally, when combined with the surface kinematical equation, \eqref{siavelocity} can be used to derive a nonlinear and degenerate diffusion problem for the ice sheet thickness \cite{Fowler1997}.  Appendix A reports an exact similarity solution of this problem, in the flat bed and zero mass-balance case, which we will use as a source of ice sheet initial states in certain numerical experiments.
 
 
 \section{Ice geometry and its evolution} \label{sec:stronggeometry}
@@ -173,12 +195,12 @@ At ice-free locations, where $\frac{\partial h}{\partial t}=0$ and $\bu=\bzero$,
 
 Informally, \eqref{surfacekinematical} describes how the ice surface elevation is updated: the climatically added or removed ice $a\,\Delta t$, plus the component of the ice motion in direction $\bn$, determines the vertical motion of the surface.  Note that the mass balance $a(x,y,z,t)$ is computed using a separate model for the dynamical state of the atmosphere, one which computes snow precipitation, (atmospheric) energy-driven melt at snow/ice surfaces, and liquid water runoff.  How this is done is well beyond our scope, but it is important in moving-margin glacier simulations that $a$ have a well-defined value both at the current ice surface and elsewhere, or at least nearby.  The simulated glacier can only move into new areas, retreat from ice-covered areas, and undergo changes of surface elevation, if the source term at the new (and intermediate) locations is well-defined.
 
-Numerical glacier models often evolve the time-dependent surface $z=h$ by explicit steps, i.e.~$\Delta h \approx \left(a + \bu\cdot \bn\right) \Delta t$ in the simplest forward-Euler case, based upon the current values of $a$, $\bu$, and $\bn$ (i.e.~$\grad h$).  However, we will be solving \eqref{surfacekinematical}, more precisely \eqref{stronginequality} and \eqref{strongcomplementarity}, implicitly and coupled with the Glen-Stokes system \eqref{stokes}--\eqref{inflowbc}.
+Numerical glacier models often evolve the time-dependent surface $z=h$ by explicit steps, i.e.~$\Delta h \approx \left(a + \bu\cdot \bn\right) \Delta t$ in the simplest forward-Euler case, based upon the current values of $a$, $\bu$, and $\bn$ (i.e.~$\grad h$).  However, we will be solving \eqref{surfacekinematical}, more precisely \eqref{stronginequality} and \eqref{strongcomplementarity}, implicitly and coupled with the Glen-Stokes system \eqref{stokes}--\eqref{basebc}.
 
 
-\section{Weak forms of the decoupled Stokes and SIA models} \label{sec:weakdecoupled}
+\section{The weak form of the decoupled Stokes model} \label{sec:weakdecoupled}
 
-In order to implement FE solutions we will need weak forms for the velocity-pressure boundary value problems.  We recall the well-known weak form \cite{Bueler2021,Elmanetal2014,JouvetRappaz2011} of the Glen-Stokes problem \eqref{stokes}--\eqref{inflowbc} and then we also derive the weak form for the shallow ice approximation (SIA).  The latter is needed here for two purposes, firstly as it computes initial iterates in solving the Stokes problem, and secondly for a performance comparison and metric.  Furthermore this section will set notation and provide a starting point from which to state the coupled model, i.e.~including the surface kinematical equation, in the next section.
+In order to implement FE solutions we will need the weak form for the velocity-pressure boundary value problem.  We recall this well-known weak form of the Glen-Stokes problem \eqref{stokes}--\eqref{basebc} \cite{JouvetRappaz2011}; compare the even better-known weak form of the linear Stokes problem \cite{Bueler2021,Elmanetal2014}.  Furthermore this section sets notation and provides a starting point from which to state the coupled model, i.e.~including the surface kinematical equation, in the next section.
 
 Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocity fields with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For a fixed $t>0$ we will seek a solution from the following spaces:
 \begin{align*}
@@ -204,26 +226,6 @@ We say $\bu\in \bV$ and $p\in Q$ solve the Glen-Stokes weak formulation at $t>0$
 \tilde F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in \bV_0 \text{ and } q\in Q.  \label{weakdecoupled}
 \end{equation}
 A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  Note that if the inflow velocity is zero ($\bu_{\text{in}}=\bzero$) or absent ($\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupled} is $\bu=\bzero$ and $p=0$.
-
-The SIA, a widely-used simplified model for the flow of grounded, non-sliding ice \cite{SchoofHewitt2013}, is derived by a small-parameter argument.  Following Chapter 18 of \cite{Fowler1997}, but noting that equivalent arguments are found in other sources \cite[for example]{GreveBlatter2009}, we recall this argument to derived the SIA strong form, which is then converted to weak form in analogy to \eqref{weakdecoupled} above.
-
-Let $[H]$, $[L]$, $[U]$, and $[\tau]$ denote typical thickness, horizontal extent, horizontal velocity, and vertical-plane shear stress values, respectively.  We consider $\eps = [H]/[L]$ as the small parameter; for a mountain glacier we might have $\eps \approx 0.1$ but for the Greenland ice sheet $\eps \in (10^{-3},10^{-2})$ is reasonable.  We scale the kinematic variables $x,y \sim [L]$, $z \sim [H] = \eps [L]$, $u,v \sim [U]$, and $w \sim \eps [U]$.\footnote{Recall this means, for example, that we introduce new ``hatted'' variables via $x=[L]\hat x$, $y=[L]\hat y$, and $z=[H] \hat z$.  The equations are rewritten in the new variables and then the hats are removed.}  We suppose the stress components $\tau_{xz},\tau_{yz}$ scale with $[\tau]$ and components $\tau_{xx},\tau_{yy},\tau_{xy}$ with $\eps[\tau]$.   The pressure perturbation from the hydrostatic condition, namely $p-\rho g (h - z)$, is scaled with $\eps [\tau]$ also; this means that $p-\rho g (h - z)=\eps[\tau]\hat{\delta p}$.
-
-With these scalings, plus certain additional relationships among the scale factors \cite[Chapter 18]{Fowler1997}, equations \eqref{forcebalance} and \eqref{incompressible} become
-    $$\frac{\partial\tau_{xz}}{\partial z} + O(\eps^2) = \frac{\partial h}{\partial x}, \qquad \frac{\partial\tau_{yz}}{\partial z} + O(\eps^2) = \frac{\partial h}{\partial y}, \qquad \frac{\partial u}{\partial x} + \frac{\partial v}{\partial y} + \frac{\partial w}{\partial z} = 0.$$
-(An additional equation, which we will not need, determines $\delta p$ \cite{Fowler1997}.)  The norm of the deviatoric stress satisfies $|\tau|^2 = \tau_{xz}^2 + \tau_{yz}^2 + O(\eps^2)$ and $\tau_{xz} = \nu(\frac{\partial u}{\partial z} + \eps^2 \frac{\partial w}{\partial z}),\tau_{yz} = \nu(\frac{\partial v}{\partial z} + \eps^2 \frac{\partial w}{\partial y})$.  The stress-free surface condition at $z=h$ becomes $\tau_{xz} = O(\eps^2)$ and $\tau_{yz} = O(\eps^2)$.
-
-The strong form of the SIA arises from dropping terms of order $O(\eps^2)$ from these equations (and returning to the original, unscaled variables).  Let $\bm{\tau}=\left<\tau_{xz},\tau_{yz}\right>$ denote the remaining (dominant) shear stress components and $\bm{\omega}=\left<\frac{1}{2} \frac{\partial u}{\partial z},\frac{1}{2} \frac{\partial v}{\partial z}\right>$ the corresponding strain rates.  We are left with the following strong form equations for the velocity and shear stresses,
-\begin{equation}
-\frac{\partial\bm{\tau}}{\partial z} = \grad h, \qquad \Div \bu = 0, \qquad \bm{\tau} = B_n |\bm{\omega}|^{r-2} \bm{\omega}, \label{siastrong}
-\end{equation}
-analogous to \eqref{forcebalance}--\eqref{viscflowlaw}, subject to $\bm{\tau}=0$ at the surface $z=h$ and $\bu=0$ on the base $z=b$, where $|\bm{\omega}|$ denotes the ordinary Euclidean norm on $\RR^2$.  Note this essentially uses the approximation
-    $$D\bu \approx \begin{pmatrix} 0 & 0 & \frac{1}{2} \frac{\partial u}{\partial z} \\  0 & 0 & \frac{1}{2} \frac{\partial v}{\partial z} \\ \frac{1}{2} \frac{\partial u}{\partial z} & \frac{1}{2} \frac{\partial u}{\partial z} & 0 \end{pmatrix}$$
-in \eqref{stokes}, but then we only balance the $z$ derivative of the stresses against the surface gradient, and we need not compute the pressure simultaneously with the velocity.
-
-The SIA equations \eqref{siastrong} can be used to derive a nonlinear, degenerate, and free-boundary diffusion problem for the ice sheet thickness \cite{Fowler1997}.  Appendix A considers some exact solutions of this model in the flat bed and zero mass-balance, which will be used here as a source of ice sheet initial states.
-
-FIXME which leads to SIA weak form
 
 
 \section{Implicit time-discretization and the domain update} \label{sec:implicitstep}
@@ -374,20 +376,6 @@ FIXME Figure \ref{fig:blockstructure} shows block structure; DRAFT because it mi
 \caption{FIXME block structure of coupled problem}
 \label{fig:blockstructure}
 \end{figure}
-
-
-\section{Inequality constraints and mass accounting} \label{sec:inequalities}
-
-\begin{lemma}
-Assume that the ice thickness is well defined at time $t_{n-1}$.  If [OLD] inequality holds then the updated ice surface elevation
-    $$h(r) = \sup_{s\in I(r)}\{z(r,s)\}$$
-satisfies \eqref{admissibility}, i.e.~$h(r)\ge b(r)$.
-\end{lemma}
-
-\begin{proof}
-FIXME? This is the fundamental theorem of calculus:
-    $$h(r) - b(r) = \int_{I(r)} 1\,ds \le \int_{I(r)} - \frac{\partial c}{\partial s}\,ds$$
-\end{proof}
 
 
 \section{Finite element approximation}  \label{sec:finiteelement}
