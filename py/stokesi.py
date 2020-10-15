@@ -9,7 +9,7 @@
 #   * add options something like solver packages in mccarthy/stokes/
 
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
-# timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -baserefine 1 -vertrefine 1 -savestresses -o foo.pvd
+# timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -baserefine 1 -vertrefine 1 -saveextra -o foo.pvd
 
 from firedrake import *
 import sys
@@ -67,8 +67,8 @@ parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save to output file name ending with .pvd')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
-parser.add_argument('-savestresses', action='store_true', default=False,
-                    help='save stresses (tau,nu,pminushydrostatic) to output file')
+parser.add_argument('-saveextra', action='store_true', default=False,
+                    help='save stresses (tau,nu,pminushydrostatic) and SIA horizontal velocity (velocitySIA) to output file')
 parser.add_argument('-sia', action='store_true', default=False,
                     help='use a coupled weak form corresponding to the SIA problem')
 parser.add_argument('-spectralvert', type=int, default=0, metavar='N',
@@ -370,49 +370,80 @@ def getstresses(mesh,Vscalar,u):
     tau.rename('tau')
     return tau, nu
 
-# get difference between pressure and hydrostatic pressure
-def getpdifference(mesh,base_mesh,Vscalar,p,z):
-    # first get function h, defined on base_mesh, which contains surface elevation
+# compute h(x,y) on the base mesh
+def evaluatesurfaceelevation(base_mesh,Vscalar,z):
     Vbase = FunctionSpace(base_mesh, 'CG', 1)
     hbase = Function(Vbase)
     bc = DirichletBC(Vscalar, 1.0, 'top')
-    # z itself is an 'Indexed' object, so use a Function with .dat attribute
+    # z itself is an 'Indexed' object, so use a Function with .dat attribute;
+    # also add halos for parallelizability of the interpolation
     hbase.dat.data_with_halos[:] = Function(Vscalar).interpolate(z).dat.data_with_halos[bc.nodes]
-    # now extend to h defined on the extruded mesh using the 'R' space
+    return hbase
+
+# extend h(x,y) to extruded mesh using the 'R' space
+def extendsurfaceelevation(mesh,base_mesh,Vscalar,z):
+    hbase = evaluatesurfaceelevation(base_mesh,Vscalar,z)
     h = Function(FunctionSpace(mesh, 'CG', 1, vfamily='R', vdegree=0))
     h.dat.data[:] = hbase.dat.data_ro[:]
-    # finally, compute difference with pressure
+    return h
+
+# get difference between pressure and hydrostatic pressure
+def getpdifference(mesh,base_mesh,Vscalar,z,p):
+    h = extendsurfaceelevation(mesh,base_mesh,Vscalar,z)
     pdiff = Function(Vscalar).interpolate(p - rho * g * (h - z))
     pdiff.rename('pressure minus hydrostatic pressure')
     return pdiff
+
+def getsiahorizontalvelocity(mesh,base_mesh,Vscalar,z):
+    hbase = evaluatesurfaceelevation(base_mesh,Vscalar,z)
+    if args.my > 0:
+        Vvectorbase = VectorFunctionSpace(base_mesh, 'DQ', 0)
+        gradhbase = project(grad(hbase),Vvectorbase)
+        VvectorR = VectorFunctionSpace(mesh, 'DQ', 0, vfamily='R', vdegree=0, dim=2)
+        Vvector = VectorFunctionSpace(mesh, 'DQ', 0, dim=2)
+    else:
+        Vvectorbase = FunctionSpace(base_mesh, 'DP', 0)
+        gradhbase = project(hbase.dx(0),Vvectorbase)
+        VvectorR = FunctionSpace(mesh, 'DP', 0, vfamily='R', vdegree=0)
+        Vvector = FunctionSpace(mesh, 'DP', 0)
+    gradh = Function(VvectorR)
+    gradh.dat.data[:] = gradhbase.dat.data_ro[:]
+    h = extendsurfaceelevation(mesh,base_mesh,Vscalar,z)
+    h0 = project(h, FunctionSpace(mesh,'DQ',0))
+    z0 = project(z, FunctionSpace(mesh,'DQ',0))
+    # FIXME following only valid in flat bed case
+    uv = Function(Vvector).interpolate(- Gamma * (h0**4 - (h0-z0)**4) * abs(gradh)**2 * gradh)
+    uv.rename('velocitySIA')
+    return uv
 
 # save ParaView-readable file
 if args.o:
     written = 'u,p,c'
     if mesh.comm.size > 1:
          written += ',rank'
-    if args.savestresses:
-         written += ',tau,nu,pdiff'
+    if args.saveextra:
+         written += ',tau,nu,pdiff,velocitySIA'
     PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' % (written,args.o))
     u,p,c = upc.split()
     u.rename('velocity')
     p.rename('pressure')
     c.rename('displacement')
-    if args.savestresses:
+    if args.saveextra:
         tau, nu = getstresses(mesh,Vp,u)
-        pdiff = getpdifference(mesh,base_mesh,Vp,p,z)
+        pdiff = getpdifference(mesh,base_mesh,Vp,z,p)
+        velocitySIA = getsiahorizontalvelocity(mesh,base_mesh,Vp,z)
     if mesh.comm.size > 1:
         # integer-valued element-wise process rank
         rank = Function(FunctionSpace(mesh,'DG',0))
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
-        if args.savestresses:
-            File(args.o).write(u,p,c,rank,tau,nu,pdiff)
+        if args.saveextra:
+            File(args.o).write(u,p,c,rank,tau,nu,pdiff,velocitySIA)
         else:
             File(args.o).write(u,p,c,rank)
     else:
-        if args.savestresses:
-            File(args.o).write(u,p,c,tau,nu,pdiff)
+        if args.saveextra:
+            File(args.o).write(u,p,c,tau,nu,pdiff,velocitySIA)
         else:
             File(args.o).write(u,p,c)
 
