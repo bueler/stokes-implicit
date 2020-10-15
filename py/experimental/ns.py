@@ -1,4 +1,4 @@
-# Simplified Navier-Stokes solver for lid-driven cavity using P2-P1
+# Simplified 2D Navier-Stokes solver for lid-driven cavity using P2-P1
 # Taylor-Hood elements and a direct solver (MUMPS).  Compare matfreens.py,
 # from which it came.  Note that solve converges up to about Re=950.
 
@@ -7,8 +7,8 @@ from firedrake import *
 N = 64
 mesh = UnitSquareMesh(N, N)
 
-V = VectorFunctionSpace(mesh, "CG", 2)
-W = FunctionSpace(mesh, "CG", 1)
+V = VectorFunctionSpace(mesh,'P',2)
+W = FunctionSpace(mesh,'P',1)
 Z = V * W
 
 up = Function(Z)
