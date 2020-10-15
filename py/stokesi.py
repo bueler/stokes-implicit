@@ -13,8 +13,7 @@
 
 from firedrake import *
 import sys
-from iceconstants import secpera,g,rho,n,A3,B3,Gamma
-from halfar import halfar2d,halfar3d
+from iceconstants import secpera,g,rho,n,Bn
 
 import argparse
 parser = argparse.ArgumentParser(description='''
@@ -170,9 +169,11 @@ for k in range(hierlevs):
         kmesh = mesh
     if args.my > 0:
         x,y,z = SpatialCoordinate(kmesh)
+        from halfar import halfar3d
         t0, Hinitial = halfar3d(x,y,R0=args.R0,H0=args.H0)
     else:
         x,z = SpatialCoordinate(kmesh)
+        from halfar import halfar2d
         t0, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
     Hlimited = max_value(args.Href, Hinitial)
     Vcoord = kmesh.coordinates.function_space()
@@ -245,7 +246,7 @@ else:
         #FIXME: add this?  DirichletBC(Z.sub(1), Constant(0.0), 'top'),         # SIA: zero pressure on top
     # n=3 Glen law Stokes
     Du2 = 0.5 * inner(Du, Du) + args.eps * Dtyp**2.0
-    tau = B3 * Du2**(-1.0/3.0) * Du
+    tau = Bn * Du2**(-1.0/n) * Du
 F = inner(tau, Dv) * dx \
     + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
     + inner(grad(c),grad(e)) * dx
@@ -359,63 +360,6 @@ if base_mesh.comm.size > 1:
 solve(F == 0, upc, bcs=bcs, options_prefix = 's',
       solver_parameters=parameters)
 
-# compute tensor-valued deviatoric stress tau and effective viscosity from the velocity solution
-def getstresses(mesh,Vscalar,u):
-    TQ1 = TensorFunctionSpace(mesh, 'CG', 1)
-    Du = Function(TQ1).interpolate(0.5 * (grad(u)+grad(u).T))
-    Du2 = Function(Vscalar).interpolate(0.5 * inner(Du, Du) + args.eps * Dtyp**2.0)
-    nu = Function(Vscalar).interpolate(0.5 * B3 * Du2**(-1.0/3.0))
-    nu.rename('effective viscosity')
-    tau = Function(TQ1).interpolate(2.0 * nu * Du)
-    tau.rename('tau')
-    return tau, nu
-
-# compute h(x,y) on the base mesh
-def evaluatesurfaceelevation(base_mesh,Vscalar,z):
-    Vbase = FunctionSpace(base_mesh, 'CG', 1)
-    hbase = Function(Vbase)
-    bc = DirichletBC(Vscalar, 1.0, 'top')
-    # z itself is an 'Indexed' object, so use a Function with .dat attribute;
-    # also add halos for parallelizability of the interpolation
-    hbase.dat.data_with_halos[:] = Function(Vscalar).interpolate(z).dat.data_with_halos[bc.nodes]
-    return hbase
-
-# extend h(x,y) to extruded mesh using the 'R' space
-def extendsurfaceelevation(mesh,base_mesh,Vscalar,z):
-    hbase = evaluatesurfaceelevation(base_mesh,Vscalar,z)
-    h = Function(FunctionSpace(mesh, 'CG', 1, vfamily='R', vdegree=0))
-    h.dat.data[:] = hbase.dat.data_ro[:]
-    return h
-
-# get difference between pressure and hydrostatic pressure
-def getpdifference(mesh,base_mesh,Vscalar,z,p):
-    h = extendsurfaceelevation(mesh,base_mesh,Vscalar,z)
-    pdiff = Function(Vscalar).interpolate(p - rho * g * (h - z))
-    pdiff.rename('pressure minus hydrostatic pressure')
-    return pdiff
-
-def getsiahorizontalvelocity(mesh,base_mesh,Vscalar,z):
-    hbase = evaluatesurfaceelevation(base_mesh,Vscalar,z)
-    if args.my > 0:
-        Vvectorbase = VectorFunctionSpace(base_mesh, 'DQ', 0)
-        gradhbase = project(grad(hbase),Vvectorbase)
-        VvectorR = VectorFunctionSpace(mesh, 'DQ', 0, vfamily='R', vdegree=0, dim=2)
-        Vvector = VectorFunctionSpace(mesh, 'DQ', 0, dim=2)
-    else:
-        Vvectorbase = FunctionSpace(base_mesh, 'DP', 0)
-        gradhbase = project(hbase.dx(0),Vvectorbase)
-        VvectorR = FunctionSpace(mesh, 'DP', 0, vfamily='R', vdegree=0)
-        Vvector = FunctionSpace(mesh, 'DP', 0)
-    gradh = Function(VvectorR)
-    gradh.dat.data[:] = gradhbase.dat.data_ro[:]
-    h = extendsurfaceelevation(mesh,base_mesh,Vscalar,z)
-    h0 = project(h, FunctionSpace(mesh,'DQ',0))
-    z0 = project(z, FunctionSpace(mesh,'DQ',0))
-    # FIXME following only valid in flat bed case
-    uv = Function(Vvector).interpolate(- Gamma * (h0**4 - (h0-z0)**4) * abs(gradh)**2 * gradh)
-    uv.rename('velocitySIA')
-    return uv
-
 # save ParaView-readable file
 if args.o:
     written = 'u,p,c'
@@ -429,9 +373,10 @@ if args.o:
     p.rename('pressure')
     c.rename('displacement')
     if args.saveextra:
-        tau, nu = getstresses(mesh,Vp,u)
-        pdiff = getpdifference(mesh,base_mesh,Vp,z,p)
-        velocitySIA = getsiahorizontalvelocity(mesh,base_mesh,Vp,z)
+        from diagnostic import stresses,pdifference,siahorizontalvelocity
+        tau, nu = stresses(mesh,u,args.eps,Dtyp)
+        pdiff = pdifference(mesh,p)
+        velocitySIA = siahorizontalvelocity(mesh)
     if mesh.comm.size > 1:
         # integer-valued element-wise process rank
         rank = Function(FunctionSpace(mesh,'DG',0))

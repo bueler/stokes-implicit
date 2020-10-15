@@ -1,10 +1,12 @@
 # module for Halfar solutions: 2D = Halfar, 1981; 3D = Halfar, 1983
 
 import firedrake as fd
-from iceconstants import secpera,g,rho,n,A3,B3,Gamma
+from iceconstants import secpera,g,rho,n,An,Bn,Gamma
 
 inpow = (n+1) / n
 outpow = n / (2*n+1)
+
+assert n == 3.0   # only written for this case
 
 # see equation (9) in Bueler et al (2005)
 def gett0(beta,R0,H0):
