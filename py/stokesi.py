@@ -4,7 +4,7 @@
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * implement displacement stretching scheme
-#   * "aerogel mush" above current iterate surface in Href area
+#   * "miasma" above current iterate surface in Href area
 #   * get semicoarsening to work with mg; use pool.py as testing ground
 #   * add options something like solver packages in mccarthy/stokes/
 
