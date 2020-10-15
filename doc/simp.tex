@@ -143,11 +143,11 @@ subject to $\bm{\tau}=0$ at the surface $z=h$ and $\bu=0$ on the base $z=b$.  No
     $$D\bu \approx \begin{pmatrix} 0 & 0 & \frac{1}{2} \frac{\partial u}{\partial z} \\  0 & 0 & \frac{1}{2} \frac{\partial v}{\partial z} \\ \frac{1}{2} \frac{\partial u}{\partial z} & \frac{1}{2} \frac{\partial u}{\partial z} & 0 \end{pmatrix}$$
 in \eqref{stokes}, and then balance the $z$ derivative of the stresses against the surface gradient.  Note that we need not compute the pressure simultaneously with the velocity.
 
-The SIA stress equations \eqref{siavectorized} can be vertically-integrated to give a formulas for the horizontal velocity.  By a first integral, $\bm{\tau} = \rho g (h-z) \grad h$, thus
-    $$\left<\frac{\partial u}{\partial z},\frac{\partial v}{\partial z}\right> = 2 A_n (\rho g)^n (h-z)^n |\grad h|^{n-1} \grad h.$$
+The SIA stress equations \eqref{siavectorized} can be vertically-integrated to give a formulas for the horizontal velocity.  By a first integral, $\bm{\tau} = - \rho g (h-z) \grad h$, thus
+    $$\left<\frac{\partial u}{\partial z},\frac{\partial v}{\partial z}\right> = - 2 A_n (\rho g)^n (h-z)^n |\grad h|^{n-1} \grad h.$$
 Integrating again we determine the horizontal velocity at any point within the ice:
 \begin{equation}
-\left<u,v\right> = \frac{2 A_n (\rho g)^n}{n+1} \left((h-b)^{n+1} - (h-z)^{n+1}\right) |\grad h|^{n-1} \grad h.  \label{siavelocity}
+\left<u,v\right> = - \frac{2 A_n (\rho g)^n}{n+1} \left((h-b)^{n+1} - (h-z)^{n+1}\right) |\grad h|^{n-1} \grad h.  \label{siavelocity}
 \end{equation}
 The incompressibility equation can then be used to compute the vertical velocity component $w$ by an additional vertical integration of \eqref{siavelocity}, but we have no need for this result.
 
