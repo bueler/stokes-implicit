@@ -2,30 +2,23 @@
 
 \usepackage[total={6.3in,9.2in},top=1.1in,left=1.1in]{geometry}
 
-\usepackage{bm}
-\usepackage{empheq}
+\usepackage{times,bm,empheq,fancyvrb,graphicx}
 \usepackage[dvipsnames]{xcolor}
-\usepackage{graphicx}
-\usepackage{verbatim,fancyvrb}
 \usepackage{tikz}
-\usepackage{times}
 
 % hyperref should be the last package we load
 \usepackage[pdftex,
 colorlinks=true,
 plainpages=false, % only if colorlinks=true
-linkcolor=blue,   % only if colorlinks=true
-citecolor=Red,   % only if colorlinks=true
-urlcolor=black     % only if colorlinks=true
+linkcolor=blue,   % ...
+citecolor=Red,    % ...
+urlcolor=black    % ...
 ]{hyperref}
 
 \renewcommand{\baselinestretch}{1.05}
 
-\newcommand{\ddt}[1]{\ensuremath{\frac{\partial #1}{\partial t}}}
-\newcommand{\ddx}[1]{\ensuremath{\frac{\partial #1}{\partial x}}}
-\newcommand{\ddy}[1]{\ensuremath{\frac{\partial #1}{\partial y}}}
-\newcommand{\pp}[2]{\ensuremath{\frac{\partial #1}{\partial #2}}}
-\renewcommand{\t}[1]{\texttt{#1}}
+\newtheorem{lemma}{Lemma}
+
 \newcommand{\Matlab}{\textsc{Matlab}\xspace}
 \newcommand{\eps}{\epsilon}
 \newcommand{\RR}{\mathbb{R}}
@@ -50,8 +43,6 @@ urlcolor=black     % only if colorlinks=true
 \newcommand{\bzero}{\bm{0}}
 
 \newcommand{\Href}{H_{\text{ref}}}
-
-\newtheorem{lemma}{Lemma}
 
 
 \begin{document}
@@ -86,7 +77,8 @@ To discretize the continuum equations we apply the finite element (FE) method \c
 
 The model performance metric introduced here is a natural one for glacier modeling.  Namely, we measure the run time of our coupled Glen-Stokes simulations relative to the well-understood computation of ice velocity in the shallow ice approximation (SIA) \cite{Fowler1997} on the same mesh.  That is, we define a glacier model ``work unit'' as the time needed for a diagnostic computation of the SIA velocity solution.
 
-FIXME compare the literature of existing glacier Stokes solvers; nonevolving surface \cite{IsaacStadlerGhattas2015,Tuminaroetal2016,Zwingeretal2007} (CHECK); explicity evolving surface \cite{Gudmundsson1999,Jouvetetal2008,Larouretal2012,LeysingerGudmundsson2004,PralongFunk2004,Seddiketal2012} (CHECK)
+FIXME compare the literature of existing glacier Stokes solvers; nonevolving surface \cite{IsaacStadlerGhattas2015,Lengetal2013,Lengetal2014a,Tuminaroetal2016,Zwingeretal2007} (CHECK); explicitly evolving surface \cite{Gudmundsson1999,HelanowAhlkrona2018,Jouvetetal2008,Larouretal2012,
+Lengetal2012,Lengetal2014b,LeysingerGudmundsson2004,PralongFunk2004,Seddiketal2012} (CHECK)
 
 The primary purpose of this paper is to understand the performance characteristics of numerical simulations using fully-implicit time-stepping with evolving-surface Glen-Stokes models.  That is, at each time step the stress balance, incompressibility, and surface kinematical equations are solved simultaneously to within a tolerance on the coupled residual.  (Only the interaction between ice surface elevation and the evaluation of surface mass balance is split in time.)  Time steps of order one year are targeted.  To evaluate our approach we validate the model based on results of laboratory experiments, we compare the performance of the model with shallow models, we demonstrate solver optimality and scalability, and we show a solution for the Greenland ice sheet.
 
