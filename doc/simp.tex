@@ -65,7 +65,7 @@ This paper\footnote{version: \today.  Co-author thoughts: L.~Mitchell because of
 
 \begin{figure}[h]
 \begin{center}
-\includegraphics[width=0.7\textwidth]{figs/cartoon.pdf}
+\includegraphics[width=0.7\textwidth]{figs/context.pdf}
 \end{center}
 \caption{We consider 3D models of grounded glaciers and ice sheets which are based on Glen-Stokes ice flow, an evolving free surface, and a free boundary.}
 \label{fig:cartoon}
@@ -210,7 +210,7 @@ The fundamental issue faced by implicit time-stepping schemes for this problem i
 
 \includegraphics[width=0.6\textwidth]{figs/nexttime.pdf}
 \end{center}
-\caption{The current ice domain $\Omega^{n-1}$ is modified to a reference domain $\Lambda$.  The coupled solution includes a map from $\Lambda$ to the next domain $\Omega^n$ which degenerates where the solution indicates no ice.}
+\caption{The current ice domain $\Omega^{n-1}$ is modified to a reference domain $\Lambda$.  The coupled solution on $\Lambda$ generates a map from $\Lambda$ to the updated domain $\Omega^n$.}
 \label{fig:domainupdate}
 \end{figure}
 

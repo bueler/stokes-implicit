@@ -1,6 +1,6 @@
 all: simp.pdf
 
-_cartoons := cartoon.pdf domainnotation.pdf currenttime.pdf referencedomain.pdf nexttime.pdf
+_cartoons := context.pdf domainnotation.pdf currenttime.pdf referencedomain.pdf nexttime.pdf
 cartoons := $(addprefix figs/, $(_cartoons))
 
 figures := $(cartoons) figs/coarsespy.pdf
@@ -11,8 +11,8 @@ simp.pdf: simp.tex simp.bib $(figures)
 	pdflatex simp
 	pdflatex simp
 
-$(cartoons): figs/cartoon.py
-	(cd figs/ && python3 cartoon.py)
+$(cartoons): figs/cartoons.py
+	(cd figs/ && python3 cartoons.py)
 	for X in $(cartoons); do \
 	     (pdfcrop $$X $$X); \
 	done
