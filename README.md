@@ -1,8 +1,8 @@
 # stokes-implicit
 
-This 3D glacier model combines Stokes momentum balance and coupled, implicitly-computed ice geometry.  Conservation of energy, sliding, floating ice, and bedrock motion are not modeled.  The numerical method uses tetrahedral finite elements on an extruded mesh, with stable and aspect-ratio robust Q2 x Q1 mixed elements for the velocity x pressure spaces.
+This 3D glacier model combines Stokes momentum balance and coupled, implicitly-computed ice geometry evolution using the surface kinematical equation.  Arbitrary ice geometry and topology changes are allowed as the problem is regarded as a fluid layer evolution subject to a nonnegative thickness inequality constraint (Bueler, 2020).  Conservation of energy, sliding, floating ice, and bedrock motion are _not_ modeled.  The numerical method uses tetrahedral finite elements on an extruded mesh, with stable and aspect-ratio robust Q2 x Q1 mixed elements for the velocity x pressure spaces.  A vertical displacement field is solved-for simultaneously with the Stokes equations; this also uses a Q1 element.
 
-The code uses [Firedrake](https://www.firedrakeproject.org/), and thus [PETSc](http://www.mcs.anl.gov/petsc/) under the hood.  Mesh generation is by [Gmsh](http://gmsh.info/) and solution visualization by [Paraview](https://www.paraview.org/).
+The Python code uses [Firedrake](https://www.firedrakeproject.org/), and thus [PETSc](http://www.mcs.anl.gov/petsc/) under the hood (Bueler, 2021).  Mesh generation is by [Gmsh](http://gmsh.info/) and solution visualization by [Paraview](https://www.paraview.org/).
 
 ## installation
 
@@ -37,7 +37,9 @@ FIXME Generate some other domain geometry and the mesh:
 
 FIXME multigrid schemes based on semicoarsening; see fixed-boundary analog in `pool.py`
 
-## older version
+## references
 
-There is a related Firedrake Stokes model with explicitly-updated geometry in my McCarthy Summer School notes repository [mccarthy/stokes/](https://github.com/bueler/mccarthy/tree/master/stokes).
+  * There is a related Firedrake Stokes model with explicitly-updated geometry in my McCarthy Summer School notes repository [mccarthy/stokes/](https://github.com/bueler/mccarthy/tree/master/stokes).
+  * [E. Bueler, _PETSc for Partial Differential Equations_, SIAM Press 2021](https://my.siam.org/Store/Product/viewproduct/?ProductId=32850137)
+  * E. Bueler, _Conservation laws for free-boundary fluid layers_, 2020, [arxiv:2007.05625](https://arxiv.org/abs/2007.05625)
 
