@@ -18,7 +18,7 @@ def figsave(name):
     else:
         plt.savefig(name,bbox_inches='tight',transparent=True)
 
-def genbasicfig(perturb=False,reference=False):
+def genbasicfig(perturb=False,reference=False,dottedcurrent=False,filledref=False):
     if perturb and reference:
         raise NotImplementedError('not set up for both perturb and reference figure')
     x = np.linspace(0.0,10.0,1001)
@@ -29,20 +29,30 @@ def genbasicfig(perturb=False,reference=False):
     h0 = 3.0
     L = 3.0
     firstshape = h0*(-0.2 + np.sqrt(np.maximum(0.0,1.0 - (x-5)**2/L**2)))
-    thk = np.maximum(0.0, firstshape )
-    # reference thickness for Lambda
+    thk = np.maximum(0.0, firstshape)
+    # put dotted current underneath next stuff
+    if dottedcurrent:
+        plt.plot(x, b+thk, ':k', lw=2.5)
+    # reference domain Lambda
     if reference:
         href = 0.5
         thk = np.maximum(href, thk)
         plt.plot([x[0],x[0]],[b[0],b[0]+href], 'k', lw=3.0)
         plt.plot([x[-1],x[-1]],[b[-1],b[-1]+href], 'k', lw=3.0)
-    # perturbed thickness for updated domain for Omega^n
+    # perturbed shape (updated domain for Omega^n)
     if perturb:
-        plt.plot(x, b+thk, '--k', lw=2.5)
         perturbshape = 0.2 * np.sin(1.5*x) + 0.3*(x - 5.0)
         perturbshape[x>8.0] = 0.0
         thk = np.maximum(0.0, firstshape + perturbshape )
     h = b + thk
+    # fill inside set Lambda \setminus Omega^{n-1}
+    if filledref:
+        thkref = np.maximum(0.0, firstshape) + b - h
+        hh = b + thkref
+        xf = np.concatenate((x, x[::-1], [x[0]]))
+        yf = np.concatenate((b, hh[::-1], [b[0]])) + href
+        plt.fill(xf,yf,facecolor='k',alpha=0.2)
+    # plot top
     plt.plot(x, h, 'k', lw=3.0)
     # reset axes
     plt.axis([0.0-0.02,10.0+0.02,-0.5,4.5])
@@ -126,7 +136,22 @@ figsave('referencedomain.pdf')
 
 # next time figure
 plt.figure(figsize=(10,4))
-genbasicfig(perturb=True)
+genbasicfig(perturb=True,dottedcurrent=True)
 plt.text(x[600]-1.0,b[600]+0.4*h[600],r'$\Omega^{n}$',fontsize=bigfsize,color='k')
 figsave('nexttime.pdf')
+
+# Laplace problem for c
+plt.figure(figsize=(10,4))
+genbasicfig(reference=True,dottedcurrent=True,filledref=True)
+plt.text(x[500]-1.0,b[500]+0.45*h[500],r'$\nabla^2 c = 0$',fontsize=fsize,color='k')
+plt.annotate(r'$c = \Delta t\,(a + \mathbf{u} \cdot \left<-\nabla_{\xi,\eta}h,1\right>)$',
+             fontsize=fsize, xy=(x[600],h[600]), xytext=(x[600]-4.5,h[600]+0.8),
+             arrowprops=dict(facecolor='black', width=0.5, headwidth=5.0, shrink=0.1))
+plt.annotate(r'$c = 0$',
+             fontsize=fsize, xy=(x[700],b[700]), xytext=(x[700]+1.1,b[700]-1.0),
+             arrowprops=dict(facecolor='black', width=0.5, headwidth=5.0, shrink=0.05))
+plt.annotate(r'$\nabla c\cdot \mathbf{n} = 0$',
+             fontsize=fsize, xy=(x[0],h[0]+0.2), xytext=(x[130],h[130]+1.5),
+             arrowprops=dict(facecolor='black', width=0.5, headwidth=5.0, shrink=0.05))
+figsave('claplaceproblem.pdf')
 

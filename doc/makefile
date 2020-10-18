@@ -1,6 +1,6 @@
 all: simp.pdf
 
-_cartoons := context.pdf domainnotation.pdf currenttime.pdf referencedomain.pdf nexttime.pdf
+_cartoons := context.pdf domainnotation.pdf currenttime.pdf referencedomain.pdf nexttime.pdf claplaceproblem.pdf
 cartoons := $(addprefix figs/, $(_cartoons))
 
 figures := $(cartoons) figs/coarsespy.pdf
