@@ -23,7 +23,7 @@ This 2D computation uses an extruded mesh with only 30x4=120 quadrilateral eleme
 
 The following parallel 3D computation uses an extruded mesh with 30x30x8=7200 tetrahedral elements and N=207k degrees of freedom.  It takes a few minutes:
 
-        (firedrake) $ mpiexec -n 6 ./stokesi.py -mx 30 -my 30 -vertrefine 1 -s_snes_rtol 1.0e-3 -s_snes_monitor -s_ksp_converged_reason -saveextra -o dome3.pvd
+        (firedrake) $ mpiexec -n 8 ./stokesi.py -mx 30 -my 30 -vertrefine 1 -s_snes_rtol 1.0e-3 -s_snes_monitor -s_ksp_converged_reason -saveextra -o dome3.pvd
 
 Note that rich diagnostic information is generated with `-saveextra` including the full deviatoric stress tensor and also (for comparison) the SIA velocities.
 
