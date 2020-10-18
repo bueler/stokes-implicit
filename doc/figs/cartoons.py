@@ -8,6 +8,7 @@ plt.rcParams["mathtext.fontset"] = "cm"
 
 fsize=18.0
 smallfsize=14.0
+extrasmallfsize=12.0
 bigfsize=24.0
 
 debug = False
@@ -144,8 +145,12 @@ figsave('nexttime.pdf')
 plt.figure(figsize=(10,4))
 genbasicfig(reference=True,dottedcurrent=True,filledref=True)
 plt.text(x[500]-1.0,b[500]+0.45*h[500],r'$\nabla^2 c = 0$',fontsize=fsize,color='k')
+plt.text(x[900],b[900]+0.28,'miasma',rotation=45.0,fontsize=extrasmallfsize,color='k')
 plt.annotate(r'$c = \Delta t\,(a + \mathbf{u} \cdot \left<-\nabla_{\xi,\eta}h,1\right>)$',
              fontsize=fsize, xy=(x[600],h[600]), xytext=(x[600]-4.5,h[600]+0.8),
+             arrowprops=dict(facecolor='black', width=0.5, headwidth=5.0, shrink=0.1))
+plt.annotate(r'$\ast$',
+             fontsize=fsize, xy=(x[900],h[900]+0.4), xytext=(x[900]-1.2,h[900]+1.5),
              arrowprops=dict(facecolor='black', width=0.5, headwidth=5.0, shrink=0.1))
 plt.annotate(r'$c = 0$',
              fontsize=fsize, xy=(x[700],b[700]), xytext=(x[700]+1.1,b[700]-1.0),
