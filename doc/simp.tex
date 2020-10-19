@@ -48,9 +48,16 @@ urlcolor=black    % ...
 
 
 \begin{document}
-\title[Performance of evolving-geometry simulations using Stokes dynamics]{Performance of evolving-geometry glacier and ice sheet simulations using Stokes dynamics}
+\title[Evolving-geometry glacier and ice sheet simulations using Stokes dynamics]{Evolving-geometry glacier and ice sheet simulations \\ using Stokes dynamics}
 
 \author{Ed Bueler}
+
+% Co-author thoughts:
+%   * L.~Mitchell because of \texttt{SemiCoarsened...()} etc.~ code (actual)
+%   * C.~Khrulev because of implementation and analysis help (prospect)
+%   * R.~Sayag because of validation experiment (prospect)
+%   * M.~Knepley because of performance help and analysis (prospect)
+%   * D.~Shapero because of firedrake help (actual) and implementation or application (prospect)
 
 \maketitle
 
@@ -63,9 +70,9 @@ The most important questions in glaciology concern how the climate around a glac
 
 A variety of methodologies for such numerical simulations are seen in practice, with most of the well-established schemes involving shallowness approximations of the continuum equations \cite[for example]{Hoffmanetal2018,Lipscombetal2019,Winkelmannetal2011}.  Furthermore, most methods use explicit or semi-implicit time-stepping \cite{HindmarshPayne1996,Hoffmanetal2018,Lipscombetal2019,Winkelmannetal2011}, with small stability-imposed time steps at high spatial resolution, though fully-implicit exceptions exist \cite{Brinkerhoffetal2017,Bueler2016}.  The performance properties of current numerical models limit either the physical modeling authenticity (due to shallowness and other approximations) or the spatial resolution (due to time-stepping and solver performance limitations).  In particular, the quality of ensemble simulations, regarding both the number of ensemble members and the quality of the individual simulations, is directly limited by numerical model performance.
 
-This paper\footnote{version: \today.  Co-author thoughts: L.~Mitchell because of \texttt{SemiCoarsened...()} etc.~ code (actual).  C.~Khrulev because of implementation and analysis help (prospect).  R.~Sayag because of validation experiment (prospect).  M.~Knepley because of performance help and analysis (prospect).} addresses an important, but also restricted, class of numerical glacier and ice sheet models, based on conservation of momentum and mass and without shallowness assumptions.  For conservation of momentum we use the standard shear-thinning (Glen) power-law Stokes model.  Noting that ``mass conservation'' properly refers both to fluid incompressibility and to conservation at the ice surface, we solve both the divergence-free equation for bulk ice and the surface kinematical equation (or kinematic boundary condition \cite{GreveBlatter2009}) with the surface mass balance is an input.  We model three-dimensional (3D) grounded glaciers and ice sheets for which there is a well-defined ice thickness; overhanging ice is not modeled.  The ice thickness is defined at all map-plane points but it is zero in those locations where the (coupled and solved) surface balance and ice flow do not determine the presence of glacier ice, and the solution process also determines the location of the free boundary at the ice margin \cite{SchoofHewitt2013} (Figure \ref{fig:context}).
+This paper\footnote{version: \today.} addresses an important, but also restricted, class of numerical glacier and ice sheet models, based on conservation of momentum and mass and without shallowness assumptions.  For conservation of momentum we use the standard shear-thinning (Glen) power-law Stokes model.  Noting that ``mass conservation'' properly refers both to fluid incompressibility and to conservation at the ice surface, we solve both the divergence-free equation for bulk ice and the surface kinematical equation (or kinematic boundary condition \cite{GreveBlatter2009}) with the surface mass balance is an input.  We model three-dimensional (3D) grounded glaciers and ice sheets for which there is a well-defined ice thickness; overhanging ice is not modeled.  The ice thickness is defined at all map-plane points but it is zero in those locations where the (coupled and solved) surface balance and ice flow do not determine the presence of glacier ice, and the solution process also determines the location of the free boundary at the ice margin \cite{SchoofHewitt2013} (Figure \ref{fig:context}).
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \begin{center}
 \includegraphics[width=0.7\textwidth]{figs/context.pdf}
 \end{center}
@@ -162,7 +169,7 @@ h(t,x,y) \ge b(x,y).  \label{admissibility}
 \end{equation}
 At any given map-plane location $(x,y)$ the ice may be present (strict inequality in \eqref{admissibility}) or absent (equality) in an evolving, time-dependent manner.  The time-dependent ice-covered map-plane domain, the vertical projection of $\Omega^t$, is denoted $\pi \Omega^t$.
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \begin{center}
 \includegraphics[width=0.7\textwidth]{figs/domainnotation.pdf}
 \end{center}
@@ -204,13 +211,13 @@ The fundamental issue faced by implicit time-stepping schemes for this problem i
 
 \begin{figure}[ht]
 \begin{center}
-\includegraphics[width=0.6\textwidth]{figs/currenttime.pdf}
+\includegraphics[width=0.7\textwidth]{figs/currenttime.pdf}
 \vspace{-6mm}
 
-\includegraphics[width=0.6\textwidth]{figs/referencedomain.pdf}
+\includegraphics[width=0.7\textwidth]{figs/referencedomain.pdf}
 \vspace{-1mm}
 
-\includegraphics[width=0.6\textwidth]{figs/nexttime.pdf}
+\includegraphics[width=0.7\textwidth]{figs/nexttime.pdf}
 \end{center}
 \caption{The current ice domain $\Omega^{n-1}$ is modified to a reference domain $\Lambda$.  The coupled solution on $\Lambda$ generates a map from $\Lambda$ to the updated domain $\Omega^n$.}
 \label{fig:domainupdate}
@@ -247,13 +254,13 @@ Our scheme proposes that the vertical displacement $c(\bxi)$ solves a Laplace bo
                 c &= 0 &&\text{base: } \underline{\partial} \Lambda, \notag \\
  \grad c\cdot \bn &= 0 &&\text{sides: } \partial_{|} \Lambda. \notag
 \end{align}
-Figure \ref{fig:claplaceproblem} sketches this problem.  Noting that the solution $c$ will be used to vertically perturb the domain ($z=\zeta+c(\xi,\eta,\zeta)$), the basal and side boundary conditions are clear; the latter condition makes the application of a side boundary condition at some finite distance relatively unobtrusive.
+Figure \ref{fig:claplaceproblem} sketches this problem.  Noting that the solution $c$ will be used to vertically perturb the domain ($z=\zeta+c(\xi,\eta,\zeta)$), the basal boundary condition means that the map \eqref{changecoords} sends the base of $\Lambda$ to the base of $\Omega^n$.  The Neumann side boundary condition, applied at some finite distance from the current ice, is relatively unobtrusive.  Intuitively, $c$ is a smooth function which, in each vertical column of $\Lambda$, connects the surface kinematical quantity \eqref{backwardeulerske} as linearly as possible to zero at the base.  Mathematically, $c$ satisfies the maximum principle in $\Lambda$ \cite{Evans2010}, and the direction of $\grad_{\bxi} c$ changes direction as little as possible (in the energy norm) while smoothly meeting the boundary data.
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \begin{center}
 \includegraphics[width=0.85\textwidth]{figs/claplaceproblem.pdf}
 \end{center}
-\caption{A sketch of domain $\Lambda$ and problem \eqref{claplace}.  See the text regarding the shaded ``miasma'' volume (equation \eqref{miasma}) and the ``$\ast$'' notation.}
+\caption{A sketch of reference domain $\Lambda$ and problem \eqref{claplace}.  See the text regarding the shaded ``miasma'' volume (equation \eqref{miasma}) and the ``$\ast$'' notation.}
 \label{fig:claplaceproblem}
 \end{figure}
 
@@ -262,6 +269,8 @@ However, the top-surface Dirichlet value, a surface displacement which will be i
     c = - \Href + \Delta t\,a. \label{icefreehrefske}
 \end{equation}
 In fact, assuming $h^{n-1}$ is itself continuous, as one passes across the glacier margin the top surface value in problem \eqref{claplace} changes continuously from the one in \eqref{backwardeulerske} to that in \eqref{icefreehrefske}.
+
+FIXME \eqref{claplace} is a smoother form of the independent-column two-point boundary value problem $c''=0$, $c(h)=X$, $c(b)=0$ on $\zeta\in[h,b]$ which gives $c(\zeta)=(X-b)\zeta/(h-b)$; essentially this is the vertical ``linear mapping'' in \cite[equation (22)]{Lengetal2012}
 
 The shaded area of the Figure, the portion of the reference domain not occupied by ice ($\Lambda \setminus \Omega^{n-1}$) is, properly-speaking, the volume of the atmosphere where the ice currently extends less than $\Href$ above the bed.  Note that on the top of this volume the ``$\max$'' in \eqref{claplace} adds nontrivially to the value from \eqref{backwardeulerske}.  Here our model will include an incompressible regularizing fluid which we call ``miasma.''\footnote{Defined as an oppressive or unpleasant atmosphere which surrounds something, often settling into low areas.}  For miasma the density is reduced to a smaller reference value and the fluid becomes linear with a small viscosity.  Specifically, \eqref{forcebalance} and \eqref{viscflowlaw} are replaced by
 \begin{equation} % FIXME: proposed flow law
@@ -273,31 +282,16 @@ The weak form of the coupled problem will be stated in the next section.  Doing 
 \begin{equation}
 J(\bxi) = \frac{\partial \bx}{\partial \bm{\xi}} = \begin{pmatrix} 1 & 0 & 0 \\  0 & 1 & 0 \\ \frac{\partial c}{\partial \xi} & \frac{\partial c}{\partial \eta} & 1+\frac{\partial c}{\partial \zeta} \end{pmatrix}, \label{jacchange}
 \end{equation}
-with determinant $\det(J)=1+\frac{\partial c}{\partial \zeta}$.  For a generic, smooth function $f(\bx)$ defined on $\Omega^n$ we may define a function on $\Lambda$, namely $\tilde f(\bxi) = f(\bx(\bxi))$, whose gradient transforms as $\grad_{\bxi} \tilde f = J^\top \grad_{\bx} f$.  Thus
+with determinant  
 \begin{equation}
-\grad_{\bx} f = (J^\top)^{-1} \grad_{\bxi} \tilde f = \begin{pmatrix} 1 & 0 & j \\ 0 & 1 & k \\ 0 & 0 & \ell \end{pmatrix} \grad_{\bxi} \tilde f \label{changederivatives}
+\ell(\bxi) = \det(J) = 1+\frac{\partial c}{\partial \zeta}. \label{definel}
 \end{equation}
-where
+For a generic, smooth function $f(\bx)$ defined on $\Omega^n$ we may define a function on $\Lambda$, namely $\tilde f(\bxi) = f(\bx(\bxi))$, whose gradient transforms as $\grad_{\bxi} \tilde f = J^\top \grad_{\bx} f$.  Thus
 \begin{equation}
-\ell(\bxi) = \frac{1}{1+\frac{\partial c}{\partial \zeta}}. \label{definel}
-\end{equation}
-and
-\begin{equation}
-j(\bxi) = - \frac{\partial c}{\partial \xi}\, \ell(\bxi), \quad k(\bxi) = -\frac{\partial c}{\partial \eta}\, \ell(\bxi). \label{definejk}
+\grad_{\bx} f = (J^\top)^{-1} \grad_{\bxi} \tilde f = \begin{pmatrix} 1 & 0 & - \frac{\partial c}{\partial \xi}/\ell \\ 0 & 1 & -\frac{\partial c}{\partial \eta}/\ell \\ 0 & 0 & 1/\ell \end{pmatrix} \grad_{\bxi} \tilde f. \label{changederivatives}
 \end{equation}
 
-FIXME $\frac{\partial c}{\partial \zeta}$ is a dimensionless number; in the absence of surface balance ($a=0$) we expect it to be roughly $-1$ in currently ice free regions of $\Lambda$ (cause for $c(\zeta)$ as a two-point boundary value problem, the equations $c''=0$, $c(\Href)=-\Href$, $c(0)=0$ give $c(\zeta)=-\zeta$)
-
-\newcommand{\deltaref}{\delta_{\text{ref}}}
-FIXME: NOT THIS regularize top boundary condition for $c$ so that the denominator of the formulas for $j,k,\ell$ is bounded away from zero:
-    $$c = \min\left\{-\Href + \deltaref,-\max\{\Href + b - h^{n-1},0\} + \Delta t\,(a + \bu \cdot \left<-\grad_{\xi,\eta}h,1\right>)\right\}$$
-but if the real surface balance at the solution ($\Delta t\,(a + \bu \cdot \left<-\grad_{\xi,\eta}h,1\right>)$) is less than $-\Href+\deltaref$ then we will reduce the time step and resolve
-
-FIXME use $\bxi$ notation: The new surface elevation, for the region $\Omega^n$, is
-\begin{equation}
-h(r) = \eta(r) + c(r,\eta(r)).  \label{newsurfaceelevation}
-\end{equation}
-The value $c(r,\eta(r))$ is defined in a trace sense \cite{Evans2010}; see below for the Sobolev space which contains $c$.
+FIXME note the presence of $\frac{\partial c}{\partial \zeta}$, a dimensionless number; if it has value $-1$ in an entire column then the ice is eliminated in that column; but in the absence of surface balance ($a=0$) we expect it to be roughly $-1$ in currently ice free regions of $\Lambda$; this is because for $c(\zeta)$ solving the two-point boundary value problem $c''=0$, $c(\Href)=-\Href$, $c(0)=0$ we get $c(\zeta)=-\zeta$
 
 
 \section{Weak form of the coupled equations} \label{sec:weakformcoupled}
@@ -335,11 +329,13 @@ a(c;e) = \int_\Lambda \grad c \cdot \grad e \,dr ds + \int_{\overline{\partial} 
 \end{equation}
 The integral along $\overline{\partial} \Lambda$, with length element $d\sigma$, evaluates $c$ and $e$ in the trace sense.  In the decoupled case we say that $c \in W_0^{1,2}(\Lambda)$ solves the (decoupled) weak form of \eqref{claplace} if $a(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.
 
+FIXME NOW USING $\ell$ in \eqref{definel}
+
 FIXME The change of variables defined in the last section requires us to rewrite the weak form integrals of the Glen-Stokes model.  For a generic scalar-valued $L^1$ function $\tilde f(x,z)$ defined on $\Omega^n$, by the change of variables theorem we have
 \begin{equation}
 \int_{\Omega^n} \tilde f(x,z)\,dx dz = \int_\Lambda f(r,s) \, j(r,s)\,dr ds, \label{changeintegral}
 \end{equation}
-with weight $j(r,s)$ defined in \eqref{definejkl} and $f(r,s) = \tilde f(r,s+c(r,s))$.  Using component notation $\bu = \left<u_0,u_2\right>$, compatible with coordinate notation $(x,z)$ on $\Omega$, the following expansions of velocity derivatives (strain rates) with respect to $(x,z)$; these formulas follow from \eqref{changederivatives} and \eqref{definejkl}:
+with weight $j(r,s)$ defined in FIXME and $f(r,s) = \tilde f(r,s+c(r,s))$.  Using component notation $\bu = \left<u_0,u_2\right>$, compatible with coordinate notation $(x,z)$ on $\Omega$, the following expansions of velocity derivatives (strain rates) with respect to $(x,z)$; these formulas follow from \eqref{changederivatives} and FIXME:
 \begin{align*}
 \grad_{x,z} \cdot \tilde \bu &= \frac{\partial u_0}{\partial r} + \ell \frac{\partial u_0}{\partial s} + k \frac{\partial u_2}{\partial s} \\
 D_{x,z} \tilde \bu &= \begin{pmatrix} \partial u_0/\partial r + \ell (\partial u_0/\partial s) & \gamma \\
@@ -367,7 +363,14 @@ FIXME Assuming that $\Lambda$ is a well-behaved domain, this boundary-value prob
 
 \section{Finite element approximation}  \label{sec:finiteelement}
 
-FIXME: numerical solver should check element orientation under change of coordinates (above); if the solver flips an element then it is bad; also check new element aspect ratio and (presumably) remesh if that is bad; the initial iterate for the (SNES-based) solver is clear: $\bu,p$ come from solution of previous time step, and $b$ starts at zero
+FIXME the initial iterate for the (SNES-based) solver is clear: $\bu,p$ come from solution of previous time step, and $b$ starts at zero
+
+FIXME track down \cite{IsaacStadlerGhattas2015} claim that $Q_2\times Q_1$ is aspect ratio robust because that seems to be true!
+
+FIXME pseudocode algorithm
+
+
+\section{Solver choice and performance results} \label{sec:results}
 
 FIXME cite \cite{Tuminaroetal2016} re preconditioning for thin-film extruded meshes, and \cite{IsaacStadlerGhattas2015} for existing optimal Stokes solver for ice sheets
 
@@ -385,12 +388,15 @@ FIXME Figure \ref{fig:blockstructure} shows block structure; DRAFT because it mi
 \label{fig:blockstructure}
 \end{figure}
 
-\section{Results} \label{sec:results}
+
+\section{Validation} \label{sec:validation}
+
+FIXME
+
+
+\section{Discussion and conclusion} \label{sec:discussion}
 
 FIXME among many things cite \cite{LeysingerGudmundsson2004} regarding earlier comparison of stokes to Halfar
-
-
-\section{Discussion} \label{sec:discussion}
 
 FIXME not appreciated that, while for explicit time-stepping schemes the surface mass balance need only be computed at the current ice surface, and at neighboring ice-free locations, in implicit time stepping the surface mass balance must be available to the evolving-geometry model (specifically to the residual-evaluation code) at every location in a 3D neighborhood of the ice surface, and indeed at all 3D locations above the bedrock elevation; a ``potential ice surface mass balance'' is needed at all such locations
 
