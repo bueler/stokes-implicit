@@ -230,9 +230,9 @@ The fundamental issue faced by implicit time-stepping schemes for this problem i
 
 Our scheme uses the current ice geometry to determine a reference domain on which the updated velocity, pressure, and vertical displacement are defined, even if that new domain changes extent and/or topology (connectedness).  For this we need a reference glacier thickness $\Href>0$, a value such that grounded ice of uniform thickness $\Href$ flows slowly over the bedrock topography, and which is small compared to observed glacier thicknesses.  For example, the range $50 \le \Href \le 500$ m is appropriate for small mountain glaciers to large, cold, and low-angle ice sheets.  Recall that the velocity of Glen $n=3$ ice in a slab-on-slope geometry \cite{GreveBlatter2009} goes as the $4$th power of the ice thickness; $50$ m ice flows $10^4$ times slower than $500$ m ice.
 
-Denote the current ice domain by $\Omega^{n-1}=\{\bx\,\big|\,(x,y)\in R, b(x,y)<z<h(t_{n-1},x,y)\} \subset \RR^d$; see \eqref{Omegat}.  The reference domain $\Lambda \subset \RR^d$ is constructed as follows (Figure \ref{fig:domainupdate}):
+Suppose $h^{n-1}(x,y)$ is our current (approximate) surface elevation in time-stepping.  Denote the current ice domain by $\Omega^{n-1}=\{\bx\,\big|\,(x,y)\in R, b(x,y)<z<h^{n-1}(x,y)\} \subset \RR^d$; see \eqref{Omegat}.  The reference domain $\Lambda \subset \RR^d$ is constructed as follows (Figure \ref{fig:domainupdate}):
 \begin{equation}
-\Lambda = \left\{\bxi\,\big|\,(\xi,\eta)\in R, \, b(\xi,\eta) < z < b(\xi,\eta) + \max\{\Href,h(t_{n-1},\xi,\eta)-b(\xi,\eta)\right\}.  \label{Lambda}
+\Lambda = \left\{\bxi\,\big|\,(\xi,\eta)\in R, \, b(\xi,\eta) < z < b(\xi,\eta) + \max\{\Href,h^{n-1}(\xi,\eta)-b(\xi,\eta)\right\}.  \label{Lambda}
 \end{equation}
 Note that $\Omega^{n-1} \subset \Lambda$ and that $\bxi=(\xi,\eta,\zeta) \in \Lambda$ denotes the reference coordinates.  The boundary of $\Lambda$ includes vertical sides, denoted $\partial_{|} \Lambda$, along $\partial R$.
 
@@ -246,11 +246,11 @@ The horizontal coordinate is unaltered under this change, but the $z$-coordinate
 \end{equation}
 Since $c(\bxi)$ will solve an elliptic PDE (below), the new coordinates $\bx$ are smooth functions of $\bxi$ on $\Lambda$.  However, the map is generally degenerate; it is not a diffeomorphism because its inverse is not generally smooth or even well-defined.  In particular, the map takes ice free areas of $\Lambda$ to ice of zero height, so applying the topological interior in \eqref{updateddomain} is important.
 
-A backward Euler step for the surface kinematical equation \eqref{surfacekinematical} would be
+A backward Euler step approximates \eqref{surfacekinematical} for the difference between $h^{n-1}$ and the surface elevation $h(x,y) \approx h(t_n,x,y)$ which is part of the coupled solution:
 \begin{equation}
 h - h^{n-1} = \Delta t\left(a + \bu \cdot \left<-\grad_{x,y} h,1\right>\right). \label{backwardeulerske}
 \end{equation}
-Here the quantities on the right are evaluated at the new time $t_n$ and at the ice surface; as before $a,\bu,h$ denote the surface mass balance, velocity, and elevation, respectively, and specifically $a=a_{\perp}(t_n,x,y,h(t_n,x,y))$.  However, \eqref{backwardeulerske} applies only where ice is present in the solution geometry; we actually seek to approximately solve complementarity conditions \eqref{stronginequality} and \eqref{strongcomplementarity}.
+The quantities on the right are all evaluated at the new time $t_n$ and at the ice surface; $a,\bu,h$ denote the surface mass balance, velocity, and elevation, respectively, and specifically $a=a_{\perp}(t_n,x,y,h(x,y))$.  However, \eqref{backwardeulerske} applies only where ice is present in the solution geometry; we actually seek to solve complementarity conditions \eqref{stronginequality} and \eqref{strongcomplementarity}.
 
 Our scheme proposes that the vertical displacement $c(\bxi)$ solves a Laplace boundary value problem on $\Lambda$:
 \begin{align}
@@ -259,7 +259,7 @@ Our scheme proposes that the vertical displacement $c(\bxi)$ solves a Laplace bo
                 c &= 0 &&\text{base: } \underline{\partial} \Lambda, \notag \\
  \grad c\cdot \bn &= 0 &&\text{sides: } \partial_{|} \Lambda. \notag
 \end{align}
-Figure \ref{fig:claplaceproblem} sketches this problem.  Noting that the solution $c$ will be used to vertically perturb the domain ($z=\zeta+c(\xi,\eta,\zeta)$), the basal boundary condition means that the map \eqref{changecoords} sends the base of $\Lambda$ to the base of $\Omega^n$.  The Neumann side boundary condition, applied at some finite distance from the current ice, is relatively unobtrusive.  Intuitively, $c$ is a smooth function which, in each vertical column of $\Lambda$, connects the surface kinematical quantity \eqref{backwardeulerske} as linearly as possible to zero at the base.  Mathematically, $c$ satisfies the maximum principle in $\Lambda$ \cite{Evans2010}, and the direction of $\grad_{\bxi} c$ changes direction as little as possible (in the energy norm) while smoothly meeting the boundary data.
+Figure \ref{fig:claplaceproblem} sketches this problem.  Noting that the solution $c$ will be used to vertically perturb the domain under map \eqref{changecoords}, i.e.~$z=\zeta+c(\xi,\eta,\zeta)$, the basal boundary condition implies that the map sends the base of $\Lambda$ to the base of $\Omega^n$.  The Neumann boundary condition on the sides, applied at some finite distance from the current ice, is unobtrusive.
 
 \begin{figure}[ht]
 \begin{center}
@@ -269,19 +269,19 @@ Figure \ref{fig:claplaceproblem} sketches this problem.  Noting that the solutio
 \label{fig:claplaceproblem}
 \end{figure}
 
-However, the top-surface Dirichlet value, a surface displacement which will be included weakly into the coupled system (section \ref{sec:finiteelement} below), needs comment.  Where the current geometry is more than $\Href$ above the bed the value is simply the (discretized) surface kinematical quantity \eqref{backwardeulerske}.  On the other hand, in currently ice-free areas, which satisfy $h^{n-1}=b$ and $\bu=\bzero$, as marked by ``$\ast$'' in Figure \ref{fig:claplaceproblem} the value is
+However, the top Dirichlet boundary condition, which will be included weakly into the coupled system below (section \ref{sec:finiteelement}), needs comment.  In locations where the current surface elevation is more than $\Href$ above the bed the value is simply the surface kinematical quantity \eqref{backwardeulerske}.  In currently ice-free areas where $h^{n-1}=b$ and $\bu=\bzero$, marked ``$\ast$'' in Figure \ref{fig:claplaceproblem}, the value is
 \begin{equation}
     c = - \Href + \Delta t\,a. \label{icefreehrefske}
 \end{equation}
-In fact, assuming $h^{n-1}$ is itself continuous, as one passes across the glacier margin the top surface value in problem \eqref{claplace} changes continuously from the one in \eqref{backwardeulerske} to that in \eqref{icefreehrefske}.
+Assuming $h^{n-1}$ is itself continuous, as one passes across the glacier margin the top surface value in problem \eqref{claplace} changes continuously from the one in \eqref{backwardeulerske} to that in \eqref{icefreehrefske}.
 
-FIXME \eqref{claplace} is a smoother form of the independent-column two-point boundary value problem $c''=0$, $c(h)=X$, $c(b)=0$ on $\zeta\in[h,b]$ which gives $c(\zeta)=(X-b)\zeta/(h-b)$; essentially this is the vertical ``linear mapping'' in \cite[equation (22)]{Lengetal2012}
+Intuitively, solving \eqref{claplace} yields a smooth 3D function $c$ which, in a vertical column of $\Lambda$, connects the surface kinematical quantity \eqref{backwardeulerske}, or its modified form \eqref{icefreehrefske}, as linearly as possible to zero at the base.  Mathematically, $c$ satisfies the maximum principle in $\Lambda$ \cite{Evans2010}, and the direction of $\grad_{\bxi} c$ changes direction as little as possible (in the energy norm) while smoothly meeting the boundary data.  In fact, the solution to \eqref{claplace} behaves better than solving independent-column two-point boundary value problems $c''=0$, $c(h)=X$, $c(b)=0$ on $\zeta\in[h,b]$, where ``$X$'' represents the right side of \eqref{backwardeulerske} or \eqref{icefreehrefske}.  This problem yields $c(\zeta)=(X-b)\zeta/(h-b)$, essentially the vertical ``linear mapping'' used for explicit domain evolution and remeshing in \cite[equation (22)]{Lengetal2012}.
 
-The shaded area of the Figure, the portion of the reference domain not occupied by ice ($\Lambda \setminus \Omega^{n-1}$) is, properly-speaking, the volume of the atmosphere where the ice currently extends less than $\Href$ above the bed.  Note that on the top of this volume the ``$\max$'' in \eqref{claplace} adds nontrivially to the value from \eqref{backwardeulerske}.  Here our model will include an incompressible regularizing fluid which we call ``miasma.''\footnote{Defined as an oppressive or unpleasant atmosphere which surrounds something, often settling into low areas.}  For miasma the density is reduced to a smaller reference value and the fluid becomes linear with a small viscosity.  Specifically, \eqref{forcebalance} and \eqref{viscflowlaw} are replaced by
+The shaded area of the Figure, namely the portion of the reference domain not occupied by ice ($\Lambda \setminus \Omega^{n-1}$) is, properly-speaking, the volume of the atmosphere where the ice currently extends less than $\Href$ above the bed.  On the top of this volume the ``$\max$'' in \eqref{claplace} adds nontrivially to the value from \eqref{backwardeulerske}, giving \eqref{icefreehrefske} when ice-free.  Within this volume our model will include an incompressible regularizing fluid which we call ``miasma,''\footnote{Defined as an oppressive or unpleasant atmosphere which surrounds something, often settling into low areas.} the density and viscosity of which is much smaller than ice.  Specifically, \eqref{forcebalance} and \eqref{viscflowlaw} are replaced by
 \begin{equation} % FIXME: proposed flow law
 - \nabla \cdot \tau + \nabla p = \rhom \bg, \qquad \tau = 2 \num D\bu \label{miasma}
 \end{equation}
-respectively, and Equation \eqref{incompressible} is unchanged.  In our numerical experiments (section \ref{sec:results} below) we will use a density which is a tenth that of ice and a viscosity which is a tenth of that of ice deforming at the reference strain rate $D_0$ (equation \eqref{regeffvisc}): $\rhom = \frac{1}{10} \rho$, $2\num = \frac{1}{10} B_n D_0^{1/n}$.  The intention is that such a weak and light fluid will have minimal impact on the dynamics of the ice while also occupying a part of the domain which the ice may come to occupy during the solution process for the coupled equations.
+respectively, and Equation \eqref{incompressible} is unchanged.  In our numerical experiments (section \ref{sec:results} below) we will use a density which is a tenth that of ice and a viscosity, in a linear flow law, which is a tenth of that of ice deforming at the reference strain rate $D_0$ (equation \eqref{regeffvisc}): $\rhom = \frac{1}{10} \rho$, $2\num = \frac{1}{10} B_n D_0^{1/n}$.  The intention of choosing such a weak and light fluid is to cause minimal impact on the dynamics of the ice while also occupying a part of the domain which the ice may come to occupy during the solution process for the coupled equations.
 
 The weak form of the coupled problem will be stated in the next section.  Doing so will require the derivatives of the change of coordinates \eqref{changecoords}.  The Jacobian is
 \begin{equation}
