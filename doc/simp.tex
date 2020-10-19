@@ -86,8 +86,13 @@ To discretize the continuum equations we apply the finite element (FE) method \c
 
 The model performance metric introduced here is a natural one for glacier modeling.  Namely, we measure the run time of our coupled Glen-Stokes simulations relative to the well-understood computation of ice velocity in the shallow ice approximation (SIA) \cite{Fowler1997} on the same mesh.  That is, we define a glacier model ``work unit'' as the time needed for a diagnostic computation of the SIA velocity solution.
 
-FIXME compare the literature of existing glacier Stokes solvers; nonevolving surface \cite{IsaacStadlerGhattas2015,Lengetal2013,Lengetal2014a,Tuminaroetal2016,Zwingeretal2007} (CHECK); explicitly evolving surface \cite{Gudmundsson1999,HelanowAhlkrona2018,Jouvetetal2008,Larouretal2012,
-Lengetal2012,Lengetal2014b,LeysingerGudmundsson2004,PralongFunk2004,Seddiketal2012} (CHECK)
+FIXME compare literature of existing solvers:
+\begin{itemize}
+\item  nonevolving surface Stokes \cite{IsaacStadlerGhattas2015,Lengetal2013,Lengetal2014a,Zwingeretal2007} (CHECK)
+\item  explicitly evolving surface \cite{Gudmundsson1999,HelanowAhlkrona2018,Jouvetetal2008,Larouretal2012,
+Lengetal2014b,Lengetal2012,LeysingerGudmundsson2004,PralongFunk2004,Seddiketal2012} (CHECK)
+\item significant hydrostatic/B-P \cite{BrownSmithAhmadia2013,Tuminaroetal2016}
+\end{itemize}
 
 The primary purpose of this paper is to understand the performance characteristics of numerical simulations using fully-implicit time-stepping with evolving-surface Glen-Stokes models.  That is, at each time step the stress balance, incompressibility, and surface kinematical equations are solved simultaneously to within a tolerance on the coupled residual.  (Only the interaction between ice surface elevation and the evaluation of surface mass balance is split in time.)  Time steps of order one year are targeted.  To evaluate our approach we validate the model based on results of laboratory experiments, we compare the performance of the model with shallow models, we demonstrate solver optimality and scalability, and we show a solution for the Greenland ice sheet.
 
