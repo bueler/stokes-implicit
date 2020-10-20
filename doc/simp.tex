@@ -304,22 +304,20 @@ Functions $j,\ell$ will appear in the next section as coefficients in integrals 
 
 \section{Weak form of the coupled equations} \label{sec:weakformcoupled}
 
-In order to implement FE solutions we will need the weak form of our coupled system.  We first recall the well-known weak form of the decoupled Glen-Stokes problem \eqref{stokes}--\eqref{basebc} \cite{JouvetRappaz2011} for velocity and pressures, separately from the surface kinematical equation.  (Compare the even better-known weak form of the linear Stokes problem \cite{Bueler2021,Elmanetal2014}.)  This sets notation and provides a starting point from which to state the weak form of the coupled model.
+In order to compute FE solutions we will need the weak form of our entire coupled system, consisting of the usual Stokes equations plus the vertical displacement problem just described.  However, we first recall the well-known weak form of the (decoupled) Glen-Stokes problem \eqref{stokes}--\eqref{basebc} \cite{JouvetRappaz2011} for velocity and pressures, separate from surface kinematical concerns.  This sets notation and provides a starting point from which to state the weak form of the coupled model.
 
-Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocity fields with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For a fixed $t>0$ we will seek a solution from the following spaces:
+Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocity fields on $\Omega^t$ with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For fixed $t>0$ we will seek a solution from the following spaces:
 \begin{align*}
 \bu &\in \bV = \left\{\bv \in W^{1,r}(\Omega^t)^d\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
 p &\in Q = L^{r'}(\Omega^t).
 \end{align*}
-Test functions $\bv \in \bV_0$ and $q\in Q$ will come from nearly the same spaces, but with $\bv=\bzero$ also on the inflow boundary.  Note that velocities in $V$ are not (generally) twice differentiable, and that pressures in $Q$ need not even be continuous.
+Test functions $\bv \in \bV_0$ and $q\in Q$ will come from nearly the same spaces, but with $\bv=\bzero$ also on the inflow boundary (if present).  Note that velocities in $\bV$ are not (generally) twice differentiable, and that pressures in $Q$ need not even be continuous.
 
 To derive the weak form we multiply \eqref{stokes} by $\bv\in \bV_0$ and \eqref{incompagain} by $q\in Q$, then add these and integrate-by-parts:
 \begin{equation}
--\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds + \int_{\Omega^t} \tau \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx = 0. \label{nonfunctwo}
+\int_{\Omega^t} 2 \nu_\eps(|D\bu|) D\bu \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds = 0. \label{nonfunctwo}
 \end{equation}
-Here $ds$ is the area element along $\partial\Omega^t$.  Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ appear without derivatives.
-
-Because $\bv\in \bV_0$, portions of the integral over $\partial\Omega^t$ are zero, and then the stress-free surface condition \eqref{topbc} eliminates the remaining boundary integral.  Thus we have the following functional $\tilde F$ which is nonlinear in $\bu,p$ and linear in $\bv,q$:
+Here $ds$ is the area element along $\partial\Omega^t$.  Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ appear without derivatives.  Because $\bv\in \bV_0$, portions of the integral over $\partial\Omega^t$ are zero, and then the stress-free surface condition \eqref{topbc} eliminates the remaining boundary integral.  Thus we have the following functional $\tilde F$ which is nonlinear in $\bu,p$ and linear in $\bv,q$:
 \begin{equation}
 \tilde F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx. \label{definetildeF}
 \end{equation}
@@ -331,9 +329,10 @@ We say $\bu\in \bV$ and $p\in Q$ solve the decoupled Glen-Stokes weak formulatio
 \end{equation}
 A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  Note that if the inflow velocity is zero ($\bu_{\text{in}}=\bzero$) or absent ($\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupled} is $\bu=\bzero$ and $p=0$.
 
-FIXME Because it involves the velocity unknowns, we \emph{weakly} impose the top-surface ($\partial_{\text{top}} \Lambda$) Dirichlet boundary condition in the displacement problem \eqref{claplace}.  Let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}(\Lambda)$ functions which are zero on the base and inflow.  Noting that the outflow has a natural condition, and assuming that functions $u,w$ are defined on $\overline\Lambda$, define the bilinear form
+\newcommand{\cref}{c_{\text{ref}}}
+Next we consider the weak form of the Laplace problem \eqref{claplace} for the displacement $c$ on $\Lambda$.  We weakly impose the top boundary condition because it involves the velocity unknowns.  Let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}$ scalar functions on $\Lambda$ which are zero on the base $\underline{\partial} \Lambda$.  Let $\cref=-\max\{\Href+b-h^{n-1},0\}$; this data is known in the context of problem \eqref{claplace}.  We multiply $-\grad^2 c=0$ by a test function $e$ and integrate by parts, then use the $\underline{\partial} \Lambda$ and $\partial_{|} \Lambda$ boundary conditions to eliminate all but the top boundary integral, and thereby define a bilinear form:
 \begin{equation}
-a(c;e) = \int_\Lambda \grad c \cdot \grad e \,dr ds + \int_{\overline{\partial} \Lambda} \left(c - [\text{FIXME: the top boundary value}]\right) e\,d\sigma \label{surfaceweakform}
+B(c;e) = \int_\Lambda \grad c \cdot \grad e \,dr ds + \int_{\overline{\partial} \Lambda} \left(c - \cref + \Delta t(a + \bu\cdot \left<-\grad_{\xi,\eta} h,1\right>)\right) e\,d\sigma. \label{claplaceweakform}
 \end{equation}
 The integral along $\overline{\partial} \Lambda$, with length element $d\sigma$, evaluates $c$ and $e$ in the trace sense.  In the decoupled case we say that $c \in W_0^{1,2}(\Lambda)$ solves the (decoupled) weak form of \eqref{claplace} if $a(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.
 
