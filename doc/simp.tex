@@ -255,29 +255,39 @@ The quantities on the right are all evaluated at the new time $t_n$ and at the i
 Our scheme proposes that the vertical displacement $c(\bxi)$ solves a Laplace boundary value problem on $\Lambda$:
 \begin{align}
         \grad^2 c &= 0 &&\text{in } \Lambda \label{claplace} \\
-                c &= -\max\{\Href + b - h^{n-1},0\} + \Delta t\,(a + \bu \cdot \left<-\grad_{\xi,\eta}h,1\right>) &&\text{top: } \overline{\partial} \Lambda \notag \\
-                c &= 0 &&\text{base: } \underline{\partial} \Lambda, \notag \\
- \grad c\cdot \bn &= 0 &&\text{sides: } \partial_{|} \Lambda. \notag
+                c &= -\max\{\Href + b - h^{n-1},0\} + \Delta t\,(a + \bu \cdot \left<-\grad_{\xi,\eta}h,1\right>) &&\text{top: } \overline{\partial} \Lambda  \label{claplacetop} \\
+                c &= 0 &&\text{base: } \underline{\partial} \Lambda,  \label{claplacebase} \\
+ \grad c\cdot \bn &= 0 &&\text{sides: } \partial_{|} \Lambda.  \label{claplacesides}
 \end{align}
-Figure \ref{fig:claplaceproblem} sketches this problem.  Noting that the solution $c$ will be used to vertically perturb the domain under map \eqref{changecoords}, i.e.~$z=\zeta+c(\xi,\eta,\zeta)$, the basal boundary condition implies that the map sends the base of $\Lambda$ to the base of $\Omega^n$.  The Neumann boundary condition on the sides, applied at some finite distance from the current ice, is unobtrusive.
+Figure \ref{fig:claplaceproblem} sketches this problem.  Noting that the solution $c$ will be used to vertically perturb the domain under map \eqref{changecoords}, i.e.~$z=\zeta+c(\xi,\eta,\zeta)$, the basal boundary condition \eqref{claplacebase} implies that the map sends the base of $\Lambda$ to the base of $\Omega^n$.  The Neumann boundary condition \eqref{claplacesides} on the sides, applied at some finite distance from the current ice, is unobtrusive.
 
 \begin{figure}[ht]
 \begin{center}
 \includegraphics[width=0.85\textwidth]{figs/claplaceproblem.pdf}
 \end{center}
-\caption{A sketch of reference domain $\Lambda$ and problem \eqref{claplace}.  See the text regarding the shaded ``miasma'' volume (equation \eqref{miasma}) and the ``$\ast$'' notation.}
+\caption{A sketch of reference domain $\Lambda$ and problem \eqref{claplace}--\eqref{claplacesides}.  See the text regarding the shaded ``miasma'' volume (equation \eqref{miasma}) and the ``$\ast$'' notation.}
 \label{fig:claplaceproblem}
 \end{figure}
 
-However, the top Dirichlet boundary condition, which will be included weakly into the coupled system below (section \ref{sec:finiteelement}), needs comment.  In locations where the current surface elevation is more than $\Href$ above the bed the value is simply the surface kinematical quantity \eqref{backwardeulerske}.  In currently ice-free areas where $h^{n-1}=b$ and $\bu=\bzero$, marked ``$\ast$'' in Figure \ref{fig:claplaceproblem}, the value is
+However, the top boundary condition \eqref{claplacetop}, which will be included weakly into the coupled system below (section \ref{sec:finiteelement}), needs comment.  In locations where the current surface elevation $h^{n-1}$ is more than $\Href$ above the bed the value is the same as the surface kinematical quantity in \eqref{backwardeulerske}.  In currently ice-free areas where $h^{n-1}=b$ and $\bu=\bzero$, marked ``$\ast$'' in Figure \ref{fig:claplaceproblem}, the value is
 \begin{equation}
     c = - \Href + \Delta t\,a. \label{icefreehrefske}
 \end{equation}
 Assuming $h^{n-1}$ is itself continuous, as one passes across the glacier margin the top surface value in problem \eqref{claplace} changes continuously from the one in \eqref{backwardeulerske} to that in \eqref{icefreehrefske}.
 
-Intuitively, solving \eqref{claplace} yields a smooth 3D function $c$ which, in a vertical column of $\Lambda$, connects the surface kinematical quantity \eqref{backwardeulerske}, or its modified form \eqref{icefreehrefske}, as linearly as possible to zero at the base.  Mathematically, $c$ satisfies the maximum principle in $\Lambda$ \cite{Evans2010}, and the direction of $\grad_{\bxi} c$ changes direction as little as possible (in the energy norm) while smoothly meeting the boundary data.  In fact, the solution to \eqref{claplace} behaves better than solving independent-column two-point boundary value problems $c''=0$, $c(h)=X$, $c(b)=0$ on $\zeta\in[h,b]$, where ``$X$'' represents the right side of \eqref{backwardeulerske} or \eqref{icefreehrefske}.  This problem yields $c(\zeta)=(X-b)\zeta/(h-b)$, essentially the vertical ``linear mapping'' used for explicit domain evolution and remeshing in \cite[equation (22)]{Lengetal2012}.
+The value of ``$h$'' in \eqref{claplacetop} is the updated (solution) surface elevation, that is, the elevation of the top of the ice domain \emph{after} applying the map $\bxi\mapsto \bx$.  It follows from \eqref{changecoords} that
+\begin{equation}
+h(\xi,\eta) = h^{n-1}(\xi,\eta) + c(\xi,\eta,h^{n-1}(\xi,\eta)), \label{hmeaning}
+\end{equation}
+and it follows that
+\begin{equation}
+\grad_{\xi,\eta} h = \left(1+\frac{\partial c}{\partial\zeta}\right) \grad_{\xi,\eta} h^{n-1} + \left<\frac{\partial c}{\partial\xi},\frac{\partial c}{\partial\eta}\right> \label{hgradient}
+\end{equation}
+where the derivatives of $c$ are evaluated at points $(\xi,\eta,h^{n-1}(\xi,\eta))$ along the top surface of $\Lambda$.  Therefore boundary condition \eqref{claplacetop} is in fact a Robin boundary condition in the Laplace equation problem for $c$.
 
-The shaded area of the Figure, namely the portion of the reference domain not occupied by ice ($\Lambda \setminus \Omega^{n-1}$) is, properly-speaking, the volume of the atmosphere where the ice currently extends less than $\Href$ above the bed.  On the top of this volume the ``$\max$'' in \eqref{claplace} adds nontrivially to the value from \eqref{backwardeulerske}, giving \eqref{icefreehrefske} when ice-free.  Within this volume our model will include an incompressible regularizing fluid which we call ``miasma,''\footnote{Defined as an oppressive or unpleasant atmosphere which surrounds something, often settling into low areas.} the density and viscosity of which is much smaller than ice.  Specifically, \eqref{forcebalance} and \eqref{viscflowlaw} are replaced by
+Intuitively, solving problem \eqref{claplace}--\eqref{claplacesides} yields a smooth 3D function $c$ which, in a vertical column of $\Lambda$, connects the surface kinematical quantity \eqref{backwardeulerske}, or its modified form \eqref{icefreehrefske}, as linearly as possible to zero at the base.  Mathematically, $c$ satisfies the maximum principle in $\Lambda$ \cite{Evans2010}, and the direction of $\grad_{\bxi} c$ changes direction as little as possible (in the energy norm) while smoothly meeting the boundary data.  In fact, the solution to \eqref{claplace} behaves better than solving independent-column two-point boundary value problems $c''=0$, $c(h)=X$, $c(b)=0$ on $\zeta\in[h,b]$, where ``$X$'' represents the right side of \eqref{backwardeulerske} or \eqref{icefreehrefske}.  This problem yields $c(\zeta)=(X-b)\zeta/(h-b)$, essentially the vertical ``linear mapping'' used for explicit domain evolution and remeshing in \cite[equation (22)]{Lengetal2012}.
+
+The shaded area of the Figure, namely the portion of the reference domain not occupied by ice ($\Lambda \setminus \Omega^{n-1}$) is, properly-speaking, the volume of the atmosphere where the ice currently extends less than $\Href$ above the bed.  On the top of this volume the ``$\max$'' in \eqref{claplacetop} adds nontrivially to the value from \eqref{backwardeulerske}, giving \eqref{icefreehrefske} when ice-free.  Within this volume our model will include an incompressible regularizing fluid which we call ``miasma,''\footnote{Defined as an oppressive or unpleasant atmosphere which surrounds something, often settling into low areas.} the density and viscosity of which is much smaller than ice.  Specifically, \eqref{forcebalance} and \eqref{viscflowlaw} are replaced by
 \begin{equation} % FIXME: proposed flow law
 - \nabla \cdot \tau + \nabla p = \rhom \bg, \qquad \tau = 2 \num D\bu \label{miasma}
 \end{equation}
@@ -330,19 +340,18 @@ We say $\bu\in \bV$ and $p\in Q$ solve the decoupled Glen-Stokes weak formulatio
 A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  Note that if the inflow velocity is zero ($\bu_{\text{in}}=\bzero$) or absent ($\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupled} is $\bu=\bzero$ and $p=0$.
 
 \newcommand{\cref}{c_{\text{ref}}}
-Next we consider the weak form of the Laplace problem \eqref{claplace} for the displacement $c$ on $\Lambda$.  We weakly impose the top boundary condition because it involves the velocity unknowns.  Let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}$ scalar functions on $\Lambda$ which are zero on the base $\underline{\partial} \Lambda$.  Let $\cref=-\max\{\Href+b-h^{n-1},0\}$; this data is known in the context of problem \eqref{claplace}.  We multiply $-\grad^2 c=0$ by a test function $e$ and integrate by parts, then use the $\underline{\partial} \Lambda$ and $\partial_{|} \Lambda$ boundary conditions to eliminate all but the top boundary integral, and thereby define a bilinear form:
+Next we consider the weak form of the Laplace problem \eqref{claplace}--\eqref{claplacesides} for the displacement $c$ on $\Lambda$.  We weakly impose the top boundary condition \eqref{claplacetop} because it involves the velocity unknowns.  Let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}$ scalar functions on $\Lambda$ which are zero on the base $\underline{\partial} \Lambda$.  Let $\cref=-\max\{\Href+b-h^{n-1},0\}$; this data is known in the context of problem \eqref{claplace}.  We multiply $-\grad^2 c=0$ by a test function $e$ and integrate by parts, then use the $\underline{\partial} \Lambda$ and $\partial_{|} \Lambda$ boundary conditions to eliminate all but the top boundary integral.  Denoting the boundary measure on $\partial\Lambda$ by $d\sigma$, this defines a bilinear form
 \begin{equation}
-B(c;e) = \int_\Lambda \grad c \cdot \grad e \,dr ds + \int_{\overline{\partial} \Lambda} \left(c - \cref + \Delta t(a + \bu\cdot \left<-\grad_{\xi,\eta} h,1\right>)\right) e\,d\sigma. \label{claplaceweakform}
+B(c;e) = \int_\Lambda \grad c \cdot \grad e \,d\bxi + \int_{\overline{\partial} \Lambda} \left(c - \cref + \Delta t(a + \bu\cdot \left<-\grad_{\xi,\eta} h,1\right>)\right) e\,d\sigma. \label{claplaceweakform}
 \end{equation}
-The integral along $\overline{\partial} \Lambda$, with length element $d\sigma$, evaluates $c$ and $e$ in the trace sense.  In the decoupled case we say that $c \in W_0^{1,2}(\Lambda)$ solves the (decoupled) weak form of \eqref{claplace} if $a(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.
+The boundary integral here evaluates $c$, $e$, $a$, $\bu$, and $\grad_{\xi,\eta} h$ in the trace sense; also recall expression \eqref{hgradient} for $\grad_{\xi,\eta} h$.  Given $\bu \in W^{1,2}(\Lambda)^d$, we say $c \in W_0^{1,2}(\Lambda)$ solves the (decoupled) weak form of the vertical displacement problem \eqref{claplace}--\eqref{claplacesides} if $B(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.
 
-FIXME NOW USING $\ell$ in \eqref{definel}
-
-FIXME The change of variables defined in the last section requires us to rewrite the weak form integrals of the Glen-Stokes model.  For a generic scalar-valued $L^1$ function $\tilde f(x,z)$ defined on $\Omega^n$, by the change of variables theorem we have
+The change of variables defined in the last section allows us to approximate the integrals needed for the coupled weak form.  For a generic scalar-valued $L^1$ function $f(\bx)$ defined on $\Omega^n$, by the change of variables theorem, the definition of the regularized determinant $j(\bxi)$ in \eqref{definejell}, and $\tilde f(\bxi) = f(\bx(\bxi))$ we have
 \begin{equation}
-\int_{\Omega^n} \tilde f(x,z)\,dx dz = \int_\Lambda f(r,s) \, j(r,s)\,dr ds, \label{changeintegral}
+\int_{\Omega^n} f(\bx)\,d\bx \approx \int_\Lambda \tilde f(\bxi) \, j(\bxi)\,d\bxi. \label{changeintegral}
 \end{equation}
-with weight $j(r,s)$ defined in FIXME and $f(r,s) = \tilde f(r,s+c(r,s))$.  Using component notation $\bu = \left<u_0,u_2\right>$, compatible with coordinate notation $(x,z)$ on $\Omega$, the following expansions of velocity derivatives (strain rates) with respect to $(x,z)$; these formulas follow from \eqref{changederivatives} and FIXME:
+
+FIXME:
 \begin{align*}
 \grad_{x,z} \cdot \tilde \bu &= \frac{\partial u_0}{\partial r} + \ell \frac{\partial u_0}{\partial s} + k \frac{\partial u_2}{\partial s} \\
 D_{x,z} \tilde \bu &= \begin{pmatrix} \partial u_0/\partial r + \ell (\partial u_0/\partial s) & \gamma \\
