@@ -252,7 +252,7 @@ h - h^{n-1} = \Delta t\left(a + \bu \cdot \left<-\grad_{x,y} h,1\right>\right). 
 \end{equation}
 The quantities on the right are all evaluated at the new time $t_n$ and at the ice surface; $a,\bu,h$ denote the surface mass balance, velocity, and elevation, respectively, and specifically $a=a_{\perp}(t_n,x,y,h(x,y))$.  However, \eqref{backwardeulerske} applies only where ice is present in the solution geometry; we actually seek to solve complementarity conditions \eqref{stronginequality} and \eqref{strongcomplementarity}.
 
-Our scheme proposes that the vertical displacement $c(\bxi)$ solves a Laplace boundary value problem on $\Lambda$:
+In our scheme the vertical displacement $c(\bxi)$ solves a Laplace boundary value problem on $\Lambda$:
 \begin{align}
         \grad^2 c &= 0 &&\text{in } \Lambda \label{claplace} \\
                 c &= -\max\{\Href + b - h^{n-1},0\} + \Delta t\,(a + \bu \cdot \left<-\grad_{\xi,\eta}h,1\right>) &&\text{top: } \overline{\partial} \Lambda  \label{claplacetop} \\
@@ -293,23 +293,31 @@ The shaded area of the Figure, namely the portion of the reference domain not oc
 \end{equation}
 respectively, and Equation \eqref{incompressible} is unchanged.  In our numerical experiments (section \ref{sec:results} below) we will use a density which is a tenth that of ice and a viscosity, in a linear flow law, which is a tenth of that of ice deforming at the reference strain rate $D_0$ (equation \eqref{regeffvisc}): $\rhom = \frac{1}{10} \rho$, $2\num = \frac{1}{10} B_n D_0^{1/n}$.  The intention of choosing such a weak and light fluid is to cause minimal impact on the dynamics of the ice while also occupying a part of the domain which the ice may come to occupy during the solution process for the coupled equations.
 
-The weak form of the coupled problem will be stated in the next section.  Doing so will require the derivatives of coordinate transformation \eqref{changecoords}.  The Jacobian is
+The weak form of the coupled problem, stated in the next section, will require derivatives of coordinate transformation \eqref{changecoords}.  The Jacobian is
 \begin{equation}
-J(\bxi) = \frac{\partial \bx}{\partial \bm{\xi}} = \begin{pmatrix} 1 & 0 & 0 \\ \strut 0 & 1 & 0 \\ {\Large \strut} \frac{\partial c}{\partial \xi} & \frac{\partial c}{\partial \eta} & 1+\frac{\partial c}{\partial \zeta} \end{pmatrix}, \label{jacchange}
+J(\bxi) = \frac{\partial \bx}{\partial \bm{\xi}} = \begin{pmatrix} 1 & 0 & 0 \\ \strut 0 & 1 & 0 \\ {\Large \strut} \frac{\partial c}{\partial \xi} & \frac{\partial c}{\partial \eta} & 1+\frac{\partial c}{\partial \zeta} \end{pmatrix}, \label{changejac}
 \end{equation}
 with determinant $\det(J) = 1+\frac{\partial c}{\partial \zeta}$.  For a generic, smooth function $f(\bx)$ defined on $\Omega^n$ the transformation defines $\tilde f(\bxi) = f(\bx(\bxi))$ on $\Lambda$ with gradient $\grad_{\bxi} \tilde f = J^\top \grad_{\bx} f$.  Thus
 \begin{equation}
-\grad_{\bx} f = (J^\top)^{-1} \grad_{\bxi} \tilde f = \begin{pmatrix} {\Large \strut} 1 & 0 & - \frac{\partial c}{\partial \xi} \hat\ell \\ {\Large \strut} 0 & 1 & -\frac{\partial c}{\partial \eta} \hat\ell \\ {\Large \strut} 0 & 0 & \hat\ell \end{pmatrix} \grad_{\bxi} \tilde f. \label{changederivatives}
+\grad_{\bx} f = (J^\top)^{-1} \grad_{\bxi} \tilde f = \begin{pmatrix} {\Large \strut} 1 & 0 & - \frac{\partial c}{\partial \xi} \hat\ell \\ {\Large \strut} 0 & 1 & -\frac{\partial c}{\partial \eta} \hat\ell \\ {\Large \strut} 0 & 0 & \hat\ell \end{pmatrix} \grad_{\bxi} \tilde f. \label{changegrad}
 \end{equation}
-where $\hat\ell(\bxi) = \left(1+\frac{\partial c}{\partial \zeta}\right)^{-1}=\det(J)^{-1}$.
+where $\hat\ell(\bxi) = \left(1+\frac{\partial c}{\partial \zeta}\right)^{-1}=\det(J)^{-1}$.  Regarding derivatives of vector fields, it follows from \eqref{changegrad} that for $\tilde \bu(\bxi) = \bu(\bx(\bxi)) = \left<\tilde u,\tilde v, \tilde w\right>$ we have
+\begin{equation}
+\grad_{\bx} \cdot \bu = \grad_{\bxi} \cdot \tilde\bu - \hat\ell \left(\frac{\partial c}{\partial \xi} \frac{\partial \tilde u}{\partial \zeta} + \frac{\partial c}{\partial \eta} \frac{\partial \tilde v}{\partial \zeta}\right) + (\hat\ell-1) \frac{\partial \tilde w}{\partial \zeta} \label{changediv}
+\end{equation}
+and
+\begin{equation}
+D_{\bx}\bu = D_{\bxi} \tilde\bu
+             - \hat\ell \begin{pmatrix} \frac{\partial c}{\partial \xi} \frac{\partial \tilde u}{\partial \zeta} & \frac{1}{2} \left(\frac{\partial c}{\partial \eta} \frac{\partial \tilde u}{\partial \zeta} + \frac{\partial c}{\partial \xi} \frac{\partial \tilde v}{\partial \zeta}\right) & \frac{1}{2} \frac{\partial c}{\partial \xi} \frac{\partial \tilde w}{\partial \zeta} \\ \square & \frac{\partial c}{\partial \eta} \frac{\partial \tilde v}{\partial \zeta} & {\Large\strut} \frac{1}{2} \frac{\partial c}{\partial \eta} \frac{\partial \tilde w}{\partial \zeta} \\ {\Large\strut} \square & \square & 0 \end{pmatrix}
+             + (\hat\ell-1) \begin{pmatrix} 0 & 0 & \frac{1}{2} \frac{\partial \tilde u}{\partial \zeta} \\ \square & 0 & {\Large\strut} \frac{1}{2} \frac{\partial \tilde v}{\partial \zeta} \\ \square & \square & {\Large\strut} \frac{\partial \tilde w}{\partial \zeta} \end{pmatrix},  \label{changeDu}
+\end{equation}
+where the squares indicate symmetric entries.
 
-%FIXME:  perhaps we should be solving a variational inequality subject to \frac{\partial c}{\partial \zeta} \ge -1 *and* regularizing the weak form stretching factors to keep \ell bounded
-
-Thus the change of coordinates $\bxi \mapsto \bx$ is not locally invertible where $\frac{\partial c}{\partial \zeta}=-1$.  Noting $c$ has dimensions of distance, this dimensionless value of $-1$ is significant because the map would eliminate all the ice at a location $(\xi,\eta)$ if $\frac{\partial c}{\partial \zeta}=-1$ identically in that column.  While we will allow for such a possibility, we also need to compute well-posed time steps over the reference domain $\Lambda$, thus we make one more regularization.  Let $\delta > 0$ be a small number and define the (unhatted) functions
+Observe that the change of coordinates $\bxi \mapsto \bx$ is not locally invertible where $\frac{\partial c}{\partial \zeta}=-1$.  Noting $c$ has dimensions of distance, this dimensionless value of $-1$ is significant because the map would eliminate all the ice at a location $(\xi,\eta)$ if $\frac{\partial c}{\partial \zeta}=-1$ identically in that column.  While we will (and must) allow for such a possibility, we also need to compute well-posed time steps over the reference domain $\Lambda$, thus we make one more regularization.  Let $\delta > 0$ be a small number and define the (unhatted) functions
 \begin{equation}
 j(\bxi) = \begin{cases} 1 + {\displaystyle \frac{\partial c}{\partial \zeta}}, & {\displaystyle \frac{\partial c}{\partial \zeta} \ge -1 + \delta}, \\ \delta, & \text{otherwise}, \end{cases} \qquad \text{and} \qquad \ell(\bxi) = j(\bxi)^{-1}. \label{definejell}
 \end{equation}
-Functions $j,\ell$ will appear in the next section as coefficients in integrals over $\Lambda$; with the regularization in \eqref{definejell} these integrals will be finite.
+Functions $j,\ell$ will appear in the next section as coefficients in integrals over $\Lambda$; because of regularization \eqref{definejell} these integrals will be finite.  Specifically, formulas \eqref{changediv} and \eqref{changeDu} will be used in the coupled weak form in the next section.
 
 
 \section{Weak form of the coupled equations} \label{sec:weakformcoupled}
@@ -375,6 +383,8 @@ F(\bu,p,c;\bv,q,e) &= \int_\Lambda 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv\, j\,dr ds
 The solution of the weak form is a list of three functions, $\bu = \left<u_0,u_2\right> \in V_D$, $p\in L^{p'}(\Lambda)$, and $c\in W^{1,2}_0(\Lambda)$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all $\bv = \left<v_0,v_2\right> \in V_0$,  $q\in L^{p'}(\Lambda)$, and $e \in W^{1,2}_0(\Lambda)$.  Note that all trial and test functions are functions of $r$ and $s$ in $\Lambda$.
 
 FIXME Assuming that $\Lambda$ is a well-behaved domain, this boundary-value problem is expected to be well-posed, but this mathematical issue is not resolved in this paper.
+
+%FIXME:  perhaps we should be solving a variational inequality subject to \frac{\partial c}{\partial \zeta} \ge -1 *and* regularizing the weak form stretching factors to keep \ell bounded (which is done)
 
 
 \section{Finite element approximation}  \label{sec:finiteelement}
