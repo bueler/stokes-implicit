@@ -42,6 +42,7 @@ urlcolor=black    % ...
 
 \newcommand{\bzero}{\bm{0}}
 
+\newcommand{\cref}{c_{\text{ref}}}
 \newcommand{\Href}{H_{\text{ref}}}
 \newcommand{\num}{\nu_{\text{m}}}
 \newcommand{\rhom}{\rho_{\text{m}}}
@@ -184,15 +185,13 @@ At any given map-plane location $(x,y)$ the ice may be present (strict inequalit
 
 In agreement with almost all ice sheet and glacier modeling literature, equation \eqref{Omegat} states that both the upper and lower surfaces of the ice mass are described by a well-defined functions of map-plane location.  The domain $\Omega^t$ is thus a layer \cite{Bueler2020}, and not general.  In the usual case where $\partial_{\text{in}} \Omega^t=\emptyset$ we assume a disjoint decomposition $\partial \Omega^t = \overline{\partial} \Omega^t \cup \underline{\partial} \Omega^t$ except for a set of measure zero along the margin.  Looking ahead, this layer assumption is compatible with FE numerics based on vertically-extruded meshes which are unstructured mesh in the map plane.
 
-Let $a_\perp(t,x,y,z)$ be the vertical modeled climatic surface mass balance, in (ice-equivalent) units $\text{m}\,\text{s}^{-1}$.  This scalar field must be defined for all locations above the bedrock elevation, i.e.~$(x,y,z) \in R\times[b(x,y),\infty)$.  Denoting the velocity components as $\bu=\left<u,v,w\right>$, the surface kinematical equation \cite{GreveBlatter2009} then applies on the top of the ice,
+Let $a_\perp(t,x,y,z)$ be the modeled vertical climatic surface mass balance, in (ice-equivalent) units $\text{m}\,\text{s}^{-1}$.  This scalar field must be defined for all locations above the bedrock elevation, i.e.~$(x,y,z) \in R\times[b(x,y),\infty)$.  Denoting the velocity components as $\bu=\left<u,v,w\right>$, the surface kinematical equation \cite{GreveBlatter2009} then applies on the top of the ice,
     $$\frac{\partial h}{\partial t} = a - u \frac{\partial h}{\partial x} - v \frac{\partial h}{\partial y} + w,$$
 or, stated more precisely using vector notation,
 \begin{equation}
 \frac{\partial h}{\partial t} = a + \bu|_{z=h} \cdot \bn \quad \text{ on } \overline{\partial}\Omega^t, \label{surfacekinematical}
 \end{equation}
-where $\bn = \left<-\frac{\partial h}{\partial x},-\frac{\partial h}{\partial y},1\right>$ is upward and normal to the ice surface.  The surface mass balance $a$ in \eqref{surfacekinematical} is the trace \cite{Evans2010} of the vertical value of the mass balance along the ice surface,
-    $$a := a_{\perp}(t,x,y,h(x,y,t)).$$
-Modeled melting or freeze-on at the ice base would add a basal kinematic equation \cite[for example]{Aschwandenetal2012}, but for simplicity this is not considered here.
+where $\bn = \left<-\frac{\partial h}{\partial x},-\frac{\partial h}{\partial y},1\right>$ is upward and normal to the ice surface.  The surface mass balance $a$ in \eqref{surfacekinematical} is the trace \cite{Evans2010} of the vertical value of the mass balance along the ice surface, i.e.~$a = a_{\perp}(t,x,y,h(t,x,y))$.  Modeled melting or freeze-on at the ice base would add a basal kinematic equation \cite[for example]{Aschwandenetal2012}, but for simplicity this is not considered here.
 
 Equation \eqref{surfacekinematical} applies on the ice surface, that is, where ice is present.  However, the equation should be understood as the following pair of statements on the entire computational domain $R$ \cite{Bueler2016,Bueler2020,SchoofHewitt2013}:
 \begin{align}
@@ -250,7 +249,11 @@ A backward Euler step approximates \eqref{surfacekinematical} for the difference
 \begin{equation}
 h - h^{n-1} = \Delta t\left(a + \bu \cdot \left<-\grad_{x,y} h,1\right>\right). \label{backwardeulerske}
 \end{equation}
-The quantities on the right are all evaluated at the new time $t_n$ and at the ice surface; $a,\bu,h$ denote the surface mass balance, velocity, and elevation, respectively, and specifically $a=a_{\perp}(t_n,x,y,h(x,y))$.  However, \eqref{backwardeulerske} applies only where ice is present in the solution geometry; we actually seek to solve complementarity conditions \eqref{stronginequality} and \eqref{strongcomplementarity}.
+The quantities on the right are all evaluated at the new time $t_n$ and at the ice surface; $a,\bu,h$ denote the surface mass balance, velocity, and elevation, respectively, and specifically from section \ref{sec:stronggeometry} we have
+\begin{equation}
+a=a_{\perp}(t_n,x,y,h(x,y)). \label{definea}
+\end{equation}
+However, \eqref{backwardeulerske} applies only where ice is present in the solution geometry; we actually seek to solve complementarity conditions \eqref{stronginequality} and \eqref{strongcomplementarity}.
 
 In our scheme the vertical displacement $c(\bxi)$ solves a Laplace boundary value problem on $\Lambda$:
 \begin{align}
@@ -317,70 +320,51 @@ Observe that the change of coordinates $\bxi \mapsto \bx$ is not locally inverti
 \begin{equation}
 j(\bxi) = \begin{cases} 1 + {\displaystyle \frac{\partial c}{\partial \zeta}}, & {\displaystyle \frac{\partial c}{\partial \zeta} \ge -1 + \delta}, \\ \delta, & \text{otherwise}, \end{cases} \qquad \text{and} \qquad \ell(\bxi) = j(\bxi)^{-1}. \label{definejell}
 \end{equation}
-Functions $j,\ell$ will appear in the next section as coefficients in integrals over $\Lambda$; because of regularization \eqref{definejell} these integrals will be finite.  Specifically, formulas \eqref{changediv} and \eqref{changeDu} will be used in the coupled weak form in the next section.
+
+Formulas \eqref{changediv} and \eqref{changeDu} will be used in stating the coupled weak form in the next section, with $\ell$ replacing $\hat\ell$.  In fact, functions $j$ and $\ell$ will appear as coefficients in the weak form integrals over $\Lambda$, and regularization \eqref{definejell} makes these integrals finite even in areas where ice is rapidly being removed, i.e.~even when $\partial c/\partial \zeta$ is negative and $O(1)$ or larger.
 
 
 \section{Weak form of the coupled equations} \label{sec:weakformcoupled}
 
-In order to compute FE solutions we will need the weak form of our entire coupled system, consisting of the usual Stokes equations plus the vertical displacement problem just described.  However, we first recall the well-known weak form of the (decoupled) Glen-Stokes problem \eqref{stokes}--\eqref{basebc} \cite{JouvetRappaz2011} for velocity and pressures, separate from surface kinematical concerns.  This sets notation and provides a starting point from which to state the weak form of the coupled model.
+Our FE method will solve the weak form of the coupled system consisting of the velocity-pressure equations in section \ref{sec:strongform} plus the vertical displacement problem just described.  We first recall the well-known weak form of the former, that is, the (decoupled) Glen-Stokes problem \eqref{stokes}--\eqref{basebc} \cite{JouvetRappaz2011} separately from surface kinematical concerns.  This provides notation and a starting point from which to state the coupled weak form.
 
 Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocity fields on $\Omega^t$ with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For fixed $t>0$ we will seek a solution from the following spaces:
 \begin{align*}
-\bu &\in \bV = \left\{\bv \in W^{1,r}(\Omega^t)^d\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
-p &\in Q = L^{r'}(\Omega^t).
+\bu &\in \hat\bV = \left\{\bv \in W^{1,r}(\Omega^t)^d\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
+p &\in \hat Q = L^{r'}(\Omega^t).
 \end{align*}
-Test functions $\bv \in \bV_0$ and $q\in Q$ will come from nearly the same spaces, but with $\bv=\bzero$ also on the inflow boundary (if present).  Note that velocities in $\bV$ are not (generally) twice differentiable, and that pressures in $Q$ need not even be continuous.
+(Hats indicate choices which are preliminary to the coupled case.)  Test functions $\bv \in \hat\bV_0$ and $q\in \hat Q$ will come from nearly the same spaces, but with $\bv=\bzero$ also on the inflow boundary if present.  Note that velocities in $\hat\bV$ are generally only once differentiable, and that pressures in $\hat Q$ need not even be continuous.
 
-To derive the weak form we multiply \eqref{stokes} by $\bv\in \bV_0$ and \eqref{incompagain} by $q\in Q$, then add these and integrate-by-parts:
+To derive the weak form we multiply \eqref{stokes} by $\bv\in \hat\bV_0$ and \eqref{incompagain} by $q\in \hat Q$, then add these and integrate-by-parts.  Using $ds$ for the boundary measure this yields
 \begin{equation}
 \int_{\Omega^t} 2 \nu_\eps(|D\bu|) D\bu \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds = 0. \label{nonfunctwo}
 \end{equation}
-Here $ds$ is the area element along $\partial\Omega^t$.  Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ appear without derivatives.  Because $\bv\in \bV_0$, portions of the integral over $\partial\Omega^t$ are zero, and then the stress-free surface condition \eqref{topbc} eliminates the remaining boundary integral.  Thus we have the following functional $\tilde F$ which is nonlinear in $\bu,p$ and linear in $\bv,q$:
+Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ appear without derivatives.  Because $\bv\in \hat\bV_0$, some portions of the integral over $\partial\Omega^t$ are zero, and the stress-free surface condition \eqref{topbc} eliminates the remaining portions.  Thus we have the following functional which is nonlinear in $\bu$ and linear in $p,\bv,q$:
 \begin{equation}
-\tilde F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx. \label{definetildeF}
+\hat F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx. \label{definetildeF}
 \end{equation}
-The final integral in \eqref{definetildeF} can be regarded as the source term.
-
-We say $\bu\in \bV$ and $p\in Q$ solve the decoupled Glen-Stokes weak formulation at $t>0$ if
+The final integral in \eqref{definetildeF} is the source term.  We say $\bu\in \hat\bV$ and $p\in \hat Q$ solve the decoupled Glen-Stokes weak formulation at time $t>0$ if
 \begin{equation}
-\tilde F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in \bV_0 \text{ and } q\in Q.  \label{weakdecoupled}
-\end{equation}
-A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  Note that if the inflow velocity is zero ($\bu_{\text{in}}=\bzero$) or absent ($\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupled} is $\bu=\bzero$ and $p=0$.
-
-\newcommand{\cref}{c_{\text{ref}}}
-Next we consider the weak form of the Laplace problem \eqref{claplace}--\eqref{claplacesides} for the displacement $c$ on $\Lambda$.  We weakly impose the top boundary condition \eqref{claplacetop} because it involves the velocity unknowns.  Let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}$ scalar functions on $\Lambda$ which are zero on the base $\underline{\partial} \Lambda$.  Let $\cref=-\max\{\Href+b-h^{n-1},0\}$; this data is known in the context of problem \eqref{claplace}.  We multiply $-\grad^2 c=0$ by a test function $e$ and integrate by parts, then use the $\underline{\partial} \Lambda$ and $\partial_{|} \Lambda$ boundary conditions to eliminate all but the top boundary integral.  Denoting the boundary measure on $\partial\Lambda$ by $d\sigma$, this defines a bilinear form
-\begin{equation}
-B(c;e) = \int_\Lambda \grad c \cdot \grad e \,d\bxi + \int_{\overline{\partial} \Lambda} \left(c - \cref + \Delta t(a + \bu\cdot \left<-\grad_{\xi,\eta} h,1\right>)\right) e\,d\sigma. \label{claplaceweakform}
-\end{equation}
-The boundary integral here evaluates $c$, $e$, $a$, $\bu$, and $\grad_{\xi,\eta} h$ in the trace sense; also recall expression \eqref{hgradient} for $\grad_{\xi,\eta} h$.  Given $\bu \in W^{1,2}(\Lambda)^d$, we say $c \in W_0^{1,2}(\Lambda)$ solves the (decoupled) weak form of the vertical displacement problem \eqref{claplace}--\eqref{claplacesides} if $B(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.
-
-The change of variables defined in the last section allows us to approximate the integrals needed for the coupled weak form.  For a generic scalar-valued $L^1$ function $f(\bx)$ defined on $\Omega^n$, by the change of variables theorem, the definition of the regularized determinant $j(\bxi)$ in \eqref{definejell}, and $\tilde f(\bxi) = f(\bx(\bxi))$ we have
-\begin{equation}
-\int_{\Omega^n} f(\bx)\,d\bx \approx \int_\Lambda \tilde f(\bxi) \, j(\bxi)\,d\bxi. \label{changeintegral}
+\hat F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in \hat\bV_0 \text{ and } q\in \hat Q.  \label{weakdecoupled}
 \end{equation}
 
-FIXME:
-\begin{align*}
-\grad_{x,z} \cdot \tilde \bu &= \frac{\partial u_0}{\partial r} + \ell \frac{\partial u_0}{\partial s} + k \frac{\partial u_2}{\partial s} \\
-D_{x,z} \tilde \bu &= \begin{pmatrix} \partial u_0/\partial r + \ell (\partial u_0/\partial s) & \gamma \\
-  \strut \gamma & k (\partial u_2/\partial s)\end{pmatrix} \\
-|D_{x,z} \tilde \bu|^2 &= \frac{1}{2}\left(\frac{\partial u_0}{\partial r} + \ell \frac{\partial u_0}{\partial s}\right)^2 + \gamma^2 + \frac{1}{2}\left(k \frac{\partial u_2}{\partial s}\right)^2
-\end{align*}
-where
-    $$\gamma = \frac{1}{2} \left(k \frac{\partial u_0}{\partial s} + \frac{\partial u_2}{\partial r} + \ell \frac{\partial u_2}{\partial s}\right)$$
-is a notational simplification only.
+A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  If the inflow velocity is zero or absent (i.e.~$\bu_{\text{in}}=\bzero$ or $\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupled} is $\bu=\bzero$ and $p=0$.
 
-From weak forms \eqref{definetildeF} and FIXME, the proposed [DRAFT] weak form is
-\begin{align}
-F(\bu,p,c;\bv,q,e) &= \int_\Lambda 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv\, j\,dr ds [FIXME] \label{defineF} \\
-    &\quad  - \int_\Lambda p \left(j \frac{\partial v_0}{\partial r} - \frac{\partial c}{\partial r} \frac{\partial v_0}{\partial s} + \frac{\partial v_2}{\partial s}\right) \,dr ds \notag \\
-    &\quad - \int_\Lambda q \left(j \frac{\partial u_0}{\partial r} - \frac{\partial c}{\partial r} \frac{\partial u_0}{\partial s} + \frac{\partial u_2}{\partial s}\right)\,dr ds \notag \\
-    &\quad  - \int_\Lambda \rho \mathbf{g} \cdot \bv \, j\,dr ds \notag \\
-    &\quad + \int_{\partial_O \Lambda} \rho (H_{\text{out}}-s-c) \bg \cdot \bv \,dS \notag \\
-    &\quad + FIXME: a(c;e) \notag
-\end{align}
+Next we consider the decoupled weak form of the Laplace problem \eqref{claplace}--\eqref{claplacesides} for the displacement $c$ on $\Lambda$.  Recall that these equations describe our method for a backward Euler time step of the surface kinematical equation, i.e.~\eqref{backwardeulerske}.  We weakly impose the top boundary condition \eqref{claplacetop} because it involves the velocity unknowns.  Let $\cref=-\max\{\Href+b-h^{n-1},0\}$; this data in \eqref{claplacetop} is known.  Let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}$ scalar functions on $\Lambda$ which are zero on the base $\underline{\partial} \Lambda$.  We multiply \eqref{claplace} by a test function $e \in W_0^{1,2}(\Lambda)$ and integrate by parts, then use conditions \eqref{claplacebase} and \eqref{claplacesides} to eliminate all but the top boundary integral.  Denoting the boundary measure by $d\sigma$, this defines a bilinear form
+\begin{equation}
+B(c;e) = \int_\Lambda \grad c \cdot \grad e \,d\bxi + \int_{\overline{\partial} \Lambda} \Big(c - \cref + \Delta t(a + \bu\cdot \left<-\grad_{\xi,\eta} h,1\right>)\Big) e\,d\sigma. \label{claplaceweakform}
+\end{equation}
+Note that the boundary integral evaluates $c$, $e$, $a$, $\bu$, and $\grad_{\xi,\eta} h$ all in the trace sense, and recall expression \eqref{definea} for $a$ and \eqref{hgradient} for $\grad_{\xi,\eta} h$.
 
-The solution of the weak form is a list of three functions, $\bu = \left<u_0,u_2\right> \in V_D$, $p\in L^{p'}(\Lambda)$, and $c\in W^{1,2}_0(\Lambda)$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all $\bv = \left<v_0,v_2\right> \in V_0$,  $q\in L^{p'}(\Lambda)$, and $e \in W^{1,2}_0(\Lambda)$.  Note that all trial and test functions are functions of $r$ and $s$ in $\Lambda$.
+Given data $b$, $h^{n-1}$, $a$, $\bu$, and $h$ we say $c \in W_0^{1,2}(\Lambda)$ solves the decoupled weak form of the vertical displacement problem \eqref{claplace}--\eqref{claplacesides} if $B(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.  However, in the coupled weak form below $\bu$ and $h$ will be solution variables, not data.
+
+The change of variables defined in the last section allows us to approximate the integrals needed for the coupled weak form.  For a generic scalar-valued $L^1$ function $f(\bx)$ defined on $\Omega^n$, by the change of variables theorem and the definition of the regularized determinant $j(\bxi)$ in \eqref{definejell} we have
+\begin{equation}
+\int_{\Omega^n} f(\bx)\,d\bx = \int_\Lambda \tilde f(\bxi) \, \det(J(\bxi))\,d\bxi \approx \int_\Lambda \tilde f(\bxi) \, j(\bxi)\,d\bxi \label{changeintegral}
+\end{equation}
+where $\tilde f(\bxi) = f(\bx(\bxi))$.
+
+FIXME The solution of the weak form is a list of three functions, $\bu = \left<u_0,u_2\right> \in V_D$, $p\in L^{p'}(\Lambda)$, and $c\in W^{1,2}_0(\Lambda)$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all $\bv = \left<v_0,v_2\right> \in V_0$,  $q\in L^{p'}(\Lambda)$, and $e \in W^{1,2}_0(\Lambda)$.  Note that all trial and test functions are functions of $r$ and $s$ in $\Lambda$.
 
 FIXME Assuming that $\Lambda$ is a well-behaved domain, this boundary-value problem is expected to be well-posed, but this mathematical issue is not resolved in this paper.
 
