@@ -42,6 +42,8 @@ urlcolor=black    % ...
 
 \newcommand{\bzero}{\bm{0}}
 
+\newcommand{\rhoi}{\rho_{\text{i}}}
+
 \newcommand{\cref}{c_{\text{ref}}}
 \newcommand{\Href}{H_{\text{ref}}}
 \newcommand{\num}{\nu_{\text{m}}}
@@ -104,13 +106,13 @@ The standard model for the flow of glaciers uses Stokes equations based upon Gle
 
 Allowing any Glen exponent $n\ge 1$, the strong-form model equations are:
 \begin{align}
-- \nabla \cdot \tau + \nabla p &= \rho \bg &&\text{\emph{stress balance}} \label{forcebalance} \\
+- \nabla \cdot \tau + \nabla p &= \rhoi \bg &&\text{\emph{stress balance}} \label{forcebalance} \\
 \nabla \cdot \bu &= 0 &&\text{\emph{incompressibility}} \label{incompressible} \\
 \tau &= B_n |D\bu|^{(1/n) - 1} D\bu  &&\text{\emph{flow law}} \label{viscflowlaw}
 \end{align}
-The solution fields are velocity $\bu$, pressure $p$, and deviatoric stress tensor $\tau$.  For simplicity we take the ice density $\rho$ and the acceleration of gravity $\bg=\left<0,0,-g\right>$, with $g>0$, to be constant.
+The solution fields are velocity $\bu$, pressure $p$, and deviatoric stress tensor $\tau$.  For simplicity we take the ice density $\rhoi$ and the acceleration of gravity $\bg=\left<0,0,-g\right>$, with $g>0$, to be constant.
 
-Regarding tensors and their notation, the full (Cauchy) stress tensor $\sigma$ decomposes into the deviatoric part $\tau$ minus the pressure, i.e.~$\sigma = \tau - p\,I$, so equation \eqref{forcebalance} simply says $-\Div \sigma = \rho \bg$.  The strain rate tensor $D\bu$ is the symmetric part of $\grad \bu$, i.e.~$(D\bu)_{ij} = \frac{1}{2} \left(\grad\bu + \grad\bu^\top\right)$.  Because $D\bu$ is symmetric, and because it has trace zero by equation \eqref{incompressible}, i.e.~$\trace(D\bu)=\nabla \cdot \bu = 0$, from equation \eqref{viscflowlaw} it follows that $\tau$ is also symmetric with trace zero.  The tensor norm in \eqref{viscflowlaw} satisfies $|D\bu|^2 = \frac{1}{2} \trace\left((D\bu)^2\right) = \frac{1}{2} (D\bu)_{ij} (D\bu)_{ij}$.  Note $B_n$ is the $n$-dependent ice hardness in units $\text{Pa}\,\text{s}^{1/n}$, sometimes written $B_n = (A_n)^{-1/n}$ in terms of the softness $A_n$.
+Regarding tensors and their notation, the full (Cauchy) stress tensor $\sigma$ decomposes into the deviatoric part $\tau$ minus the pressure, i.e.~$\sigma = \tau - p\,I$, so equation \eqref{forcebalance} simply says $-\Div \sigma = \rhoi \bg$.  The strain rate tensor $D\bu$ is the symmetric part of $\grad \bu$, i.e.~$(D\bu)_{ij} = \frac{1}{2} \left(\grad\bu + \grad\bu^\top\right)$.  Because $D\bu$ is symmetric, and because it has trace zero by equation \eqref{incompressible}, i.e.~$\trace(D\bu)=\nabla \cdot \bu = 0$, from equation \eqref{viscflowlaw} it follows that $\tau$ is also symmetric with trace zero.  The tensor norm in \eqref{viscflowlaw} satisfies $|D\bu|^2 = \frac{1}{2} \trace\left((D\bu)^2\right) = \frac{1}{2} (D\bu)_{ij} (D\bu)_{ij}$.  Note $B_n$ is the $n$-dependent ice hardness in units $\text{Pa}\,\text{s}^{1/n}$, sometimes written $B_n = (A_n)^{-1/n}$ in terms of the softness $A_n$.
 
 For the linear Stokes equations \cite{Elmanetal2014}, i.e.~the $n=1$ case, one would traditionally write the flow law \eqref{viscflowlaw} as $\tau = 2\nu D\bu$, and in that case the viscosity would be $\nu = (1/2) B_1$.  For realistic powers $n>1$, namely shear-thinning ice, one defines an ``effective viscosity'' in equation \eqref{viscflowlaw} which involves a negative power of the strain rate magnitudes $|D\bu|$.  This effective viscosity would be singular in the limit of small strain rates, and so, motivated by the expected finite viscosity of glacier ice \cite{GreveBlatter2009}, and noting the equations using such a regularization are well-posed \cite{JouvetRappaz2011}, we define the regularized effective viscosity
 \begin{equation}
@@ -120,7 +122,7 @@ where $\eps = 10^{-4}$ and $r=(1/n)+1$.  The constant $D_0$ defines a strain-rat
 
 Using \eqref{viscflowlaw}, as modified by \eqref{regeffvisc}, we eliminate $\tau$ from equation \eqref{forcebalance}, thereby rewriting the system in terms of velocity and pressure derivatives only:
 \begin{align}
-- \nabla \cdot \left(2 \nu_\eps(|D\bu|)\, D\bu\right) + \nabla p &= \rho \mathbf{g} \label{stokes} \\
+- \nabla \cdot \left(2 \nu_\eps(|D\bu|)\, D\bu\right) + \nabla p &= \rhoi \mathbf{g} \label{stokes} \\
 \Div \bu &= 0 \label{incompagain}
 \end{align}
 This system is our Glen-Stokes model for bulk ice motion.  A solution is a velocity-pressure pair $(\bu,p)$, from which one may derive strain rates $D\bu$ and stresses $\tau$ and/or $\sigma = \tau - p\,I$.
@@ -136,7 +138,7 @@ Optionally, to allow simulation of a certain laboratory experiment \cite{SayagWo
 
 Assuming the well-posedness of the above model \eqref{stokes}--\eqref{basebc}, as is proven by \cite{JouvetRappaz2011}, if the ice geometry $\Omega^t$ is known then the solution is a unique pair $(\bu,p)$.  Note that the slowness of the fluid, i.e.~zero Reynolds number, implies that the given boundary stresses and body forces determine velocity and pressure fields without any ``memory'' of prior states or influence from inertia, as would arise in the Navier-Stokes equations \cite{Fowler1997}.
 
-The SIA, a widely-used simplified model for the flow of grounded, non-sliding ice \cite{SchoofHewitt2013}, is used in this paper for comparison purposes.  It is derived by a small-parameter argument which we recall now by following Chapter 18 of \cite{Fowler1997}; note similar arguments in other sources e.g.~\cite{GreveBlatter2009}.  Let $[H]$, $[L]$, $[U]$, and $[\tau]$ denote typical thickness, horizontal extent, horizontal velocity, and vertical-plane shear stress values, respectively.  We consider $\eps = [H]/[L]$ as the small parameter; for a mountain glacier we might have $\eps \approx 0.1$ but for the Greenland ice sheet $\eps \in (10^{-3},10^{-2})$ is reasonable.  We scale the kinematic variables $x,y \sim [L]$, $z \sim [H] = \eps [L]$, $u,v \sim [U]$, and $w \sim \eps [U]$.\footnote{Recall this means, for example, that we introduce new ``hatted'' variables via $x=[L]\hat x$, $y=[L]\hat y$, and $z=[H] \hat z$.  The equations are rewritten in the new variables and then the hats are removed.}  We suppose the stress components $\tau_{xz},\tau_{yz}$ scale with $[\tau]$ and components $\tau_{xx},\tau_{yy},\tau_{xy}$ with $\eps[\tau]$.   The pressure perturbation from the hydrostatic condition, namely $p-\rho g (h - z)$, is scaled with $\eps [\tau]$ also; this means that $p-\rho g (h - z)=\eps[\tau]\hat{\delta p}$.  With these scalings, plus certain additional relationships among the scale factors \cite[Chapter 18]{Fowler1997}, equations \eqref{forcebalance} yield
+The SIA, a widely-used simplified model for the flow of grounded, non-sliding ice \cite{SchoofHewitt2013}, is used in this paper for comparison purposes.  It is derived by a small-parameter argument which we recall now by following Chapter 18 of \cite{Fowler1997}; note similar arguments in other sources e.g.~\cite{GreveBlatter2009}.  Let $[H]$, $[L]$, $[U]$, and $[\tau]$ denote typical thickness, horizontal extent, horizontal velocity, and vertical-plane shear stress values, respectively.  We consider $\eps = [H]/[L]$ as the small parameter; for a mountain glacier we might have $\eps \approx 0.1$ but for the Greenland ice sheet $\eps \in (10^{-3},10^{-2})$ is reasonable.  We scale the kinematic variables $x,y \sim [L]$, $z \sim [H] = \eps [L]$, $u,v \sim [U]$, and $w \sim \eps [U]$.\footnote{Recall this means, for example, that we introduce new ``hatted'' variables via $x=[L]\hat x$, $y=[L]\hat y$, and $z=[H] \hat z$.  The equations are rewritten in the new variables and then the hats are removed.}  We suppose the stress components $\tau_{xz},\tau_{yz}$ scale with $[\tau]$ and components $\tau_{xx},\tau_{yy},\tau_{xy}$ with $\eps[\tau]$.   The pressure perturbation from the hydrostatic condition, namely $p-\rhoi g (h - z)$, is scaled with $\eps [\tau]$ also; this means that $p-\rhoi g (h - z)=\eps[\tau]\hat{\delta p}$.  With these scalings, plus certain additional relationships among the scale factors \cite[Chapter 18]{Fowler1997}, equations \eqref{forcebalance} yield
     $$\frac{\partial\tau_{xz}}{\partial z} + O(\eps^2) = \frac{\partial h}{\partial x}, \qquad \frac{\partial\tau_{yz}}{\partial z} + O(\eps^2) = \frac{\partial h}{\partial y}.$$
 The shear stresses are dominated by the $z$ derivatives of the horizontal velocity, that is,
     $$\tau_{xz} = \nu\left(\frac{\partial u}{\partial z} + \eps^2 \frac{\partial w}{\partial z}\right), \qquad \tau_{yz} = \nu\left(\frac{\partial v}{\partial z} + \eps^2 \frac{\partial w}{\partial y}\right).$$
@@ -144,21 +146,21 @@ Also, the norm of the deviatoric stress satisfies $|\tau|^2 = \tau_{xz}^2 + \tau
 
 The strong form of the SIA arises from dropping terms of order $O(\eps^2)$ from these equations and returning to the original, unscaled variables.  Let $\bm{\tau}=\left<\tau_{xz},\tau_{yz}\right>$ denote the remaining shear stress components and $\bm{\omega}=\left<\frac{1}{2} \frac{\partial u}{\partial z},\frac{1}{2} \frac{\partial v}{\partial z}\right>$ the corresponding strain rates.  Note that \eqref{viscflowlaw} implies $|\bm{\tau}|=B_n |\bm{\omega}|^{1/n}$, where $|\cdot|$ denotes the ordinary Euclidean norm on $\RR^2$, and thus that $\bm{\omega} = A_n |\bm{\tau}|^{n-1} \bm{\tau}$ where $A_n=(B_n)^{-n}$.  We now have the following equations for the shear stresses and the velocity,
 \begin{equation}
-\frac{\partial\bm{\tau}}{\partial z} = \rho g \grad h, \qquad \Div \bu = 0, \qquad \bm{\omega} = A_n |\bm{\tau}|^{n-1} \bm{\tau}, \label{siavectorized}
+\frac{\partial\bm{\tau}}{\partial z} = \rhoi g \grad h, \qquad \Div \bu = 0, \qquad \bm{\omega} = A_n |\bm{\tau}|^{n-1} \bm{\tau}, \label{siavectorized}
 \end{equation}
 subject to $\bm{\tau}=0$ at the surface $z=h$ and $\bu=0$ on the base $z=b$.  Note that equations \eqref{siavectorized} essentially use the approximation
     $$D\bu \approx \begin{pmatrix} 0 & 0 & \frac{1}{2} \frac{\partial u}{\partial z} \\  0 & 0 & \frac{1}{2} \frac{\partial v}{\partial z} \\ \frac{1}{2} \frac{\partial u}{\partial z} & \frac{1}{2} \frac{\partial u}{\partial z} & 0 \end{pmatrix}$$
 in \eqref{stokes}, and then balance the $z$ derivative of the stresses against the surface gradient.  Note that we need not compute the pressure simultaneously with the velocity.
 
-The SIA stress equations \eqref{siavectorized} can be vertically-integrated to give a formulas for the horizontal velocity.  By a first integral, $\bm{\tau} = - \rho g (h-z) \grad h$, thus
-    $$\left<\frac{\partial u}{\partial z},\frac{\partial v}{\partial z}\right> = - 2 A_n (\rho g)^n (h-z)^n |\grad h|^{n-1} \grad h.$$
+The SIA stress equations \eqref{siavectorized} can be vertically-integrated to give a formulas for the horizontal velocity.  By a first integral, $\bm{\tau} = - \rhoi g (h-z) \grad h$, thus
+    $$\left<\frac{\partial u}{\partial z},\frac{\partial v}{\partial z}\right> = - 2 A_n (\rhoi g)^n (h-z)^n |\grad h|^{n-1} \grad h.$$
 Integrating again we determine the horizontal velocity at any point within the ice:
 \begin{equation}
-\left<u,v\right> = - \frac{2 A_n (\rho g)^n}{n+1} \left((h-b)^{n+1} - (h-z)^{n+1}\right) |\grad h|^{n-1} \grad h.  \label{siavelocity}
+\left<u,v\right> = - \frac{2 A_n (\rhoi g)^n}{n+1} \left((h-b)^{n+1} - (h-z)^{n+1}\right) |\grad h|^{n-1} \grad h.  \label{siavelocity}
 \end{equation}
 The incompressibility equation can then be used to compute the vertical velocity component $w$ by an additional vertical integration of \eqref{siavelocity}, but we have no need for this result.
 
-The result in \eqref{siavelocity} will not be used in this paper as an actual model for ice flow.  Rather it has three ancillary purposes.  First, in combination with the hydrostatic pressure computation $p=\rho g (h-z)$, and the above-mentioned application of incompressibility to find $w$, it provides a fast computation of an initial iterate in a nonlinear Stokes solver.  Second, computing \eqref{siavelocity} on a given mesh defines our ``work unit'' when evaluating Stokes solver performance on that mesh.  Third and finally, when combined with the surface kinematical equation, \eqref{siavelocity} can be used to derive a nonlinear and degenerate diffusion problem for the ice sheet thickness \cite{Fowler1997}.  Appendix A reports an exact similarity solution of this problem, in the flat bed and zero mass-balance case, which we will use as a source of ice sheet initial states in certain numerical experiments.
+The result in \eqref{siavelocity} will not be used in this paper as an actual model for ice flow.  Rather it has three ancillary purposes.  First, in combination with the hydrostatic pressure computation $p=\rhoi g (h-z)$, and the above-mentioned application of incompressibility to find $w$, it provides a fast computation of an initial iterate in a nonlinear Stokes solver.  Second, computing \eqref{siavelocity} on a given mesh defines our ``work unit'' when evaluating Stokes solver performance on that mesh.  Third and finally, when combined with the surface kinematical equation, \eqref{siavelocity} can be used to derive a nonlinear and degenerate diffusion problem for the ice sheet thickness \cite{Fowler1997}.  Appendix A reports an exact similarity solution of this problem, in the flat bed and zero mass-balance case, which we will use as a source of ice sheet initial states in certain numerical experiments.
 
 
 \section{Ice geometry and its evolution} \label{sec:stronggeometry}
@@ -290,11 +292,11 @@ where the derivatives of $c$ are evaluated at points $(\xi,\eta,h^{n-1}(\xi,\eta
 
 Intuitively, solving problem \eqref{claplace}--\eqref{claplacesides} yields a smooth 3D function $c$ which, in a vertical column of $\Lambda$, connects the surface kinematical quantity \eqref{backwardeulerske}, or its modified form \eqref{icefreehrefske}, as linearly as possible to zero at the base.  Mathematically, $c$ satisfies the maximum principle in $\Lambda$ \cite{Evans2010}, and the direction of $\grad_{\bxi} c$ changes direction as little as possible (in the energy norm) while smoothly meeting the boundary data.  In fact, the solution to \eqref{claplace} behaves better than solving independent-column two-point boundary value problems $c''=0$, $c(h)=X$, $c(b)=0$ on $\zeta\in[h,b]$, where ``$X$'' represents the right side of \eqref{backwardeulerske} or \eqref{icefreehrefske}.  This problem yields $c(\zeta)=(X-b)\zeta/(h-b)$, essentially the vertical ``linear mapping'' used for explicit domain evolution and remeshing in \cite[equation (22)]{Lengetal2012}.
 
-The shaded area of the Figure, namely the portion of the reference domain not occupied by ice ($\Lambda \setminus \Omega^{n-1}$) is, properly-speaking, the volume of the atmosphere where the ice currently extends less than $\Href$ above the bed.  On the top of this volume the ``$\max$'' in \eqref{claplacetop} adds nontrivially to the value from \eqref{backwardeulerske}, giving \eqref{icefreehrefske} when ice-free.  Within this volume our model will include an incompressible regularizing fluid which we call ``miasma,''\footnote{Defined as an oppressive or unpleasant atmosphere which surrounds something, often settling into low areas.} the density and viscosity of which is much smaller than ice.  Specifically, \eqref{forcebalance} and \eqref{viscflowlaw} are replaced by
+The shaded area of the Figure, namely the portion of the reference domain not occupied by ice, is, properly-speaking, the volume of the atmosphere where the ice currently extends less than $\Href$ above the bed.  On the top of this volume the ``$\max$'' in \eqref{claplacetop} adds nontrivially to the value from \eqref{backwardeulerske}, giving \eqref{icefreehrefske} when ice-free.  Within this volume our model will include an incompressible regularizing fluid which we call ``miasma,''\footnote{Defined as an oppressive or unpleasant atmosphere which surrounds something, often settling into low areas.} the density and viscosity of which is much smaller than ice.  Specifically, \eqref{forcebalance} and \eqref{viscflowlaw} are replaced by
 \begin{equation} % FIXME: proposed flow law
 - \nabla \cdot \tau + \nabla p = \rhom \bg, \qquad \tau = 2 \num D\bu \label{miasma}
 \end{equation}
-respectively, and Equation \eqref{incompressible} is unchanged.  In our numerical experiments (section \ref{sec:results} below) we will use a density which is a tenth that of ice and a viscosity, in a linear flow law, which is a tenth of that of ice deforming at the reference strain rate $D_0$ (equation \eqref{regeffvisc}): $\rhom = \frac{1}{10} \rho$, $2\num = \frac{1}{10} B_n D_0^{1/n}$.  The intention of choosing such a weak and light fluid is to cause minimal impact on the dynamics of the ice while also occupying a part of the domain which the ice may come to occupy during the solution process for the coupled equations.
+respectively, and Equation \eqref{incompressible} is unchanged.  In our numerical experiments (section \ref{sec:results} below) we will use a density which is a tenth that of ice and a viscosity, in a linear flow law, which is a tenth of that of ice deforming at the reference strain rate $D_0$ (equation \eqref{regeffvisc}): $\rhom = \frac{1}{10} \rhoi$, $2\num = \frac{1}{10} B_n D_0^{1/n}$.  The intention of choosing such a weak and light fluid is to cause minimal impact on the dynamics of the ice while also occupying a part of the domain which the ice may come to occupy during the solution process for the coupled equations.
 
 The weak form of the coupled problem, stated in the next section, will require derivatives of coordinate transformation \eqref{changecoords}.  The Jacobian is
 \begin{equation}
@@ -337,22 +339,22 @@ p &\in \hat Q = L^{r'}(\Omega^t).
 
 To derive the weak form we multiply \eqref{stokes} by $\bv\in \hat\bV_0$ and \eqref{incompagain} by $q\in \hat Q$, then add these and integrate-by-parts.  Using $ds$ for the boundary measure this yields
 \begin{equation}
-\int_{\Omega^t} 2 \nu_\eps(|D\bu|) D\bu \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds = 0. \label{nonfunctwo}
+\int_{\Omega^t} 2 \nu_\eps(|D\bu|) D\bu \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rhoi \mathbf{g} \cdot \bv \,d\bx -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds = 0. \label{nonfunctwo}
 \end{equation}
 Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ appear without derivatives.  Because $\bv\in \hat\bV_0$, some portions of the integral over $\partial\Omega^t$ are zero, and the stress-free surface condition \eqref{topbc} eliminates the remaining portions.  Thus we have the following functional which is nonlinear in $\bu$ and linear in $p,\bv,q$:
 \begin{equation}
-\hat F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv \,d\bx. \label{definetildeF}
+\hat F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rhoi \mathbf{g} \cdot \bv \,d\bx. \label{definehatF}
 \end{equation}
-The final integral in \eqref{definetildeF} is the source term.  We say $\bu\in \hat\bV$ and $p\in \hat Q$ solve the decoupled Glen-Stokes weak formulation at time $t>0$ if
+The final integral in \eqref{definehatF} is the source term.  We say $\bu\in \hat\bV$ and $p\in \hat Q$ solve the decoupled Glen-Stokes weak formulation at time $t>0$ if
 \begin{equation}
-\hat F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in \hat\bV_0 \text{ and } q\in \hat Q.  \label{weakdecoupled}
+\hat F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in \hat\bV_0 \text{ and } q\in \hat Q.  \label{weakdecoupledstokes}
 \end{equation}
 
-A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  If the inflow velocity is zero or absent (i.e.~$\bu_{\text{in}}=\bzero$ or $\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupled} is $\bu=\bzero$ and $p=0$.
+A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  If the inflow velocity is zero or absent (i.e.~$\bu_{\text{in}}=\bzero$ or $\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupledstokes} is $\bu=\bzero$ and $p=0$.
 
 Next we consider the decoupled weak form of the Laplace problem \eqref{claplace}--\eqref{claplacesides} for the displacement $c$ on $\Lambda$.  Recall that these equations describe our method for a backward Euler time step of the surface kinematical equation, i.e.~\eqref{backwardeulerske}.  We weakly impose the top boundary condition \eqref{claplacetop} because it involves the velocity unknowns.  Let $\cref=-\max\{\Href+b-h^{n-1},0\}$; this data in \eqref{claplacetop} is known.  Let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}$ scalar functions on $\Lambda$ which are zero on the base $\underline{\partial} \Lambda$.  We multiply \eqref{claplace} by a test function $e \in W_0^{1,2}(\Lambda)$ and integrate by parts, then use conditions \eqref{claplacebase} and \eqref{claplacesides} to eliminate all but the top boundary integral.  Denoting the boundary measure by $d\sigma$, this defines a bilinear form
 \begin{equation}
-B(c;e) = \int_\Lambda \grad c \cdot \grad e \,d\bxi + \int_{\overline{\partial} \Lambda} \Big(c - \cref + \Delta t(a + \bu\cdot \left<-\grad_{\xi,\eta} h,1\right>)\Big) e\,d\sigma. \label{claplaceweakform}
+B(c;e) = \int_\Lambda \grad c \cdot \grad e \,d\bxi + \int_{\overline{\partial} \Lambda} \Big(c - \cref + \Delta t(a + \bu\cdot \left<-\grad_{\xi,\eta} h,1\right>)\Big) e\,d\sigma. \label{defineB}
 \end{equation}
 Note that the boundary integral evaluates $c$, $e$, $a$, $\bu$, and $\grad_{\xi,\eta} h$ all in the trace sense, and recall expression \eqref{definea} for $a$ and \eqref{hgradient} for $\grad_{\xi,\eta} h$.
 
@@ -364,9 +366,38 @@ The change of variables defined in the last section allows us to approximate the
 \end{equation}
 where $\tilde f(\bxi) = f(\bx(\bxi))$.
 
-FIXME The solution of the weak form is a list of three functions, $\bu = \left<u_0,u_2\right> \in V_D$, $p\in L^{p'}(\Lambda)$, and $c\in W^{1,2}_0(\Lambda)$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all $\bv = \left<v_0,v_2\right> \in V_0$,  $q\in L^{p'}(\Lambda)$, and $e \in W^{1,2}_0(\Lambda)$.  Note that all trial and test functions are functions of $r$ and $s$ in $\Lambda$.
+Now we can write the coupled weak form.  Recall from section \ref{sec:stronggeometry} that the central idea is to solve for velocity, pressure, and vertical displacement simultaneously on $\Lambda$ so as to determine the updated ice-filled domain $\Omega^n$ via map \eqref{changecoords}.  Thus the essence of our strategy is to add together functionals $\hat F$ from \eqref{definehatF} and $B$ from \eqref{defineB} to form a single coupled form, but all integrals must be over the reference domain $\Lambda$ so $\hat F$ needs modification.  Let
+\begin{align*}
+\bV &= \left\{\bv \in W^{1,r}(\Lambda)^d\,:\,\bv\big|_{\underline{\partial} \Lambda}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Lambda} = \bu_{\text{in}}\right\}, \\
+Q   &= L^{r'}(\Lambda), \\
+R   &= \left\{e \in W_0^{1,2}(\Lambda)\,:\,e\big|_{\underline{\partial} \Lambda} = 0\right\}.
+\end{align*}
+Let $\bV_0$ be the obvious modified space with $\bv\big|_{\partial_{\text{in}} \Lambda} = \bzero$ if an inflow boundary is present.  For $(\bu,p,c) \in \bV\times Q\times R$ and test functions $(\bv,q,e) \in \bV_0\times Q\times R$ let
+\begin{align}
+F(\bu,p,c;\bv,q,e) &= \int_{\Lambda} \Big[2 \nu\, D_\bx\bu\,:\,D_\bx\bv - p (\nabla_\bx \cdot \bv) - \left(\nabla_\bx \cdot \bu\right) q - \rho \mathbf{g} \cdot \bv\Big] j \,d\bxi  \notag \\
+&\qquad + \int_\Lambda \grad c \cdot \grad e \,d\bxi + \int_{\overline{\partial} \Lambda} \Big(c - \cref + \Delta t(a + \bu\cdot \left<-\grad_{\xi,\eta} h,1\right>)\Big) e\,d\sigma. \label{defineF}
+\end{align}
+In this formula, $\nu$ is defined for $\bxi=(\xi,\eta,\zeta)\in\Lambda$ by
+    $$\nu = \begin{cases} \nu_\eps(|D_\bx\bu|), & \zeta < h(\xi,\eta), \\
+                          \num, & h(\xi,\eta) < \zeta < \Href \end{cases}$$
+with $\nu_\eps(X) = \frac{1}{2} B_n \left(|X|^2 + \eps\, D_0^2\right)^{(r-2)/2}$ from \eqref{regeffvisc}, and $\rho$ by
+    $$\rho = \begin{cases} \rho_i, & \zeta < h(\xi,\eta), \\
+                           \rhom, & h(\xi,\eta) < \zeta < \Href. \end{cases}$$
+In defining $\nu$ and $\rho$ we need to recall that $h$ is defined by equation \eqref{hmeaning}, that is, $h^{n-1}(\xi,\eta) + c(\xi,\eta,h^{n-1}(\xi,\eta))$.  Furthermore recall that $\grad_{\xi,\eta} h$ appearing in \eqref{defineF} is defined by equation \eqref{hgradient}, that is, $\grad_{\xi,\eta} h = \left(1+\frac{\partial c}{\partial\zeta}\right) \grad_{\xi,\eta} h^{n-1} + \left<\frac{\partial c}{\partial\xi},\frac{\partial c}{\partial\eta}\right>$.  The divergences $\grad_\bx \cdot\bu$, $\grad_\bx \cdot\bv$ and strain rate tensors $D_\bx\bu$, $D_\bx\bv$ in \eqref{defineF} are given by expressions \eqref{changediv} and \eqref{changeDu} with $\ell$ replacing $\hat\ell$.  The function $\ell$, and the density $j$ in the first integral in \eqref{defineF}, are defined by formulas \eqref{definejell}.
 
-FIXME Assuming that $\Lambda$ is a well-behaved domain, this boundary-value problem is expected to be well-posed, but this mathematical issue is not resolved in this paper.
+The definition of our master, coupled functional $F$ thus involves multiple couplings and regularizations.  The reader deserves a summary here as we must not lose, or sweep under the rug, these important aspects of the implicit geometry update.  Observe that the functions $b(\xi,\eta)$ and $h^{n-1}(\xi,\eta)$, which define the domain $\Lambda$, as they appear in the above formulas, are known data in this coupled problem.
+
+Regarding the couplings, note that the ``miasma'' parameters $\num,\rhom$ are only applied above the surface $\zeta=h(\xi,\eta)$ in locations $(\xi,\eta) \in R$ where that surface is below $\Href$; see Figure \ref{fig:claplaceproblem}.  The effect is to couple the energy integral and source terms for the Glen-Stokes form, the first integral in \eqref{defineF}, to the vertical displacement function $c$, as it appears in equations \eqref{hmeaning} and \eqref{hgradient} for the solution elevation $h$.  On the other hand, the final boundary integral in \eqref{defineF} explicitly couples the velocity $\bu$ to the vertical displacement problem for $c$.
+
+Finally, we explicitly list the regularizations:
+\begin{itemize}
+\item ``$+\eps D_0^2$'' in formula \eqref{regeffvisc} for the nonlinear viscosity, using $\eps>0$ and $D_0>0$,
+\item miasma definition \eqref{miasma} using parameters $\num>0,\rhom>0$, and
+\item the cutoff in $j$ and $\ell$ in formula \eqref{definejell}, using parameter $\delta>0$, during rapid ice removal.
+\end{itemize}
+The first of these is well known, but the second and third are new to this work.  Critically, the third removes a potential singularity from the first integral in \eqref{defineF}, one which corresponds to a local orientation reversal in the map \eqref{changecoords}.
+
+By definition, the solution of the coupled weak form is a list of three functions, the velocity $\bu \in \bV$, the pressure $p\in Q$, and the vertical displacement $c\in R$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all test functions $\bv$, $q$, $e$.  All of these functions are defined on the domain $\Lambda$ which is fixed for the duration of the time step; it is this domain which will be meshed in the FE method.  Assuming that $\Lambda$ is a well-behaved domain we expect this boundary-value problem to be well-posed, but this mathematical issue is definitely \emph{not} resolved in this paper, except indirectly through the numerical evidence below.
 
 %FIXME:  perhaps we should be solving a variational inequality subject to \frac{\partial c}{\partial \zeta} \ge -1 *and* regularizing the weak form stretching factors to keep \ell bounded (which is done)
 
