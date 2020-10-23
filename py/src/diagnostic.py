@@ -1,7 +1,7 @@
 # generate and save diagnostic quantities on extruded meshes
 
 import firedrake as fd
-from .iceconstants import g,rho,n,Bn,Gamma
+from .constants import g,rho,n,Bn,Gamma
 
 __all__ = ['stresses', 'surfaceelevation', 'extendsurfaceelevation',
            'pdifference', 'siahorizontalvelocity', 'writeresult']

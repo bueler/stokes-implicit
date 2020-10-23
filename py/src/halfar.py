@@ -1,7 +1,7 @@
 # module for Halfar solutions: 2D = Halfar, 1981; 3D = Halfar, 1983
 
 import firedrake as fd
-from .iceconstants import secpera,g,rho,n,An,Bn,Gamma
+from .constants import secpera,g,rho,n,An,Bn,Gamma
 
 __all__ = ['gett0', 'halfar2d', 'halfar3d']
 

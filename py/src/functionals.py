@@ -1,7 +1,7 @@
 # module for defining UFL functionals for coupled weak form
 
 import firedrake as fd
-from .iceconstants import g,rho,n,Bn  # for default values
+from .constants import g,rho,n,Bn  # for default values
 
 __all__ = ['IceModel', 'IceModel2D']
 

@@ -12,10 +12,10 @@
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
 # timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -baserefine 1 -vertrefine 1 -saveextra -o foo.pvd
 
-from firedrake import *
 import sys,argparse
-from src.iceconstants import secpera
-from src.icefunctional import IceModel, IceModel2D
+from firedrake import *
+from src.constants import secpera
+from src.functionals import IceModel, IceModel2D
 from src.diagnostic import writeresult
 
 parser = argparse.ArgumentParser(description='''
