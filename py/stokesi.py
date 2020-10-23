@@ -15,7 +15,7 @@
 import sys,argparse
 from firedrake import *
 from src.constants import secpera
-from src.meshes import basemesh
+from src.meshes import basemesh, extrudedmesh
 from src.halfar import halfar2d, halfar3d
 from src.functionals import IceModel, IceModel2D
 from src.diagnostic import writeresult
@@ -100,18 +100,14 @@ else:
                     % (-args.L/1000.0,args.L/1000.0))
     PETSc.Sys.Print('base mesh:           %d elements (intervals)' % args.mx)
 
-# extrude mesh; use SemiCoarsenedExtrudedHierarchy() if base mesh is NOT refined,
-# otherwise use ExtrudedMeshHierarchy() and require equal refinement ratios
-temporary_height = 1.0
+# extrude mesh
 if args.refine > 0:
-    hierarchy = SemiCoarsenedExtrudedHierarchy(base_mesh, temporary_height, base_layer=args.mz,
-                                               nref=args.refine)
-    mesh = hierarchy[-1]     # the fine mesh
+    mesh, hierarchy = extrudedmesh(base_mesh, args.mz, refine=args.refine)
     mzfine = args.mz * 2**args.refine
     PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' \
                     % (args.mz,mzfine))
 else:
-    mesh = ExtrudedMesh(base_mesh, layers=args.mz, layer_height=temporary_height/args.mz)
+    mesh = extrudedmesh(base_mesh, args.mz, refine=args.refine)
     mzfine = args.mz
 
 # deform z coordinate, in each level of hierarchy, to match Halfar solution, but limited at Href
