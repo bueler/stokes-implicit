@@ -15,6 +15,7 @@
 import sys,argparse
 from firedrake import *
 from src.constants import secpera
+from src.halfar import halfar2d, halfar3d
 from src.functionals import IceModel, IceModel2D
 from src.diagnostic import writeresult
 
@@ -131,12 +132,10 @@ for k in range(hierlevs):
         kmesh = mesh
     if args.my > 0:
         x,y,z = SpatialCoordinate(kmesh)
-        from src.halfar import halfar3d
-        t0, Hinitial = halfar3d(x,y,R0=args.R0,H0=args.H0)
+        _, Hinitial = halfar3d(x,y,R0=args.R0,H0=args.H0)
     else:
         x,z = SpatialCoordinate(kmesh)
-        from src.halfar import halfar2d
-        t0, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
+        _, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
     Hlimited = max_value(args.Href, Hinitial)
     Vcoord = kmesh.coordinates.function_space()
     if args.my > 0:
@@ -150,6 +149,7 @@ dxelem = 2.0 * args.L / mx
 dzrefelem = args.Href / mz
 if args.my > 0:
     dyelem = 2.0 * args.L / my
+    t0, _ = halfar3d(x,y,R0=args.R0,H0=args.H0)
     PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0/secpera))
     PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (hexahedra); limited at Href=%.2f m'
@@ -157,6 +157,7 @@ if args.my > 0:
     PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f, ratioy=%.1f'
                     % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem,dyelem/dzrefelem))
 else:
+    t0, _ = halfar2d(x,R0=args.R0,H0=args.H0)
     PETSc.Sys.Print('initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0/secpera))
     PETSc.Sys.Print('2D extruded mesh:    %d x %d elements (quads); limited at Href=%.2f m'
