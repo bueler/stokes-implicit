@@ -253,11 +253,11 @@ v,q,e = TestFunctions(Z)
 
 # weak form for the coupled problem
 if args.my > 0:
-    im = IceModel(mesh, args.Href, args.eps, Dtyp)
+    im = IceModel(almost=True, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
     zerovelocity = Constant((0.0, 0.0, 0.0))
     sides = (1,2,3,4)
 else:
-    im = IceModel2D(mesh, args.Href, args.eps, Dtyp)
+    im = IceModel2D(almost=True, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
     zerovelocity = Constant((0.0, 0.0))
     sides = (1,2)
 F = im.F(u,p,c,v,q,e)

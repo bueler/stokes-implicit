@@ -9,7 +9,8 @@ class IceModel(object):
     '''Physics of the coupled ice flow and surface kinematical problem
     in the 3D case.'''
 
-    def __init__(self, mesh, Href, eps, Dtyp):
+    def __init__(self, almost, mesh, Href, eps, Dtyp):
+        self.almost = almost
         self.mesh = mesh
         self.Href = Href
         self.eps = eps
@@ -17,10 +18,10 @@ class IceModel(object):
         self.a = fd.Constant(0.0) # FIXME only correct for Halfar
         self.f_body = fd.Constant((0.0, 0.0, - rho * g))
 
-    def F(self,u,p,c,v,q,e):
+    def _Falmost(self,u,p,c,v,q,e):
         '''Return the nonlinear weak form F(u,p,c;v,q,e), without the top
-        boundary term, for coupled Glen law Stokes and displacement problems.'''
-        # FIXME need stretching in F; couples (u,p) and c problems
+        boundary term, for coupled Glen law Stokes and displacement problems.
+        However, this draft version uses the unmapped reference domain Lambda.'''
         Du = 0.5 * (fd.grad(u)+fd.grad(u).T)
         Dv = 0.5 * (fd.grad(v)+fd.grad(v).T)
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
@@ -28,6 +29,15 @@ class IceModel(object):
         return fd.inner(tau, Dv) * fd.dx \
                + ( - p * fd.div(v) - fd.div(u) * q - fd.inner(self.f_body,v) ) * fd.dx \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
+
+    def F(self,u,p,c,v,q,e):
+        '''Return the nonlinear weak form F(u,p,c;v,q,e), without the top
+        boundary term, for coupled Glen law Stokes and displacement problems.'''
+        if self.almost:
+            return self._Falmost(u,p,c,v,q,e)
+        else:
+            # FIXME use IceModelAlmost version, but add stretching coefficients inside F
+            raise NotImplementedError
 
     def zcoord(self,mesh):
         _,_,z = fd.SpatialCoordinate(mesh)
@@ -55,6 +65,7 @@ class IceModel(object):
         equation weakly.'''
         z = self.zcoord(mesh)
         return self.smbref(dt,z,self.a)
+
 
 class IceModel2D(IceModel):
     '''Physics of the coupled ice flow and surface kinematical problem
