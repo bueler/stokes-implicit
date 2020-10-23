@@ -26,5 +26,5 @@ test: test_pool test_stokesi
 clean:
 	@rm -f *.pdf *.geo *.msh *.pvd *.vtu *.pvtu *.m
 	@rm -f maketmp tmp difftmp
-	@rm -rf __pycache__
+	@rm -rf __pycache__ src/__pycache__
 

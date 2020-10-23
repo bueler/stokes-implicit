@@ -1,14 +1,17 @@
-# glacier modeling diagnostic calculations on extruded meshes
+# generate and save diagnostic quantities on extruded meshes
 
 from firedrake import *
-from iceconstants import g,rho,n,Bn,Gamma
+from .iceconstants import g,rho,n,Bn,Gamma
+
+__all__ = ['stresses', 'surfaceelevation', 'extendsurfaceelevation',
+           'pdifference', 'siahorizontalvelocity', 'writeresult']
 
 # regularized tensor-valued deviatoric stress tau and effective viscosity from the velocity solution
-def stresses(mesh,u,eps,Dtyp):
+def stresses(mesh,icemodel,u):
     Q1 = FunctionSpace(mesh,'Q',1)
     TQ1 = TensorFunctionSpace(mesh,'Q',1)
     Du = Function(TQ1).interpolate(0.5 * (grad(u)+grad(u).T))
-    Du2 = Function(Q1).interpolate(0.5 * inner(Du, Du) + eps * Dtyp**2.0)
+    Du2 = Function(Q1).interpolate(0.5 * inner(Du, Du) + icemodel.eps * icemodel.Dtyp**2.0)
     nu = Function(Q1).interpolate(0.5 * Bn * Du2**(-1.0/n))
     nu.rename('effective viscosity')
     tau = Function(TQ1).interpolate(2.0 * nu * Du)
@@ -81,4 +84,37 @@ def siahorizontalvelocity(mesh):
     uv = Function(Vvector).interpolate(- Gamma * (h0**(n+1) - (h0-z0)**(n+1)) * abs(gradh)**(n-1) * gradh)
     uv.rename('velocitySIA')
     return uv
+
+# save ParaView-readable file
+def writeresult(filename,mesh,icemodel,upc,saveextra=False):
+    assert filename.split('.')[-1] == 'pvd'
+    written = 'u,p,c'
+    if mesh.comm.size > 1:
+         written += ',rank'
+    if saveextra:
+         written += ',tau,nu,pdiff,velocitySIA'
+    PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' % (written,filename))
+    u,p,c = upc.split()
+    u.rename('velocity')
+    p.rename('pressure')
+    c.rename('displacement')
+    if saveextra:
+        from .diagnostic import stresses,pdifference,siahorizontalvelocity
+        tau, nu = stresses(mesh,icemodel,u)
+        pdiff = pdifference(mesh,p)
+        velocitySIA = siahorizontalvelocity(mesh)
+    if mesh.comm.size > 1:
+        # integer-valued element-wise process rank
+        rank = Function(FunctionSpace(mesh,'DG',0))
+        rank.dat.data[:] = mesh.comm.rank
+        rank.rename('rank')
+        if saveextra:
+            File(filename).write(u,p,c,rank,tau,nu,pdiff,velocitySIA)
+        else:
+            File(filename).write(u,p,c,rank)
+    else:
+        if saveextra:
+            File(filename).write(u,p,c,tau,nu,pdiff,velocitySIA)
+        else:
+            File(filename).write(u,p,c)
 

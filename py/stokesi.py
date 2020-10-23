@@ -13,8 +13,9 @@
 
 from firedrake import *
 import sys
-from iceconstants import secpera,g,rho,n,Bn
-from icefunctional import IceModel, IceModel2D
+from src.iceconstants import secpera,g,rho,n,Bn
+from src.icefunctional import IceModel, IceModel2D
+from src.diagnostic import writeresult
 
 import argparse
 parser = argparse.ArgumentParser(description='''
@@ -166,11 +167,11 @@ for k in range(hierlevs):
         kmesh = mesh
     if args.my > 0:
         x,y,z = SpatialCoordinate(kmesh)
-        from halfar import halfar3d
+        from src.halfar import halfar3d
         t0, Hinitial = halfar3d(x,y,R0=args.R0,H0=args.H0)
     else:
         x,z = SpatialCoordinate(kmesh)
-        from halfar import halfar2d
+        from src.halfar import halfar2d
         t0, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
     Hlimited = max_value(args.Href, Hinitial)
     Vcoord = kmesh.coordinates.function_space()
@@ -331,33 +332,5 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
 
 # save ParaView-readable file
 if args.o:
-    written = 'u,p,c'
-    if mesh.comm.size > 1:
-         written += ',rank'
-    if args.saveextra:
-         written += ',tau,nu,pdiff,velocitySIA'
-    PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' % (written,args.o))
-    u,p,c = upc.split()
-    u.rename('velocity')
-    p.rename('pressure')
-    c.rename('displacement')
-    if args.saveextra:
-        from diagnostic import stresses,pdifference,siahorizontalvelocity
-        tau, nu = stresses(mesh,u,args.eps,Dtyp)
-        pdiff = pdifference(mesh,p)
-        velocitySIA = siahorizontalvelocity(mesh)
-    if mesh.comm.size > 1:
-        # integer-valued element-wise process rank
-        rank = Function(FunctionSpace(mesh,'DG',0))
-        rank.dat.data[:] = mesh.comm.rank
-        rank.rename('rank')
-        if args.saveextra:
-            File(args.o).write(u,p,c,rank,tau,nu,pdiff,velocitySIA)
-        else:
-            File(args.o).write(u,p,c,rank)
-    else:
-        if args.saveextra:
-            File(args.o).write(u,p,c,tau,nu,pdiff,velocitySIA)
-        else:
-            File(args.o).write(u,p,c)
+    writeresult(args.o,mesh,im,upc,saveextra=args.saveextra)
 

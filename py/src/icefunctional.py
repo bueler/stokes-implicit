@@ -1,7 +1,9 @@
 # module for defining UFL functionals for coupled weak form
 
-from iceconstants import g,rho,n,Bn  # for default values
 import firedrake as fd
+from .iceconstants import g,rho,n,Bn  # for default values
+
+__all__ = ['IceModel', 'IceModel2D']
 
 class IceModel(object):
     '''Physics of the coupled ice flow and surface kinematical problem
