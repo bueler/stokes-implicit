@@ -54,8 +54,6 @@ parser.add_argument('-Href', type=float, default=200.0, metavar='X',
                     help='minimum thickness in m of reference domain (default=200)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
-parser.add_argument('-linear', action='store_true', default=False,
-                    help='use linear, trivialized Stokes problem')
 parser.add_argument('-mx', type=int, default=30, metavar='N',
                     help='number of equal subintervals in x-direction (default=30)')
 parser.add_argument('-my', type=int, default=-1, metavar='N',
@@ -68,8 +66,6 @@ parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
 parser.add_argument('-saveextra', action='store_true', default=False,
                     help='save stresses (tau,nu,pminushydrostatic) and SIA horizontal velocity (velocitySIA) to output file')
-parser.add_argument('-sia', action='store_true', default=False,
-                    help='use a coupled weak form corresponding to the SIA problem')
 parser.add_argument('-spectralvert', type=int, default=0, metavar='N',
                     help='stages for p-refinement in vertical; use 0,1,2,3 only  (default=0)')
 parser.add_argument('-stokesihelp', action='store_true', default=False,
