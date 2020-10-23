@@ -102,16 +102,17 @@ else:
 
 # extrude mesh; use SemiCoarsenedExtrudedHierarchy() if base mesh is NOT refined,
 # otherwise use ExtrudedMeshHierarchy() and require equal refinement ratios
-mz = args.mz
 temporary_height = 1.0
 if args.refine > 0:
     hierarchy = SemiCoarsenedExtrudedHierarchy(base_mesh, temporary_height, base_layer=args.mz,
                                                nref=args.refine)
     mesh = hierarchy[-1]     # the fine mesh
-    mz *= 2**args.refine
-    PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' % (args.mz,mz))
+    mzfine = args.mz * 2**args.refine
+    PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' \
+                    % (args.mz,mzfine))
 else:
     mesh = ExtrudedMesh(base_mesh, layers=args.mz, layer_height=temporary_height/args.mz)
+    mzfine = args.mz
 
 # deform z coordinate, in each level of hierarchy, to match Halfar solution, but limited at Href
 if args.refine > 0:
@@ -137,16 +138,22 @@ for k in range(hierlevs):
         f = Function(Vcoord).interpolate(as_vector([x,Hlimited*z]))
     kmesh.coordinates.assign(f)
 
-# report on generated geometry and fine mesh
-dxelem = 2.0 * args.L / args.mx
-dzrefelem = args.Href / mz
+# extruded mesh coordinates
 if args.my > 0:
-    dyelem = 2.0 * args.L / args.my
+    x,y,z = SpatialCoordinate(mesh)
+else:
+    x,z = SpatialCoordinate(mesh)
+
+# report on generated geometry and extruded mesh
+dxelem = 2.0 * args.L / args.mx
+dzrefelem = args.Href / mzfine
+if args.my > 0:
     t0, _ = halfar3d(x,y,R0=args.R0,H0=args.H0)
+    dyelem = 2.0 * args.L / args.my
     PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0/secpera))
     PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (hexahedra); limited at Href=%.2f m'
-                    % (args.mx,args.my,mz,args.Href))
+                    % (args.mx,args.my,mzfine,args.Href))
     PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f, ratioy=%.1f'
                     % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem,dyelem/dzrefelem))
 else:
@@ -154,17 +161,11 @@ else:
     PETSc.Sys.Print('initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0/secpera))
     PETSc.Sys.Print('2D extruded mesh:    %d x %d elements (quads); limited at Href=%.2f m'
-                    % (args.mx,mz,args.Href))
+                    % (args.mx,mzfine,args.Href))
     PETSc.Sys.Print('element dimensions:  dx=%.2f m, dz_min=%.2f m, ratio=%.1f'
                     % (dxelem,dzrefelem,dxelem/dzrefelem))
 
-# fine mesh coordinates
-if args.my > 0:
-    x,y,z = SpatialCoordinate(mesh)
-else:
-    x,z = SpatialCoordinate(mesh)
-
-# optional: p-refinement in vertical for (u,p); args.spectralvert in {0,1,2,3}
+# optional: p-refinement in vertical for (u,p); note args.spectralvert is in {0,1,2,3}
 degreexz = [(2,1),(3,2),(4,3),(5,4)]
 zudeg,zpdeg = degreexz[args.spectralvert]
 
