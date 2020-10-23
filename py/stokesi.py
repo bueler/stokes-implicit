@@ -22,14 +22,15 @@ parser = argparse.ArgumentParser(description='''
 Solve coupled Glen-Stokes plus surface kinematical equation (SKE) for
 an ice sheet.  Generates flat-bed 2D or 3D mesh by extrusion
 of an equally-spaced interval or quadrilateral mesh in the map plane,
-respectively, with quadrilateral or hexahedral elements.  Currently the
+respectively, with quadrilateral or hexahedral elements.  Optional
+refinement in the vertical to allow semicoarsening multigrid.  Currently the
 initial geometry is from Halfar (1981) or Halfar (1983).  A reference
 domain with a minimum thickness is generated from the initial geometry.
 We solve a nonlinear system for velocity u, pressure p, and (scalar)
 vertical displacement c.  The system of 3 PDEs corresponds to a single
 backward Euler time step of -dta years:
-   stress balance:       F_1(u,p)   = 0    FIXME: also c when stretched
-   incompressibility:    F_2(u)     = 0    FIXME: also c when stretched
+   stress balance:       F_1(u,p,c) = 0
+   incompressibility:    F_2(u,c)   = 0
    Laplace/SKE:          F_3(u,c)   = 0
 The last equation is Laplace's equation for c in the domain interior but it
 is coupled to the first two through the top boundary condition which enforces
@@ -40,8 +41,6 @@ Schur lower fieldsplit with selfp preconditioning on the Schur block.  The
 diagonal blocks are solved by LU using MUMPS.''',
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  add_help=False)
-parser.add_argument('-baserefine', type=int, default=-1, metavar='N',
-                    help='number of base (x,y) mesh refinement levels')
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
 parser.add_argument('-dta', type=float, default=1.0, metavar='X',
@@ -66,14 +65,14 @@ parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save to output file name ending with .pvd')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of ice sheet (default=50e3)')
+parser.add_argument('-refine', type=int, default=-1, metavar='N',
+                    help='number of vertical (z) mesh refinement levels')
 parser.add_argument('-saveextra', action='store_true', default=False,
                     help='save stresses (tau,nu,pminushydrostatic) and SIA horizontal velocity (velocitySIA) to output file')
 parser.add_argument('-spectralvert', type=int, default=0, metavar='N',
                     help='stages for p-refinement in vertical; use 0,1,2,3 only  (default=0)')
 parser.add_argument('-stokesihelp', action='store_true', default=False,
                     help='print help for stokesi.py and quit')
-parser.add_argument('-vertrefine', type=int, default=-1, metavar='N',
-                    help='number of vertical (z) mesh refinement levels')
 args, unknown = parser.parse_known_args()
 if args.stokesihelp:
     parser.print_help()
@@ -85,83 +84,48 @@ Dtyp = args.Dtyp / secpera
 # timestep  FIXME need time-stepping loop
 dt = args.dta * secpera
 
-# set up base mesh, with hierarchy if requested
+# set up base mesh on [-L,L] or [-L,L]x[-L,L]
 mx = args.mx
-# initial mesh is [0,2L] or [0,2L]x[0,2L]
 if args.my > 0:
     my = args.my
     base_mesh = RectangleMesh(mx, my, 2.0*args.L, 2.0*args.L, quadrilateral=True)
+    base_mesh.coordinates.dat.data[:, 0] -= args.L
+    base_mesh.coordinates.dat.data[:, 1] -= args.L
 else:
     base_mesh = IntervalMesh(mx, length_or_left=0.0, right=2.0*args.L)
-if args.baserefine > 0:
-    base_hierarchy = MeshHierarchy(base_mesh, args.baserefine)
-    base_mesh = base_hierarchy[-1]     # the fine mesh
-    mx *= 2**args.baserefine
-    if args.my > 0:  # MeshHierarchy sees RectangleMesh() with [0,2L] x [0,2L]
-        my *= 2**args.baserefine
-    hierlevs = args.baserefine + 1
-    for k in range(hierlevs):
-        if args.my > 0:
-            base_hierarchy[k].coordinates.dat.data[:, 0] -= args.L
-            base_hierarchy[k].coordinates.dat.data[:, 1] -= args.L
-        else:
-            base_hierarchy[k].coordinates.dat.data[:] -= args.L
-        #print(base_hierarchy[k].coordinates.dat.data)
-else:
-    if args.my > 0:
-        base_mesh.coordinates.dat.data[:, 0] -= args.L
-        base_mesh.coordinates.dat.data[:, 1] -= args.L
-    else:
-        base_mesh.coordinates.dat.data[:] -= args.L
-    #print(base_mesh.coordinates.dat.data)
+    base_mesh.coordinates.dat.data[:] -= args.L
 
 # report on base mesh
 PETSc.Sys.Print('**** SUMMARY OF SETUP ****')
 if args.my > 0:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
                     % (-args.L/1000.0,args.L/1000.0,-args.L/1000.0,args.L/1000.0))
-    if args.baserefine > 0:
-        PETSc.Sys.Print('coarse base mesh:    %d x %d elements (quads)' % (args.mx,args.my))
-        PETSc.Sys.Print('refined base mesh:   %d x %d elements (quads)' % (mx,my))
-    else:
-        PETSc.Sys.Print('base mesh:           %d x %d elements (quads)' % (mx,my))
+    PETSc.Sys.Print('base mesh:           %d x %d elements (quads)' % (mx,my))
 else:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] km interval'
                     % (-args.L/1000.0,args.L/1000.0))
-    if args.baserefine > 0:
-        PETSc.Sys.Print('coarse base mesh:    %d elements (intervals)' % args.mx)
-        PETSc.Sys.Print('refined base mesh:   %d elements (intervals)' % mx)
-    else:
-        PETSc.Sys.Print('base mesh:           %d elements (intervals)' % mx)
+    PETSc.Sys.Print('base mesh:           %d elements (intervals)' % mx)
 
 # extrude mesh; use SemiCoarsenedExtrudedHierarchy() if base mesh is NOT refined,
 # otherwise use ExtrudedMeshHierarchy() and require equal refinement ratios
 mz = args.mz
 temporary_height = 1.0
-if args.baserefine > 0:
-    if args.vertrefine != args.baserefine:
-        raise ValueError('if base is refined then vertical direction must be refined the same amount')
-    hierarchy = ExtrudedMeshHierarchy(base_hierarchy, temporary_height, base_layer=args.mz)
+if args.refine > 0:
+    hierarchy = SemiCoarsenedExtrudedHierarchy(base_mesh, temporary_height, base_layer=args.mz,
+                                               nref=args.refine)
     mesh = hierarchy[-1]     # the fine mesh
-    mz *= 2**args.vertrefine
+    mz *= 2**args.refine
+    PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' % (args.mz,mz))
 else:
-    if args.vertrefine > 0:
-        hierarchy = SemiCoarsenedExtrudedHierarchy(base_mesh, temporary_height, base_layer=args.mz,
-                                                   nref=args.vertrefine)
-        mesh = hierarchy[-1]     # the fine mesh
-        mz *= 2**args.vertrefine
-    else:
-        mesh = ExtrudedMesh(base_mesh, layers=args.mz, layer_height=temporary_height/args.mz)
-if args.vertrefine > 0:
-    PETSc.Sys.Print('vertical mesh:       %d coarse layers refined to %d fine layers' % (args.mz,mz))
+    mesh = ExtrudedMesh(base_mesh, layers=args.mz, layer_height=temporary_height/args.mz)
 
 # deform z coordinate, in each level of hierarchy, to match Halfar solution, but limited at Href
-if args.vertrefine > 0:
-    hierlevs = args.vertrefine + 1
+if args.refine > 0:
+    hierlevs = args.refine + 1
 else:
     hierlevs = 1
 for k in range(hierlevs):
-    if args.vertrefine > 0:
+    if args.refine > 0:
         kmesh = hierarchy[k]
     else:
         kmesh = mesh
