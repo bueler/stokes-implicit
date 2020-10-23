@@ -183,6 +183,25 @@ for k in range(hierlevs):
         f = Function(Vcoord).interpolate(as_vector([x,Hlimited*z]))
     kmesh.coordinates.assign(f)
 
+# report on generated geometry and fine mesh
+dxelem = 2.0 * args.L / mx
+dzrefelem = args.Href / mz
+if args.my > 0:
+    dyelem = 2.0 * args.L / my
+    PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
+                    % (args.H0,args.R0/1000.0,t0/secpera))
+    PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (hexahedra); limited at Href=%.2f m'
+                    % (mx,my,mz,args.Href))
+    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f, ratioy=%.1f'
+                    % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem,dyelem/dzrefelem))
+else:
+    PETSc.Sys.Print('initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
+                    % (args.H0,args.R0/1000.0,t0/secpera))
+    PETSc.Sys.Print('2D extruded mesh:    %d x %d elements (quads); limited at Href=%.2f m'
+                    % (mx,mz,args.Href))
+    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dz_min=%.2f m, ratio=%.1f'
+                    % (dxelem,dzrefelem,dxelem/dzrefelem))
+
 # fine mesh coordinates
 if args.my > 0:
     x,y,z = SpatialCoordinate(mesh)
@@ -229,13 +248,15 @@ upc = Function(Z)
 u,p,c = split(upc)
 v,q,e = TestFunctions(Z)
 
-# define the nonlinear weak form F(u,p,c;v,q,e)
-Du = 0.5 * (grad(u)+grad(u).T)
-Dv = 0.5 * (grad(v)+grad(v).T)
+# body force
 if args.my > 0:
     f_body = Constant((0.0, 0.0, - rho * g))
 else:
     f_body = Constant((0.0, - rho * g))
+
+# define the nonlinear weak form F(u,p,c;v,q,e)
+Du = 0.5 * (grad(u)+grad(u).T)
+Dv = 0.5 * (grad(v)+grad(v).T)
 # FIXME stretching in F; couples (u,p) and c problems
 if args.linear:   # linear Stokes with viscosity = 1.0
     tau = 2.0 * Du
@@ -268,41 +289,22 @@ else:
     Fsmb = (c - smbref) * e * ds_t
     bctop = EquationBC(Fsmb == 0, upc, 'top', V=Z.sub(2))
 
-# list boundary conditions
+# boundary conditions
 if args.my > 0:
     bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0, 0.0)), 'bottom'),  # zero velocity on bottom
-           DirichletBC(Z.sub(0), Constant((0.0, 0.0, 0.0)), (1,2,3,4)), # zero velocity on the edges
-           DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),              # zero displacement on the bottom
+           DirichletBC(Z.sub(0), Constant((0.0, 0.0, 0.0)), (1,2,3,4)), # zero velocity on sides
+           DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),              # zero displacement bottom
            bctop]                                                       # SKE equation on the top
 else:
     bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # zero velocity on bottom
-           DirichletBC(Z.sub(0), Constant((0.0, 0.0)), (1,2)),     # zero velocity on the ends
+           DirichletBC(Z.sub(0), Constant((0.0, 0.0)), (1,2)),     # zero velocity on sides
            DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),         # zero displacement on the bottom
            bctop]                                                  # SKE equation on the top
 
-# report on generated geometry and fine mesh
-dxelem = 2.0 * args.L / mx
-dzrefelem = args.Href / mz
-if args.my > 0:
-    dyelem = 2.0 * args.L / my
-    PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
-                    % (args.H0,args.R0/1000.0,t0/secpera))
-    PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (hexahedra); limited at Href=%.2f m'
-                    % (mx,my,mz,args.Href))
-    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f, ratioy=%.1f'
-                    % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem,dyelem/dzrefelem))
-else:
-    PETSc.Sys.Print('initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
-                    % (args.H0,args.R0/1000.0,t0/secpera))
-    PETSc.Sys.Print('2D extruded mesh:    %d x %d elements (quads); limited at Href=%.2f m'
-                    % (mx,mz,args.Href))
-    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dz_min=%.2f m, ratio=%.1f'
-                    % (dxelem,dzrefelem,dxelem/dzrefelem))
+# report on vector spaces
 n_u,n_p,n_c,N = Vu.dim(),Vp.dim(),Vc.dim(),Z.dim()
 PETSc.Sys.Print('vector space dims:   n_u=%d, n_p=%d, n_c=%d  -->  N=%d' \
                 % (n_u,n_p,n_c,N))
-PETSc.Sys.Print('**** SOLVING ****')
-PETSc.Sys.Print('    ... one time step dt=%.5f a ...' % args.dta)
 
 # solver parameters; some are defaults which are deliberately made explicit here
 # note 'lu' = mumps, both in serial and parallel (faster)
@@ -357,6 +359,8 @@ if base_mesh.comm.size > 1:
     parameters['fieldsplit_1_pc_factor_mat_solver_type'] = 'mumps'
 
 # solve system as though it is nonlinear:  F(u) = 0
+PETSc.Sys.Print('**** SOLVING ****')
+PETSc.Sys.Print('    ... one time step dt=%.5f a ...' % args.dta)
 solve(F == 0, upc, bcs=bcs, options_prefix = 's',
       solver_parameters=parameters)
 
