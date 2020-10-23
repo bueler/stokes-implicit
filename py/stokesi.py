@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
-#   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
+#   * factor out extruded mesh creation and mesh deformation into src/meshes.py
+#   * combine solver parameters into something like the packages in mccarthy/stokes/
 #   * implement displacement stretching scheme
 #   * "miasma" above current iterate surface in Href area
+#   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
+#   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * get semicoarsening to work with mg; use pool.py as testing ground
-#   * add options something like solver packages in mccarthy/stokes/
 
 # example: runs in about a minute with 5/2 element ratio and N=1.6e5
 # timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -baserefine 1 -vertrefine 1 -saveextra -o foo.pvd
 
 from firedrake import *
-import sys
-from src.iceconstants import secpera,g,rho,n,Bn
+import sys,argparse
+from src.iceconstants import secpera
 from src.icefunctional import IceModel, IceModel2D
 from src.diagnostic import writeresult
 
-import argparse
 parser = argparse.ArgumentParser(description='''
 Solve coupled Glen-Stokes plus surface kinematical equation (SKE) for
 an ice sheet.  Generates flat-bed 2D or 3D mesh by extrusion
