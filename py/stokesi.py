@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * factor out extruded mesh creation and mesh deformation into src/meshes.py
 #   * combine solver parameters into something like the packages in mccarthy/stokes/
 #   * implement displacement stretching scheme
 #   * "miasma" above current iterate surface in Href area
@@ -15,7 +14,7 @@
 import sys,argparse
 from firedrake import *
 from src.constants import secpera
-from src.meshes import basemesh, extrudedmesh
+from src.meshes import basemesh, extrudedmesh, deformlimitmesh
 from src.halfar import halfar2d, halfar3d
 from src.functionals import IceModel, IceModel2D
 from src.diagnostic import writeresult
@@ -100,39 +99,30 @@ else:
                     % (-args.L/1000.0,args.L/1000.0))
     PETSc.Sys.Print('base mesh:           %d elements (intervals)' % args.mx)
 
-# extrude mesh
+def deforminitial(mesh):
+    '''Use initial shape to determine mesh for reference domain.
+    Currently this just uses the Halfar solution.'''
+    if args.my > 0:
+        x,y,z = SpatialCoordinate(mesh)
+        _, Hinitial = halfar3d(x,y,R0=args.R0,H0=args.H0)
+    else:
+        x,z = SpatialCoordinate(mesh)
+        _, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
+    deformlimitmesh(mesh,Hinitial,Href=args.Href)
+
+# extrude mesh, generating hierarchy if refining, and deform to match initial
+# shape, but limited at Href
 if args.refine > 0:
     mesh, hierarchy = extrudedmesh(base_mesh, args.mz, refine=args.refine)
+    for kmesh in hierarchy:
+        deforminitial(kmesh)
     mzfine = args.mz * 2**args.refine
     PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' \
                     % (args.mz,mzfine))
 else:
-    mesh = extrudedmesh(base_mesh, args.mz, refine=args.refine)
+    mesh = extrudedmesh(base_mesh, args.mz)
+    deforminitial(mesh)
     mzfine = args.mz
-
-# deform z coordinate, in each level of hierarchy, to match Halfar solution, but limited at Href
-if args.refine > 0:
-    hierlevs = args.refine + 1
-else:
-    hierlevs = 1
-for k in range(hierlevs):
-    if args.refine > 0:
-        kmesh = hierarchy[k]
-    else:
-        kmesh = mesh
-    if args.my > 0:
-        x,y,z = SpatialCoordinate(kmesh)
-        _, Hinitial = halfar3d(x,y,R0=args.R0,H0=args.H0)
-    else:
-        x,z = SpatialCoordinate(kmesh)
-        _, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
-    Hlimited = max_value(args.Href, Hinitial)
-    Vcoord = kmesh.coordinates.function_space()
-    if args.my > 0:
-        f = Function(Vcoord).interpolate(as_vector([x,y,Hlimited*z]))
-    else:
-        f = Function(Vcoord).interpolate(as_vector([x,Hlimited*z]))
-    kmesh.coordinates.assign(f)
 
 # extruded mesh coordinates
 if args.my > 0:

@@ -2,7 +2,7 @@
 
 import firedrake as fd
 
-__all__ = ['basemesh', 'extrudedmesh']
+__all__ = ['basemesh', 'extrudedmesh', 'deformlimitmesh']
 
 def basemesh(L, mx, my=-1):
     '''Set up base mesh of intervals on [-L,L] if my<0 or quadilaterals on
@@ -30,4 +30,19 @@ def extrudedmesh(base_mesh, mz, refine=-1, temporary_height=1.0):
     else:
         mesh = fd.ExtrudedMesh(base_mesh, layers=mz, layer_height=temporary_height/mz)
         return mesh
+
+def deformlimitmesh(mesh, Hinitial, Href):
+    '''Change vertical coordinate on extruded mesh to max(Hinitial,Href).'''
+    # FIXME allow for nonzero bed elevation
+    Hlimited = fd.max_value(Href, Hinitial)
+    Vcoord = mesh.coordinates.function_space()
+    if mesh._base_mesh.cell_dimension() == 1:
+        x,z = fd.SpatialCoordinate(mesh)
+        f = fd.Function(Vcoord).interpolate(fd.as_vector([x,Hlimited*z]))
+    elif mesh._base_mesh.cell_dimension() == 2:
+        x,y,z = fd.SpatialCoordinate(mesh)
+        f = fd.Function(Vcoord).interpolate(fd.as_vector([x,y,Hlimited*z]))
+    else:
+        raise ValueError('only 2D and 3D extruded meshes can be deformed')
+    mesh.coordinates.assign(f)
 
