@@ -15,6 +15,7 @@
 import sys,argparse
 from firedrake import *
 from src.constants import secpera
+from src.meshes import basemesh
 from src.halfar import halfar2d, halfar3d
 from src.functionals import IceModel, IceModel2D
 from src.diagnostic import writeresult
@@ -85,27 +86,19 @@ Dtyp = args.Dtyp / secpera
 # timestep  FIXME need time-stepping loop
 dt = args.dta * secpera
 
-# set up base mesh on [-L,L] or [-L,L]x[-L,L]
-mx = args.mx
-if args.my > 0:
-    my = args.my
-    base_mesh = RectangleMesh(mx, my, 2.0*args.L, 2.0*args.L, quadrilateral=True)
-    base_mesh.coordinates.dat.data[:, 0] -= args.L
-    base_mesh.coordinates.dat.data[:, 1] -= args.L
-else:
-    base_mesh = IntervalMesh(mx, length_or_left=0.0, right=2.0*args.L)
-    base_mesh.coordinates.dat.data[:] -= args.L
+# set up base mesh
+base_mesh = basemesh(L=args.L,mx=args.mx,my=args.my)
 
 # report on base mesh
 PETSc.Sys.Print('**** SUMMARY OF SETUP ****')
 if args.my > 0:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
                     % (-args.L/1000.0,args.L/1000.0,-args.L/1000.0,args.L/1000.0))
-    PETSc.Sys.Print('base mesh:           %d x %d elements (quads)' % (mx,my))
+    PETSc.Sys.Print('base mesh:           %d x %d elements (quads)' % (args.mx,args.my))
 else:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] km interval'
                     % (-args.L/1000.0,args.L/1000.0))
-    PETSc.Sys.Print('base mesh:           %d elements (intervals)' % mx)
+    PETSc.Sys.Print('base mesh:           %d elements (intervals)' % args.mx)
 
 # extrude mesh; use SemiCoarsenedExtrudedHierarchy() if base mesh is NOT refined,
 # otherwise use ExtrudedMeshHierarchy() and require equal refinement ratios
@@ -145,15 +138,15 @@ for k in range(hierlevs):
     kmesh.coordinates.assign(f)
 
 # report on generated geometry and fine mesh
-dxelem = 2.0 * args.L / mx
+dxelem = 2.0 * args.L / args.mx
 dzrefelem = args.Href / mz
 if args.my > 0:
-    dyelem = 2.0 * args.L / my
+    dyelem = 2.0 * args.L / args.my
     t0, _ = halfar3d(x,y,R0=args.R0,H0=args.H0)
     PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0/secpera))
     PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (hexahedra); limited at Href=%.2f m'
-                    % (mx,my,mz,args.Href))
+                    % (args.mx,args.my,mz,args.Href))
     PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f, ratioy=%.1f'
                     % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem,dyelem/dzrefelem))
 else:
@@ -161,7 +154,7 @@ else:
     PETSc.Sys.Print('initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0/secpera))
     PETSc.Sys.Print('2D extruded mesh:    %d x %d elements (quads); limited at Href=%.2f m'
-                    % (mx,mz,args.Href))
+                    % (args.mx,mz,args.Href))
     PETSc.Sys.Print('element dimensions:  dx=%.2f m, dz_min=%.2f m, ratio=%.1f'
                     % (dxelem,dzrefelem,dxelem/dzrefelem))
 
