@@ -14,6 +14,7 @@
 from firedrake import *
 import sys
 from iceconstants import secpera,g,rho,n,Bn
+from icefunctional import IceModel, IceModel2D
 
 import argparse
 parser = argparse.ArgumentParser(description='''
@@ -236,71 +237,39 @@ zcE = FiniteElement('P',interval,1)  # consider raising to 2: field "looks bette
 cE = TensorProductElement(xcE,zcE)
 Vc = FunctionSpace(mesh, cE)
 
-# construct mixed space
+# mixed space
 Z = Vu * Vp * Vc
+
+# report on vector spaces sizes
+n_u,n_p,n_c,N = Vu.dim(),Vp.dim(),Vc.dim(),Z.dim()
+PETSc.Sys.Print('vector space dims:   n_u=%d, n_p=%d, n_c=%d  -->  N=%d' \
+                % (n_u,n_p,n_c,N))
 
 # trial and test functions
 upc = Function(Z)
 u,p,c = split(upc)
 v,q,e = TestFunctions(Z)
 
-# body force
+# weak form for the coupled problem
 if args.my > 0:
-    f_body = Constant((0.0, 0.0, - rho * g))
+    im = IceModel(mesh, args.Href, args.eps, Dtyp)
+    zerovelocity = Constant((0.0, 0.0, 0.0))
+    sides = (1,2,3,4)
 else:
-    f_body = Constant((0.0, - rho * g))
-
-# define the nonlinear weak form F(u,p,c;v,q,e)
-Du = 0.5 * (grad(u)+grad(u).T)
-Dv = 0.5 * (grad(v)+grad(v).T)
-# FIXME stretching in F; couples (u,p) and c problems
-if args.linear:   # linear Stokes with viscosity = 1.0
-    tau = 2.0 * Du
-else:
-    if args.sia:  # FIXME not sure if this is SIA!  TEST with -s_mat_type aij -s_pc_type svd -s_ksp_type preonly
-        Du = as_matrix([[0, 0.5*u[0].dx(1)], [0, 0]])  # FIXME 2D only
-        Dv = as_matrix([[v[0].dx(1), 0], [0, 0]])
-        #FIXME: add this?  DirichletBC(Z.sub(1), Constant(0.0), 'top'),         # SIA: zero pressure on top
-    # n=3 Glen law Stokes
-    Du2 = 0.5 * inner(Du, Du) + args.eps * Dtyp**2.0
-    tau = Bn * Du2**(-1.0/n) * Du
-F = inner(tau, Dv) * dx \
-    + ( - p * div(v) - div(u) * q - inner(f_body,v) ) * dx \
-    + inner(grad(c),grad(e)) * dx
-
-# construct equation for surface kinematical equation (SKE) boundary condition
-a = Constant(0.0) # correct for Halfar
-if args.dirichletsmb:
-    # artificial case: apply solution-independent smb as Dirichlet
-    smb = a
-    smbref = conditional(z > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
-    bctop = DirichletBC(Z.sub(2), smbref, 'top')
-else:
-    # in default coupled case, SMB is an equation
-    if args.my > 0:
-        smb = a - u[0] * z.dx(0) - u[1] * z.dx(1) + u[2]  #  a - u dh/dx - v dh/dy + w
-    else:
-        smb = a - u[0] * z.dx(0) + u[1]  #  a - u dh/dx + w
-    smbref = conditional(z > args.Href, dt * smb, dt * smb - args.Href)  # FIXME: try "y>0"
-    Fsmb = (c - smbref) * e * ds_t
-    bctop = EquationBC(Fsmb == 0, upc, 'top', V=Z.sub(2))
+    im = IceModel2D(mesh, args.Href, args.eps, Dtyp)
+    zerovelocity = Constant((0.0, 0.0))
+    sides = (1,2)
+F = im.F(u,p,c,v,q,e)
 
 # boundary conditions
-if args.my > 0:
-    bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0, 0.0)), 'bottom'),  # zero velocity on bottom
-           DirichletBC(Z.sub(0), Constant((0.0, 0.0, 0.0)), (1,2,3,4)), # zero velocity on sides
-           DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),              # zero displacement bottom
-           bctop]                                                       # SKE equation on the top
-else:
-    bcs = [DirichletBC(Z.sub(0), Constant((0.0, 0.0)), 'bottom'),  # zero velocity on bottom
-           DirichletBC(Z.sub(0), Constant((0.0, 0.0)), (1,2)),     # zero velocity on sides
-           DirichletBC(Z.sub(2), Constant(0.0), 'bottom'),         # zero displacement on the bottom
-           bctop]                                                  # SKE equation on the top
-
-# report on vector spaces
-n_u,n_p,n_c,N = Vu.dim(),Vp.dim(),Vc.dim(),Z.dim()
-PETSc.Sys.Print('vector space dims:   n_u=%d, n_p=%d, n_c=%d  -->  N=%d' \
-                % (n_u,n_p,n_c,N))
+bcs = [DirichletBC(Z.sub(0), zerovelocity, 'bottom'),
+       DirichletBC(Z.sub(0), zerovelocity, sides),
+       DirichletBC(Z.sub(2), Constant(0.0), 'bottom')]  # for displacement
+if args.dirichletsmb: # artifically set Dirichlet condition on top
+    bcs.append(DirichletBC(Z.sub(2), im.Dirichletsmb(mesh,dt), 'top'))
+else:                 # weakly-apply SKE equation on top
+    Fsmb = im.Fsmb(mesh,Z,dt,u,c,e)
+    bcs.append(EquationBC(Fsmb == 0, upc, 'top', V=Z.sub(2)))
 
 # solver parameters; some are defaults which are deliberately made explicit here
 # note 'lu' = mumps, both in serial and parallel (faster)
