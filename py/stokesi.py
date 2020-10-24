@@ -89,11 +89,11 @@ if args.stokesihelp:
     parser.print_help()
     sys.exit(0)
 
-# regularization constant
+# correct units to SI
 Dtyp = args.Dtyp / secpera
-
-# timestep  FIXME need time-stepping loop
 dt = args.dta * secpera
+
+# FIXME need time-stepping loop
 
 # set up base mesh
 base_mesh = basemesh(L=args.L,mx=args.mx,my=args.my)
@@ -109,10 +109,12 @@ else:
                     % (-args.L/1000.0,args.L/1000.0))
     PETSc.Sys.Print('base mesh:           %d elements (intervals)' % args.mx)
 
+ThreeD = args.my > 0
+
 def deforminitial(mesh):
     '''Use initial shape to determine mesh for reference domain.
     Currently this just uses the Halfar solution.'''
-    if args.my > 0:
+    if ThreeD:
         x,y,z = SpatialCoordinate(mesh)
         _, Hinitial = halfar3d(x,y,R0=args.R0,H0=args.H0)
     else:
@@ -135,7 +137,7 @@ else:
     mzfine = args.mz
 
 # extruded mesh coordinates
-if args.my > 0:
+if ThreeD:
     x,y,z = SpatialCoordinate(mesh)
 else:
     x,z = SpatialCoordinate(mesh)
@@ -143,7 +145,7 @@ else:
 # report on generated geometry and extruded mesh
 dxelem = 2.0 * args.L / args.mx
 dzrefelem = args.Href / mzfine
-if args.my > 0:
+if ThreeD:
     t0, _ = halfar3d(x,y,R0=args.R0,H0=args.H0)
     dyelem = 2.0 * args.L / args.my
     PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
@@ -166,29 +168,20 @@ degreexz = [(2,1),(3,2),(4,3),(5,4)]
 zudeg,zpdeg = degreexz[args.spectralvert]
 
 # construct component spaces by explicitly applying TensorProductElement()
-# velocity u
-if args.my > 0:
-    xuE = FiniteElement('Q',quadrilateral,2)
-else:
-    xuE = FiniteElement('P',interval,2)
+# * velocity u
+xuE = FiniteElement('Q',quadrilateral,2) if ThreeD else FiniteElement('P',interval,2)
 zuE = FiniteElement('P',interval,zudeg)
 uE = TensorProductElement(xuE,zuE)
 Vu = VectorFunctionSpace(mesh, uE)
-# pressure p
-# [note Isaac et al (2015) recommend discontinuous pressure space for mass
-#  conservation but using dQ0 seems unstable and dQ1 notably more expensive]
-if args.my > 0:
-    xpE = FiniteElement('Q',quadrilateral,1)
-else:
-    xpE = FiniteElement('P',interval,1)
+# * pressure p; note Isaac et al (2015) recommend discontinuous pressure space
+#               to get mass conservation but using dQ0 seems unstable and dQ1
+#               notably more expensive
+xpE = FiniteElement('Q',quadrilateral,1) if ThreeD else FiniteElement('P',interval,1)
 zpE = FiniteElement('P',interval,zpdeg)
 pE = TensorProductElement(xpE,zpE)
 Vp = FunctionSpace(mesh, pE)
-# displacement c
-if args.my > 0:
-    xcE = FiniteElement('Q',quadrilateral,1)
-else:
-    xcE = FiniteElement('P',interval,1)
+# * displacement c
+xcE = FiniteElement('Q',quadrilateral,1) if ThreeD else FiniteElement('P',interval,1)
 zcE = FiniteElement('P',interval,1)  # consider raising to 2: field "looks better?"
 cE = TensorProductElement(xcE,zcE)
 Vc = FunctionSpace(mesh, cE)
@@ -206,8 +199,8 @@ upc = Function(Z)
 u,p,c = split(upc)
 v,q,e = TestFunctions(Z)
 
-# weak form for the coupled problem
-if args.my > 0:
+# get physics of the coupled problem
+if ThreeD:
     im = IceModel(almost=True, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
     zerovelocity = Constant((0.0, 0.0, 0.0))
     sides = (1,2,3,4)
@@ -215,8 +208,8 @@ else:
     im = IceModel2D(almost=True, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
     zerovelocity = Constant((0.0, 0.0))
     sides = (1,2)
+# coupled weak form
 F = im.F(u,p,c,v,q,e)
-
 # boundary conditions
 bcs = [DirichletBC(Z.sub(0), zerovelocity, 'bottom'),
        DirichletBC(Z.sub(0), zerovelocity, sides),
