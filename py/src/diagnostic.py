@@ -63,7 +63,7 @@ def siahorizontalvelocity(mesh):
     hbase = surfaceelevation(mesh)
     if mesh._base_mesh.cell_dimension() == 2:
         Vvectorbase = fd.VectorFunctionSpace(mesh._base_mesh,'DQ',0)
-        gradhbase = fd.project(grad(hbase),Vvectorbase)
+        gradhbase = fd.project(fd.grad(hbase),Vvectorbase)
         VvectorR = fd.VectorFunctionSpace(mesh,'DQ',0, vfamily='R', vdegree=0, dim=2)
         Vvector = fd.VectorFunctionSpace(mesh,'DQ',0, dim=2)
     elif mesh._base_mesh.cell_dimension() == 1:
