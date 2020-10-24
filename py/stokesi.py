@@ -8,8 +8,11 @@
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * get semicoarsening to work with mg; use pool.py as testing ground
 
-# example: runs in about a minute with 5/2 element ratio and N=1.6e5
-# timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -baserefine 1 -vertrefine 1 -saveextra -o foo.pvd
+# serial 2D example: runs in about a minute with 5/2 element ratio and N=1.6e5
+# timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 1920 -refine 1 -saveextra -o foo2.pvd
+
+# parallel 3D example: runs in under 2 minutes with 80/1 element ratio and N=1.1e5
+# tmpg -n 8 ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 30 -my 30 -saveextra -o foo3.pvd
 
 import sys,argparse
 from firedrake import *
@@ -20,38 +23,45 @@ from src.functionals import IceModel, IceModel2D
 from src.diagnostic import writeresult
 
 parser = argparse.ArgumentParser(description='''
-Solve coupled Glen-Stokes plus surface kinematical equation (SKE) for
-an ice sheet.  Generates flat-bed 2D or 3D mesh by extrusion
-of an equally-spaced interval or quadrilateral mesh in the map plane,
-respectively, with quadrilateral or hexahedral elements.  Optional
+Solve coupled Glen-Stokes equations plus surface kinematical equation (SKE)
+for a glacier or ice sheet.  Generates flat-bed 2D or 3D mesh by extrusion
+of an equally-spaced interval or quadrilateral mesh in the map plane
+giving quadrilateral or hexahedral elements, respectively.  Optional
 refinement in the vertical to allow semicoarsening multigrid.  Currently the
 initial geometry is from Halfar (1981) or Halfar (1983).  A reference
 domain with a minimum thickness is generated from the initial geometry.
 We solve a nonlinear system for velocity u, pressure p, and (scalar)
 vertical displacement c.  The system of 3 PDEs corresponds to a single
 backward Euler time step of -dta years:
-   stress balance:       F_1(u,p,c) = 0
-   incompressibility:    F_2(u,c)   = 0
-   Laplace/SKE:          F_3(u,c)   = 0
+  stress balance:       F_1(u,p,c) = 0
+  incompressibility:    F_2(u,c)   = 0
+  Laplace/SKE:          F_3(u,c)   = 0
 The last equation is Laplace's equation for c in the domain interior but it
 is coupled to the first two through the top boundary condition which enforces
-the SKE.  The mixed space consists of (u,p) in Q2 x Q1 for the Stokes problem
-and c in Q1 for displacement.  The default solver is multiplicative fieldsplit
-between the Stokes (u,p) block and the c block.  The Stokes block is solved by
-Schur lower fieldsplit with selfp preconditioning on the Schur block.  The
-diagonal blocks are solved by LU using MUMPS.''',
+the SKE and through weighting/stretching factors in the Glen-Stokes weak form.
+The mixed space consists of (u,p) in Q2 x Q1 for the Stokes problem and c in
+Q1 for displacement and thus the Jacobian matrices have block form
+      * * | *
+  J = *   | *
+      -------
+      *   | *
+where the upper-left 2x2 (u,p) block is a weighted form of the usual mixed and
+element Stokes matrix.  The default solver is multiplicative fieldsplit between
+the (u,p) block and the c blocks.  The (u,p) block is solved by Schur lower
+fieldsplit with selfp preconditioning on its Schur block.  By default the
+diagonal blocks are solved (preconditioned) by LU using MUMPS.''',
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  add_help=False)
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
 parser.add_argument('-dta', type=float, default=1.0, metavar='X',
-                    help='length of time step in years')
+                    help='length of time step in years (default=1.0 a)')
 parser.add_argument('-Dtyp', type=float, default=2.0, metavar='X',
                     help='typical strain rate in "+(eps Dtyp)^2" (default=2.0 a-1)')
 parser.add_argument('-eps', type=float, default=0.0001, metavar='X',
                     help='to regularize viscosity by "+eps Dtyp^2" (default=0.0001)')
 parser.add_argument('-H0', type=float, default=3000.0, metavar='X',
-                    help='center height in m of ice sheet (default=3000)')
+                    help='center height in m of initial ice sheet (default=3000)')
 parser.add_argument('-Href', type=float, default=200.0, metavar='X',
                     help='minimum thickness in m of reference domain (default=200)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
@@ -59,19 +69,19 @@ parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
 parser.add_argument('-mx', type=int, default=30, metavar='N',
                     help='number of equal subintervals in x-direction (default=30)')
 parser.add_argument('-my', type=int, default=-1, metavar='N',
-                    help='solve in 3D with this number of equal subintervals in y-direction (default=30)')
+                    help='3D solve if my>0: subintervals in y-direction (default=-1)')
 parser.add_argument('-mz', type=int, default=4, metavar='N',
                     help='number of layers in each vertical column (default=4)')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save to output file name ending with .pvd')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
-                    help='half-width in m of ice sheet (default=50e3)')
+                    help='half-width in m of initial ice sheet (default=50e3)')
 parser.add_argument('-refine', type=int, default=-1, metavar='N',
                     help='number of vertical (z) mesh refinement levels')
 parser.add_argument('-saveextra', action='store_true', default=False,
-                    help='save stresses (tau,nu,pminushydrostatic) and SIA horizontal velocity (velocitySIA) to output file')
+                    help='add stresses and SIA velocity to -o output file')
 parser.add_argument('-spectralvert', type=int, default=0, metavar='N',
-                    help='stages for p-refinement in vertical; use 0,1,2,3 only  (default=0)')
+                    help='stages for p-refinement in vertical; use 0,1,2,3 only (default=0)')
 parser.add_argument('-stokesihelp', action='store_true', default=False,
                     help='print help for stokesi.py and quit')
 args, unknown = parser.parse_known_args()
