@@ -8,13 +8,13 @@ __all__ = ['IceModel', 'IceModel2D']
 class IceModel(object):
     '''Physics of the coupled ice flow and surface kinematical problems.'''
 
-    def __init__(self, almost, mesh, Href, eps, Dtyp):
+    def __init__(self, almost, mesh, a, Href, eps, Dtyp):
         self.almost = almost
         self.mesh = mesh
+        self.a = a
         self.Href = Href
         self.eps = eps
         self.Dtyp = Dtyp
-        self.a = fd.Constant(0.0) # FIXME only correct for Halfar
         self.delta = 0.1
         self.qdegree = 3  # used in mapped weak form FIXME how to determine a wise value?
 
@@ -86,7 +86,8 @@ class IceModel(object):
     def _vertu(self,u):  # 3D
         return u[2]
 
-    def _smbref(self,dt,z,smb):
+    def smbref(self,dt,z,smb):
+        '''The surface mass balance value on the top of the reference domain.'''
         return fd.conditional(z > self.Href, dt * smb, dt * smb - self.Href)
 
     def Fsmb(self,mesh,Z,dt,u,c,e):
@@ -95,13 +96,7 @@ class IceModel(object):
         equation weakly.  This weak form also depends on u.'''
         z = self._zcoord(mesh)
         smb = self.a - self._tangentu(u,z) + self._vertu(u)
-        return (c - self._smbref(dt,z,smb)) * e * fd.ds_t
-
-    def Dirichletsmb(self,mesh,dt):
-        '''Returns a DirichletBC if we are NOT applying the surface kinematical
-        equation weakly.'''
-        z = self._zcoord(mesh)
-        return self._smbref(dt,z,self.a)
+        return (c - self.smbref(dt,z,smb)) * e * fd.ds_t
 
 
 class IceModel2D(IceModel):
