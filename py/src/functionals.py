@@ -17,7 +17,7 @@ class IceModel(object):
         self.a = fd.Constant(0.0) # FIXME only correct for Halfar
         self.delta = 0.1
 
-    def fbody(self):
+    def _fbody(self):
         return fd.Constant((0.0, 0.0, - rho * g))  # 3D
 
     def _Falmost(self,u,p,c,v,q,e):
@@ -27,7 +27,7 @@ class IceModel(object):
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
         tau = Bn * Du2**(-1.0/n) * Du
         return fd.inner(tau, Dv) * fd.dx \
-               + ( - p * fd.div(v) - fd.div(u) * q - fd.inner(self.fbody(),v) ) * fd.dx \
+               + ( - p * fd.div(v) - fd.div(u) * q - fd.inner(self._fbody(),v) ) * fd.dx \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
 
     def _j(self,c):  # 3D
@@ -61,7 +61,7 @@ class IceModel(object):
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
         #FIXME: MIASMA
         tau = Bn * Du2**(-1.0/n) * Du  # = 2 nu_e Du
-        source = fd.inner(self.fbody(),v)
+        source = fd.inner(self._fbody(),v)
         return (fd.inner(tau, Dv) - p * divv - divu * q - source ) * self._j(c) * fd.dx \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
 
@@ -74,39 +74,38 @@ class IceModel(object):
         else:
             return self._Ftrue(u,p,c,v,q,e)
 
-    def zcoord(self,mesh):  # 3D
+    def _zcoord(self,mesh):  # 3D
         _,_,z = fd.SpatialCoordinate(mesh)
         return z
 
-    def tangentu(self,u,z):  # 3D
+    def _tangentu(self,u,z):  # 3D
         return u[0] * z.dx(0) + u[1] * z.dx(1)
 
-    def vertu(self,u):  # 3D
+    def _vertu(self,u):  # 3D
         return u[2]
 
-    def smbref(self,dt,z,smb):
+    def _smbref(self,dt,z,smb):
         return fd.conditional(z > self.Href, dt * smb, dt * smb - self.Href)
 
     def Fsmb(self,mesh,Z,dt,u,c,e):
         '''Return the weak form Fsmb(c;e) of the top boundary condition
         for the displacement problem so we may apply the surface kinematical
         equation weakly.  This weak form also depends on u.'''
-        z = self.zcoord(mesh)
-        smb = self.a - self.tangentu(u,z) + self.vertu(u)
-        return (c - self.smbref(dt,z,smb)) * e * fd.ds_t
+        z = self._zcoord(mesh)
+        smb = self.a - self._tangentu(u,z) + self._vertu(u)
+        return (c - self._smbref(dt,z,smb)) * e * fd.ds_t
 
     def Dirichletsmb(self,mesh,dt):
         '''Returns a DirichletBC if we are NOT applying the surface kinematical
         equation weakly.'''
-        z = self.zcoord(mesh)
-        return self.smbref(dt,z,self.a)
+        z = self._zcoord(mesh)
+        return self._smbref(dt,z,self.a)
 
 
 class IceModel2D(IceModel):
-    '''Physics of the coupled ice flow and surface kinematical problem
-    in the 2D (flowline) case.'''
+    '''The 2D (flowline) case of IceModel.'''
 
-    def fbody(self):
+    def _fbody(self):
         return fd.Constant((0.0, - rho * g))
 
     def _j(self,c):
@@ -124,13 +123,13 @@ class IceModel2D(IceModel):
                            [0.5 * u[0].dx(1), u[1].dx(1)      ]])
         return 0.5 * (fd.grad(u)+fd.grad(u).T) - self._ell(c) * Mcu + (self._ell(c) - 1.0) * Lu
 
-    def zcoord(self,mesh):
+    def _zcoord(self,mesh):
         _,z = fd.SpatialCoordinate(mesh)
         return z
 
-    def tangentu(self,u,z):
+    def _tangentu(self,u,z):
         return u[0] * z.dx(0)
 
-    def vertu(self,u):
+    def _vertu(self,u):
         return u[1]
 
