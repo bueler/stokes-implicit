@@ -18,6 +18,13 @@ def stresses(mesh,icemodel,u):
     tau.rename('tau')
     return tau, nu
 
+# compute jweight function
+def jweight(mesh,icemodel,c):
+    Q1 = fd.FunctionSpace(mesh,'Q',1)
+    jweight = fd.Function(Q1).interpolate(icemodel.jweight(c))
+    jweight.rename('jweight')
+    return jweight
+
 # h(x,y) on the base mesh
 def surfaceelevation(mesh):
     Q1 = fd.FunctionSpace(mesh,'Q',1)
@@ -93,7 +100,7 @@ def writeresult(filename,mesh,icemodel,upc,saveextra=False):
     if mesh.comm.size > 1:
          written += ',rank'
     if saveextra:
-         written += ',tau,nu,phydrostatic,velocitySIA'
+         written += ',tau,nu,phydrostatic,jweight,velocitySIA'
     fd.PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' \
                        % (written,filename))
     u,p,c = upc.split()
@@ -103,6 +110,7 @@ def writeresult(filename,mesh,icemodel,upc,saveextra=False):
     if saveextra:
         tau, nu = stresses(mesh,icemodel,u)
         ph = phydrostatic(mesh)
+        jw = jweight(mesh,icemodel,c)
         velocitySIA = siahorizontalvelocity(mesh)
     if mesh.comm.size > 1:
         # integer-valued element-wise process rank
@@ -110,12 +118,12 @@ def writeresult(filename,mesh,icemodel,upc,saveextra=False):
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
         if saveextra:
-            fd.File(filename).write(u,p,c,rank,tau,nu,ph,velocitySIA)
+            fd.File(filename).write(u,p,c,rank,tau,nu,ph,jw,velocitySIA)
         else:
             fd.File(filename).write(u,p,c,rank)
     else:
         if saveextra:
-            fd.File(filename).write(u,p,c,tau,nu,ph,velocitySIA)
+            fd.File(filename).write(u,p,c,tau,nu,ph,jw,velocitySIA)
         else:
             fd.File(filename).write(u,p,c)
 
