@@ -228,12 +228,12 @@ else:                 # weakly-apply SKE equation on top
 # note 'lu' = mumps, both in serial and parallel (faster)
 parameters = {'snes_linesearch_type': 'bt',  # new firedrake default is "basic", i.e. NO linesearch
               'mat_type': 'aij',
-              'ksp_type': 'gmres',
-              'ksp_pc_side': 'left',
+              'ksp_type': 'gmres',  # consider fgmres
+              'ksp_pc_side': 'right',  # consider left
               # (u,p)-(u,p) and c-c diagonal blocks are coupled by (lower) c-u block
               # FIXME: reconsider when stretching adds u-c and p-c blocks
               'pc_type': 'fieldsplit',
-              'pc_fieldsplit_type': 'multiplicative',  # 'additive': more linear iters
+              'pc_fieldsplit_type': 'symmetric_multiplicative',  # 'multiplicative' or 'additive': more linear iters
               'pc_fieldsplit_0_fields': '0,1',
               'pc_fieldsplit_1_fields': '2',
               # schur fieldsplit for (u,p)-(u,p) block
