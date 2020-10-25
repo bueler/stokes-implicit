@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * combine solver parameters into something like the packages in mccarthy/stokes/
-#   * implement displacement stretching scheme
+#   * add diagnostics to debug mapping scheme (e.g. where dc/dzeta too negative; where miasma)
 #   * "miasma" above current iterate surface in Href area
+#   * turn off (or try to fix) warning about quadrature degree
+#   * combine solver parameters into something like the packages in mccarthy/stokes/
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * get semicoarsening to work with mg; use pool.py as testing ground
 
 # serial 2D example: runs in about a minute with 5/2 element ratio and N=1.6e5
-# timer ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 1920 -refine 1 -saveextra -o foo2.pvd
+# timer ./stokesi.py -almost -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 1920 -refine 1 -saveextra -o foo2.pvd
 
 # parallel 3D example: runs in under 2 minutes with 80/1 element ratio and N=1.1e5
-# tmpg -n 8 ./stokesi.py -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 30 -my 30 -saveextra -o foo3.pvd
+# tmpg -n 8 ./stokesi.py -almost -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 30 -my 30 -saveextra -o foo3.pvd
 
 import sys,argparse
 from firedrake import *
