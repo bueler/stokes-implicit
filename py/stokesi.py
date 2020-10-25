@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * add diagnostics to debug mapping scheme (e.g. where dc/dzeta too negative; where miasma)
-#   * "miasma" above current iterate surface in Href area
-#   * turn off (or try to fix) warning about quadrature degree
+#   * "miasma" above current iterate surface in Href area; add where-miasma diagnostic
 #   * combine solver parameters into something like the packages in mccarthy/stokes/
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
