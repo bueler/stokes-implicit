@@ -18,8 +18,8 @@ class IceModel(object):
         self.delta = 0.1
         self.qdegree = 3  # used in mapped weak form FIXME how to determine a wise value?
 
-    def _fbody(self):
-        return fd.Constant((0.0, 0.0, - rho * g))  # 3D
+    def _fbody(self):  # 3D
+        return fd.Constant((0.0, 0.0, - rho * g))
 
     def _Falmost(self,u,p,c,v,q,e):
         '''This draft version uses the unmapped reference domain.'''
@@ -31,27 +31,46 @@ class IceModel(object):
                + ( - p * fd.div(v) - fd.div(u) * q - fd.inner(self._fbody(),v) ) * fd.dx \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
 
-    def _j(self,c):  # 3D
-        return fd.conditional(1.0 + c.dx(2) >= self.delta, 1.0 + c.dx(2), self.delta)
+    def _czeta(self,c):  # 3D
+        return c.dx(2)
 
-    def _ell(self,c):
-        return 1.0 / self._j(c)
+    def _divmiddle(self,u,c):  # 3D
+        return c.dx(0) * u[0].dx(2) + c.dx(1) * u[1].dx(2)
 
-    def _divmapped(self,u,c):  # 3D
-        middle = c.dx(0) * u[0].dx(2) + c.dx(1) * u[1].dx(2)
-        return fd.div(u) - self._ell(c) * middle + (self._ell(c) - 1.0) * u[2].dx(2)
+    def _w(self,u):  # 3D
+        return u[2]
 
-    def _Dmapped(self,u,c):  # 3D
+    def _wzeta(self,u):  # 3D
+        return u[2].dx(2)
+
+    def _Mcu(self,u,c):  # 3D
         term12 = 0.5 * (c.dx(1) * u[0].dx(2) + c.dx(0) * u[1].dx(2))
         term13 = 0.5 * c.dx(0) * u[2].dx(2)
         term23 = 0.5 * c.dx(1) * u[2].dx(2)
-        Mcu = fd.as_tensor([[c.dx(0) * u[0].dx(2), term12,               term13],
-                            [term12,               c.dx(1) * u[1].dx(2), term23],
-                            [term13,               term23,               0.0   ]])
-        Lu = fd.as_tensor([[0.0,              0.0,              0.5 * u[0].dx(2)],
-                           [0.0,              0.0,              0.5 * u[1].dx(2)],
-                           [0.5 * u[0].dx(2), 0.5 * u[1].dx(2), u[2].dx(2)      ]])
-        return 0.5 * (fd.grad(u)+fd.grad(u).T) - self._ell(c) * Mcu + (self._ell(c) - 1.0) * Lu
+        return fd.as_tensor([[c.dx(0) * u[0].dx(2), term12,               term13],
+                             [term12,               c.dx(1) * u[1].dx(2), term23],
+                             [term13,               term23,               0.0   ]])
+
+    def _Lu(self,u,c):  # 3D
+        return fd.as_tensor([[0.0,              0.0,              0.5 * u[0].dx(2)],
+                             [0.0,              0.0,              0.5 * u[1].dx(2)],
+                             [0.5 * u[0].dx(2), 0.5 * u[1].dx(2), u[2].dx(2)      ]])
+
+    def jweight(self,c):
+        #FIXME why convergence failure: return fd.max_value(1.0 + self._czeta(c), self.delta)
+        return fd.conditional(1.0 + self._czeta(c) >= self.delta,
+                              1.0 + self._czeta(c), self.delta)
+
+    def _ell(self,c):
+        return 1.0 / self.jweight(c)
+
+    def _divmapped(self,u,c):
+        return fd.div(u) - self._ell(c) * self._divmiddle(u,c) \
+               + (self._ell(c) - 1.0) * self._wzeta(u)
+
+    def _Dmapped(self,u,c):
+        return 0.5 * (fd.grad(u)+fd.grad(u).T) - self._ell(c) * self._Mcu(u,c) \
+               + (self._ell(c) - 1.0) * self._Lu(u,c)
 
     def _Ftrue(self,u,p,c,v,q,e):
         '''This version includes the  x -> xi  mapping.'''
@@ -64,7 +83,7 @@ class IceModel(object):
         tau = Bn * Du2**(-1.0/n) * Du  # = 2 nu_e Du
         source = fd.inner(self._fbody(),v)
         return (fd.inner(tau, Dv) - p * divv - divu * q - source ) \
-                   * self._j(c) * fd.dx(degree=self.qdegree) \
+                   * self.jweight(c) * fd.dx(degree=self.qdegree) \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
 
     def F(self,u,p,c,v,q,e):
@@ -83,9 +102,6 @@ class IceModel(object):
     def _tangentu(self,u,z):  # 3D
         return u[0] * z.dx(0) + u[1] * z.dx(1)
 
-    def _vertu(self,u):  # 3D
-        return u[2]
-
     def smbref(self,dt,z,smb):
         '''The surface mass balance value on the top of the reference domain.'''
         return fd.conditional(z > self.Href, dt * smb, dt * smb - self.Href)
@@ -95,7 +111,7 @@ class IceModel(object):
         for the displacement problem so we may apply the surface kinematical
         equation weakly.  This weak form also depends on u.'''
         z = self._zcoord(mesh)
-        smb = self.a - self._tangentu(u,z) + self._vertu(u)
+        smb = self.a - self._tangentu(u,z) + self._w(u)
         return (c - self.smbref(dt,z,smb)) * e * fd.ds_t
 
 
@@ -105,20 +121,26 @@ class IceModel2D(IceModel):
     def _fbody(self):
         return fd.Constant((0.0, - rho * g))
 
-    def _j(self,c):
-        return fd.conditional(1.0 + c.dx(1) >= self.delta, 1.0 + c.dx(1), self.delta)
+    def _czeta(self,c):
+        return c.dx(1)
 
-    def _divmapped(self,u,c):
-        middle = c.dx(0) * u[0].dx(1)
-        return fd.div(u) - self._ell(c) * middle + (self._ell(c) - 1.0) * u[1].dx(1)
+    def _divmiddle(self,u,c):
+        return c.dx(0) * u[0].dx(1)
 
-    def _Dmapped(self,u,c):
+    def _w(self,u):
+        return u[1]
+
+    def _wzeta(self,u):
+        return u[1].dx(1)
+
+    def _Mcu(self,u,c):
         term12 = 0.5 * c.dx(0) * u[1].dx(1)
-        Mcu = fd.as_tensor([[c.dx(0) * u[0].dx(1), term12],
-                            [term12,               0.0   ]])
-        Lu = fd.as_tensor([[0.0,              0.5 * u[0].dx(1)],
-                           [0.5 * u[0].dx(1), u[1].dx(1)      ]])
-        return 0.5 * (fd.grad(u)+fd.grad(u).T) - self._ell(c) * Mcu + (self._ell(c) - 1.0) * Lu
+        return fd.as_tensor([[c.dx(0) * u[0].dx(1), term12],
+                             [term12,               0.0   ]])
+
+    def _Lu(self,u,c):
+        return fd.as_tensor([[0.0,              0.5 * u[0].dx(1)],
+                             [0.5 * u[0].dx(1), u[1].dx(1)      ]])
 
     def _zcoord(self,mesh):
         _,z = fd.SpatialCoordinate(mesh)
@@ -126,7 +148,4 @@ class IceModel2D(IceModel):
 
     def _tangentu(self,u,z):
         return u[0] * z.dx(0)
-
-    def _vertu(self,u):
-        return u[1]
 
