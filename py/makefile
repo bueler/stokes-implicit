@@ -15,13 +15,16 @@ runstokesi_3:
 runstokesi_4:
 	-@./../testit.sh stokesi.py "-almost -mx 5 -saveextra -o test4.pvd" 2 4
 
+runstokesi_5:
+	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2 -s_ksp_rtol 1.0e-4" 1 5
+
 test_pool: runpool_1
 
-test_stokesi: runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4
+test_stokesi: runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5
 
 test: test_pool test_stokesi
 
-.PHONY: clean runpool_1 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 test_pool test_stokesi test
+.PHONY: clean runpool_1 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5 test_pool test_stokesi test
 
 clean:
 	@rm -f *.pdf *.geo *.msh *.pvd *.vtu *.pvtu *.m
