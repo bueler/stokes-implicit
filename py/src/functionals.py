@@ -32,7 +32,7 @@ class IceModel(object):
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
 
     def _j(self,c):  # 3D
-        return fd.conditional(c.dx(2) >= self.delta, 1.0 + c.dx(2), self.delta)
+        return fd.conditional(1.0 + c.dx(2) >= self.delta, 1.0 + c.dx(2), self.delta)
 
     def _ell(self,c):
         return 1.0 / self._j(c)
@@ -106,7 +106,7 @@ class IceModel2D(IceModel):
         return fd.Constant((0.0, - rho * g))
 
     def _j(self,c):
-        return fd.conditional(c.dx(1) >= self.delta, 1.0 + c.dx(1), self.delta)
+        return fd.conditional(1.0 + c.dx(1) >= self.delta, 1.0 + c.dx(1), self.delta)
 
     def _divmapped(self,u,c):
         middle = c.dx(0) * u[0].dx(1)
