@@ -16,6 +16,7 @@ class IceModel(object):
         self.Dtyp = Dtyp
         self.a = fd.Constant(0.0) # FIXME only correct for Halfar
         self.delta = 0.1
+        self.qdegree = 3  # used in mapped weak form FIXME how to determine a wise value?
 
     def _fbody(self):
         return fd.Constant((0.0, 0.0, - rho * g))  # 3D
@@ -62,7 +63,8 @@ class IceModel(object):
         #FIXME: MIASMA
         tau = Bn * Du2**(-1.0/n) * Du  # = 2 nu_e Du
         source = fd.inner(self._fbody(),v)
-        return (fd.inner(tau, Dv) - p * divv - divu * q - source ) * self._j(c) * fd.dx \
+        return (fd.inner(tau, Dv) - p * divv - divu * q - source ) \
+                   * self._j(c) * fd.dx(degree=self.qdegree) \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
 
     def F(self,u,p,c,v,q,e):
