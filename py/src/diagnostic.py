@@ -49,14 +49,14 @@ def extendsurfaceelevation(mesh):
     h.dat.data[:] = hbase.dat.data_ro[:]
     return h
 
-# difference between pressure and hydrostatic pressure
-def pdifference(mesh,p):
+# hydrostatic pressure
+def phydrostatic(mesh):
     Q1 = fd.FunctionSpace(mesh,'Q',1)
     h = extendsurfaceelevation(mesh)
     x = fd.SpatialCoordinate(mesh)
-    pdiff = fd.Function(Q1).interpolate(p - rho * g * (h - x[mesh._base_mesh.cell_dimension()]))
-    pdiff.rename('pressure minus hydrostatic pressure')
-    return pdiff
+    ph = fd.Function(Q1).interpolate(rho * g * (h - x[mesh._base_mesh.cell_dimension()]))
+    ph.rename('hydrostatic pressure')
+    return ph
 
 # horizontal velocity <u,v> from the shallow ice approximation (SIA)
 def siahorizontalvelocity(mesh):
@@ -93,7 +93,7 @@ def writeresult(filename,mesh,icemodel,upc,saveextra=False):
     if mesh.comm.size > 1:
          written += ',rank'
     if saveextra:
-         written += ',tau,nu,pdiff,velocitySIA'
+         written += ',tau,nu,phydrostatic,velocitySIA'
     fd.PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' \
                        % (written,filename))
     u,p,c = upc.split()
@@ -102,7 +102,7 @@ def writeresult(filename,mesh,icemodel,upc,saveextra=False):
     c.rename('displacement')
     if saveextra:
         tau, nu = stresses(mesh,icemodel,u)
-        pdiff = pdifference(mesh,p)
+        ph = phydrostatic(mesh)
         velocitySIA = siahorizontalvelocity(mesh)
     if mesh.comm.size > 1:
         # integer-valued element-wise process rank
@@ -110,12 +110,12 @@ def writeresult(filename,mesh,icemodel,upc,saveextra=False):
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
         if saveextra:
-            fd.File(filename).write(u,p,c,rank,tau,nu,pdiff,velocitySIA)
+            fd.File(filename).write(u,p,c,rank,tau,nu,ph,velocitySIA)
         else:
             fd.File(filename).write(u,p,c,rank)
     else:
         if saveextra:
-            fd.File(filename).write(u,p,c,tau,nu,pdiff,velocitySIA)
+            fd.File(filename).write(u,p,c,tau,nu,ph,velocitySIA)
         else:
             fd.File(filename).write(u,p,c)
 
