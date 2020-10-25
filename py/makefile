@@ -16,7 +16,7 @@ runstokesi_4:
 	-@./../testit.sh stokesi.py "-almost -mx 5 -saveextra -o test4.pvd" 2 4
 
 runstokesi_5:
-	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2 -s_ksp_rtol 1.0e-4" 1 5
+	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2 -dta 0.01" 1 5
 
 test_pool: runpool_1
 
