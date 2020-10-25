@@ -75,9 +75,9 @@ class IceModel(object):
     def _Ftrue(self,u,p,c,v,q,e):
         '''This version includes the  x -> xi  mapping.'''
         divu = self._divmapped(u,c)
-        divv = self._divmapped(v,c)
+        divv = self._divmapped(v,c) # FIXME argue vs. fd.div(v) or _divmapped(v,e)
         Du = self._Dmapped(u,c)
-        Dv = self._Dmapped(v,c)
+        Dv = self._Dmapped(v,c) # FIXME argue vs. 0.5 * (fd.grad(v)+fd.grad(v).T) or _Dmapped(v,e)
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
         #FIXME: MIASMA
         tau = Bn * Du2**(-1.0/n) * Du  # = 2 nu_e Du

@@ -230,8 +230,6 @@ parameters = {'snes_linesearch_type': 'bt',  # new firedrake default is "basic",
               'mat_type': 'aij',
               'ksp_type': 'gmres',  # consider fgmres
               'ksp_pc_side': 'right',  # consider left
-              # (u,p)-(u,p) and c-c diagonal blocks are coupled by (lower) c-u block
-              # FIXME: reconsider when stretching adds u-c and p-c blocks
               'pc_type': 'fieldsplit',
               'pc_fieldsplit_type': 'symmetric_multiplicative',  # 'multiplicative' or 'additive': more linear iters
               'pc_fieldsplit_0_fields': '0,1',
