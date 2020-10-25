@@ -57,9 +57,7 @@ class IceModel(object):
                              [0.5 * u[0].dx(2), 0.5 * u[1].dx(2), u[2].dx(2)      ]])
 
     def jweight(self,c):
-        #FIXME why convergence failure: return fd.max_value(1.0 + self._czeta(c), self.delta)
-        return fd.conditional(1.0 + self._czeta(c) >= self.delta,
-                              1.0 + self._czeta(c), self.delta)
+        return fd.max_value(1.0 + self._czeta(c), self.delta)
 
     def _ell(self,c):
         return 1.0 / self.jweight(c)
