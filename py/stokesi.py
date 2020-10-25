@@ -52,6 +52,8 @@ fieldsplit with selfp preconditioning on its Schur block.  By default the
 diagonal blocks are solved (preconditioned) by LU using MUMPS.''',
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  add_help=False)
+parser.add_argument('-almost', action='store_true', default=False,
+                    help='use the draft weak forms which did not fully couple')
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
 parser.add_argument('-dta', type=float, default=1.0, metavar='X',
@@ -201,11 +203,11 @@ v,q,e = TestFunctions(Z)
 
 # get physics of the coupled problem
 if ThreeD:
-    im = IceModel(almost=True, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
+    im = IceModel(almost=args.almost, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
     zerovelocity = Constant((0.0, 0.0, 0.0))
     sides = (1,2,3,4)
 else:
-    im = IceModel2D(almost=True, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
+    im = IceModel2D(almost=args.almost, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
     zerovelocity = Constant((0.0, 0.0))
     sides = (1,2)
 # coupled weak form
