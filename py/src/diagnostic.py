@@ -43,27 +43,37 @@ def surfaceelevation(mesh):
     hbase.dat.data_with_halos[:] = z.dat.data_with_halos[bc.nodes]
     return hbase
 
-# extend h(x,y) to extruded mesh using the 'R' constant-in-the-vertical space
-def extendsurfaceelevation(mesh):
-    hbase = surfaceelevation(mesh)
+# extend a function f(x,y) to extruded mesh using the 'R' constant-in-the-vertical space
+def extend(mesh,f):
     if mesh._base_mesh.cell_dimension() == 2:
         Q1R = fd.FunctionSpace(mesh,'Q',1,vfamily='R',vdegree=0)
     elif mesh._base_mesh.cell_dimension() == 1:
         Q1R = fd.FunctionSpace(mesh,'P',1,vfamily='R',vdegree=0)
     else:
         raise ValueError('base mesh of extruded input mesh must be 1D or 2D')
-    h = fd.Function(Q1R)
-    h.dat.data[:] = hbase.dat.data_ro[:]
-    return h
+    fextend = fd.Function(Q1R)
+    fextend.dat.data[:] = f.dat.data_ro[:]
+    return fextend
 
 # hydrostatic pressure
 def phydrostatic(mesh):
     Q1 = fd.FunctionSpace(mesh,'Q',1)
-    h = extendsurfaceelevation(mesh)
+    hbase = surfaceelevation(mesh)
+    h = extend(mesh,hbase)
     x = fd.SpatialCoordinate(mesh)
-    ph = fd.Function(Q1).interpolate(rho * g * (h - x[mesh._base_mesh.cell_dimension()]))
+    z = x[mesh._base_mesh.cell_dimension()]
+    ph = fd.Function(Q1).interpolate(rho * g * (h - z))
     ph.rename('hydrostatic pressure')
     return ph
+
+# density as a piecewise constant
+def densityicemiasma(mesh,hcurrentextruded,rhom):
+    x = fd.SpatialCoordinate(mesh)
+    z = x[mesh._base_mesh.cell_dimension()]
+    Q0 = fd.FunctionSpace(mesh,'DQ',0)
+    rhofield = fd.Function(Q0).project(fd.conditional(z < hcurrentextruded, rho, rhom))
+    rhofield.rename('density ice/miasma')
+    return rhofield
 
 # horizontal velocity <u,v> from the shallow ice approximation (SIA)
 def siahorizontalvelocity(mesh):
@@ -82,7 +92,7 @@ def siahorizontalvelocity(mesh):
         raise ValueError('base mesh of extruded input mesh must be 1D or 2D')
     gradh = fd.Function(VvectorR)
     gradh.dat.data[:] = gradhbase.dat.data_ro[:]
-    h = extendsurfaceelevation(mesh)
+    h = extend(mesh,hbase)
     DQ0 = fd.FunctionSpace(mesh,'DQ',0)
     h0 = fd.project(h,DQ0)
     x = fd.SpatialCoordinate(mesh)
@@ -94,13 +104,13 @@ def siahorizontalvelocity(mesh):
     return uv
 
 # save ParaView-readable file
-def writeresult(filename,mesh,icemodel,upc,saveextra=False):
+def writeresult(filename,mesh,icemodel,upc,hinitialextruded,saveextra=False):
     assert filename.split('.')[-1] == 'pvd'
     written = 'u,p,c'
     if mesh.comm.size > 1:
          written += ',rank'
     if saveextra:
-         written += ',tau,nu,phydrostatic,jweight,velocitySIA'
+         written += ',tau,nu,rho,phydrostatic,jweight,velocitySIA'
     fd.PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' \
                        % (written,filename))
     u,p,c = upc.split()
@@ -109,6 +119,7 @@ def writeresult(filename,mesh,icemodel,upc,saveextra=False):
     c.rename('displacement')
     if saveextra:
         tau, nu = stresses(mesh,icemodel,u)
+        rhofield = densityicemiasma(mesh,hinitialextruded,rho / 10.0)
         ph = phydrostatic(mesh)
         jw = jweight(mesh,icemodel,c)
         velocitySIA = siahorizontalvelocity(mesh)
@@ -118,12 +129,12 @@ def writeresult(filename,mesh,icemodel,upc,saveextra=False):
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
         if saveextra:
-            fd.File(filename).write(u,p,c,rank,tau,nu,ph,jw,velocitySIA)
+            fd.File(filename).write(u,p,c,rank,tau,nu,rhofield,ph,jw,velocitySIA)
         else:
             fd.File(filename).write(u,p,c,rank)
     else:
         if saveextra:
-            fd.File(filename).write(u,p,c,tau,nu,ph,jw,velocitySIA)
+            fd.File(filename).write(u,p,c,tau,nu,rhofield,ph,jw,velocitySIA)
         else:
             fd.File(filename).write(u,p,c)
 

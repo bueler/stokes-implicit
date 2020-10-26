@@ -123,20 +123,22 @@ def deforminitial(mesh):
         x,z = SpatialCoordinate(mesh)
         _, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
     deformlimitmesh(mesh,Hinitial,Href=args.Href)
+    return Hinitial
 
 # extrude mesh, generating hierarchy if refining, and deform to match initial
 # shape, but limited at Href
 if args.refine > 0:
     mesh, hierarchy = extrudedmesh(base_mesh, args.mz, refine=args.refine)
     for kmesh in hierarchy:
-        deforminitial(kmesh)
+        hinitialextruded = deforminitial(kmesh)
     mzfine = args.mz * 2**args.refine
     PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' \
                     % (args.mz,mzfine))
 else:
     mesh = extrudedmesh(base_mesh, args.mz)
-    deforminitial(mesh)
+    hinitialextruded = deforminitial(mesh)
     mzfine = args.mz
+
 
 # extruded mesh coordinates
 if ThreeD:
@@ -281,5 +283,5 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
 
 # save ParaView-readable file
 if args.o:
-    writeresult(args.o,mesh,im,upc,saveextra=args.saveextra)
+    writeresult(args.o,mesh,im,upc,hinitialextruded,saveextra=args.saveextra)
 
