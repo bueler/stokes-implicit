@@ -17,8 +17,8 @@ class IceModel(object):
         self.delta = 0.1
         self.qdegree = 3  # used in mapped weak form FIXME how to determine a wise value?
 
-    def _fbody(self):  # 3D
-        return fd.Constant((0.0, 0.0, - rho * g))
+    def _fbody(self, rhofield):  # 3D
+        return fd.as_vector([fd.Constant(0.0), fd.Constant(0.0), - rhofield * fd.Constant(g)])
 
     def _Falmost(self,u,p,c,v,q,e):
         '''This draft version uses the unmapped reference domain.'''
@@ -26,8 +26,9 @@ class IceModel(object):
         Dv = 0.5 * (fd.grad(v)+fd.grad(v).T)
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
         tau = Bn * Du2**(-1.0/n) * Du
+        source = fd.inner(self._fbody(fd.Constant(rho)),v)
         return fd.inner(tau, Dv) * fd.dx \
-               + ( - p * fd.div(v) - fd.div(u) * q - fd.inner(self._fbody(),v) ) * fd.dx \
+               + ( - p * fd.div(v) - fd.div(u) * q - source ) * fd.dx \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
 
     def _czeta(self,c):  # 3D
@@ -82,7 +83,7 @@ class IceModel(object):
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
         #FIXME: MIASMA
         tau = Bn * Du2**(-1.0/n) * Du  # = 2 nu_e Du
-        source = fd.inner(self._fbody(),v)
+        source = fd.inner(self._fbody(fd.Constant(rho)),v)
         return (fd.inner(tau, Dv) - p * divv - divu * q - source ) \
                    * self.jweight(c) * fd.dx(degree=self.qdegree) \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
@@ -115,8 +116,8 @@ class IceModel(object):
 class IceModel2D(IceModel):
     '''The 2D (flowline) case of IceModel.'''
 
-    def _fbody(self):
-        return fd.Constant((0.0, - rho * g))
+    def _fbody(self, rhofield):
+        return fd.as_vector([fd.Constant(0.0), - rhofield * fd.Constant(g)])
 
     def _czeta(self,c):
         return c.dx(1)
