@@ -90,18 +90,19 @@ if args.stokesihelp:
     parser.print_help()
     sys.exit(0)
 
+# are we 3D or 2D
+ThreeD = args.my > 0
+
 # correct units to SI
 Dtyp = args.Dtyp / secpera
 dt = args.dta * secpera
-
-# FIXME need time-stepping loop
 
 # set up base mesh
 base_mesh = basemesh(L=args.L,mx=args.mx,my=args.my)
 
 # report on base mesh
 PETSc.Sys.Print('**** SUMMARY OF SETUP ****')
-if args.my > 0:
+if ThreeD:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
                     % (-args.L/1000.0,args.L/1000.0,-args.L/1000.0,args.L/1000.0))
     PETSc.Sys.Print('base mesh:           %d x %d elements (quads)' % (args.mx,args.my))
@@ -110,35 +111,33 @@ else:
                     % (-args.L/1000.0,args.L/1000.0))
     PETSc.Sys.Print('base mesh:           %d elements (intervals)' % args.mx)
 
-# are we 3D or 2D
-ThreeD = args.my > 0
-
-def deforminitial(mesh):
+def deformbyinitial(mesh):
     '''Use initial shape to determine mesh for reference domain.
     Currently this just uses the Halfar solution.'''
     if ThreeD:
-        x,y,z = SpatialCoordinate(mesh)
+        x,y,_ = SpatialCoordinate(mesh)
         Hinitial = halfar_3d(x,y,R0=args.R0,H0=args.H0)
     else:
-        x,z = SpatialCoordinate(mesh)
+        x,_ = SpatialCoordinate(mesh)
         Hinitial = halfar_2d(x,R0=args.R0,H0=args.H0)
     deformlimitmesh(mesh,Hinitial,Href=args.Href)
     return Hinitial
+
+# FIXME need time-stepping loop, which will alter mesh at every step
 
 # extrude mesh, generating hierarchy if refining, and deform to match initial
 # shape, but limited at Href
 if args.refine > 0:
     mesh, hierarchy = extrudedmesh(base_mesh, args.mz, refine=args.refine)
     for kmesh in hierarchy:
-        hinitialextruded = deforminitial(kmesh)
+        hinitialextruded = deformbyinitial(kmesh)
     mzfine = args.mz * 2**args.refine
     PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' \
                     % (args.mz,mzfine))
 else:
     mesh = extrudedmesh(base_mesh, args.mz)
-    hinitialextruded = deforminitial(mesh)
+    hinitialextruded = deformbyinitial(mesh)
     mzfine = args.mz
-
 
 # extruded mesh coordinates
 if ThreeD:
