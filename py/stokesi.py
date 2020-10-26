@@ -183,9 +183,13 @@ v,q,e = TestFunctions(Z)
 
 # coupled weak form
 if ThreeD:
-    im = IceModel(almost=args.almost, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
+    im = IceModel(almost=args.almost, mesh=mesh,
+                  Href=args.Href, eps=args.eps, Dtyp=Dtyp,
+                  hcurrent=hinitialextruded, rhom=rho/args.miasma)
 else:
-    im = IceModel2D(almost=args.almost, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
+    im = IceModel2D(almost=args.almost, mesh=mesh,
+                    Href=args.Href, eps=args.eps, Dtyp=Dtyp,
+                    hcurrent=hinitialextruded, rhom=rho/args.miasma)
 F = im.F(u,p,c,v,q,e)
 
 # boundary conditions other than SMB

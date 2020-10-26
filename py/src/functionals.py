@@ -8,12 +8,14 @@ __all__ = ['IceModel', 'IceModel2D']
 class IceModel(object):
     '''Physics of the coupled ice flow and surface kinematical problems.'''
 
-    def __init__(self, almost, mesh, Href, eps, Dtyp):
+    def __init__(self, mesh=None, almost=None, Href=None, eps=None, Dtyp=None, hcurrent=None, rhom=None):
         self.almost = almost
         self.mesh = mesh
         self.Href = Href
         self.eps = eps
         self.Dtyp = Dtyp
+        self.hcurrent = hcurrent
+        self.rhom = rhom
         self.delta = 0.1
         self.qdegree = 3  # used in mapped weak form FIXME how to determine a wise value?
 
@@ -75,15 +77,18 @@ class IceModel(object):
         return z
 
     def _Ftrue(self,u,p,c,v,q,e):
-        '''This version includes the  x -> xi  mapping.'''
+        '''The fully-coupled version including the  x -> xi  mapping and miasma.'''
         divu = self._divmapped(u,c)
         divv = self._divmapped(v,c) # FIXME argue vs. fd.div(v) or _divmapped(v,e)
         Du = self._Dmapped(u,c)
         Dv = self._Dmapped(v,c) # FIXME argue vs. 0.5 * (fd.grad(v)+fd.grad(v).T) or _Dmapped(v,e)
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
-        #FIXME: MIASMA
         tau = Bn * Du2**(-1.0/n) * Du  # = 2 nu_e Du
-        source = fd.inner(self._fbody(fd.Constant(rho)),v)
+        h = self.hcurrent # FIXME add c(x,y,hcurrent(x,y))?
+        cond = fd.conditional(self._zcoord() < h, rho, self.rhom)
+        Q0 = fd.FunctionSpace(self.mesh,'DQ',0)
+        rhofield = fd.Function(Q0).project(cond)
+        source = fd.inner(self._fbody(rhofield),v)
         return (fd.inner(tau, Dv) - p * divv - divu * q - source ) \
                    * self.jweight(c) * fd.dx(degree=self.qdegree) \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx

@@ -9,6 +9,6 @@ vector space dims:   n_u=1098, n_p=155, n_c=155  -->  N=1408
     ... one time step dt=0.01000 a ...
   Linear s_ solve converged due to CONVERGED_RTOL iterations 3
   Linear s_ solve converged due to CONVERGED_RTOL iterations 4
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 5
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 6
   Linear s_ solve converged due to CONVERGED_RTOL iterations 7
 Nonlinear s_ solve converged due to CONVERGED_FNORM_RELATIVE iterations 4
