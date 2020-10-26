@@ -70,8 +70,8 @@ class IceModel(object):
         return 0.5 * (fd.grad(u)+fd.grad(u).T) - self._ell(c) * self._Mcu(u,c) \
                + (self._ell(c) - 1.0) * self._Lu(u,c)
 
-    def _zcoord(self,mesh):  # 3D
-        _,_,z = fd.SpatialCoordinate(mesh)
+    def _zcoord(self):  # 3D
+        _,_,z = fd.SpatialCoordinate(self.mesh)
         return z
 
     def _Ftrue(self,u,p,c,v,q,e):
@@ -108,7 +108,7 @@ class IceModel(object):
         '''Return the weak form Fsmb(c;e) of the top boundary condition
         for the displacement problem so we may apply the surface kinematical
         equation weakly.  This weak form also depends on u.'''
-        z = self._zcoord(mesh)
+        z = self._zcoord()
         smb = a - self._tangentu(u,z) + self._w(u)
         return (c - self.smbref(smb,dt,z)) * e * fd.ds_t
 
@@ -140,8 +140,8 @@ class IceModel2D(IceModel):
         return fd.as_tensor([[0.0,              0.5 * u[0].dx(1)],
                              [0.5 * u[0].dx(1), u[1].dx(1)      ]])
 
-    def _zcoord(self,mesh):
-        _,z = fd.SpatialCoordinate(mesh)
+    def _zcoord(self):
+        _,z = fd.SpatialCoordinate(self.mesh)
         return z
 
     def _tangentu(self,u,z):
