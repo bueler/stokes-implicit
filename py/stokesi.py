@@ -17,7 +17,7 @@ import sys,argparse
 from firedrake import *
 from src.constants import secpera
 from src.meshes import basemesh, extrudedmesh, deformlimitmesh
-from src.halfar import halfar2d, halfar3d
+from src.halfar import t0_2d, t0_3d, halfar_2d, halfar_3d
 from src.functionals import IceModel, IceModel2D
 from src.diagnostic import writeresult
 
@@ -118,10 +118,10 @@ def deforminitial(mesh):
     Currently this just uses the Halfar solution.'''
     if ThreeD:
         x,y,z = SpatialCoordinate(mesh)
-        _, Hinitial = halfar3d(x,y,R0=args.R0,H0=args.H0)
+        Hinitial = halfar_3d(x,y,R0=args.R0,H0=args.H0)
     else:
         x,z = SpatialCoordinate(mesh)
-        _, Hinitial = halfar2d(x,R0=args.R0,H0=args.H0)
+        Hinitial = halfar_2d(x,R0=args.R0,H0=args.H0)
     deformlimitmesh(mesh,Hinitial,Href=args.Href)
     return Hinitial
 
@@ -150,18 +150,16 @@ else:
 dxelem = 2.0 * args.L / args.mx
 dzrefelem = args.Href / mzfine
 if ThreeD:
-    t0, _ = halfar3d(x,y,R0=args.R0,H0=args.H0)
     dyelem = 2.0 * args.L / args.my
     PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
-                    % (args.H0,args.R0/1000.0,t0/secpera))
+                    % (args.H0,args.R0/1000.0,t0_3d(args.R0,args.H0)/secpera))
     PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (hexahedra); limited at Href=%.2f m'
                     % (args.mx,args.my,mzfine,args.Href))
     PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f, ratioy=%.1f'
                     % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem,dyelem/dzrefelem))
 else:
-    t0, _ = halfar2d(x,R0=args.R0,H0=args.H0)
     PETSc.Sys.Print('initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
-                    % (args.H0,args.R0/1000.0,t0/secpera))
+                    % (args.H0,args.R0/1000.0,t0_2d(args.R0,args.H0)/secpera))
     PETSc.Sys.Print('2D extruded mesh:    %d x %d elements (quads); limited at Href=%.2f m'
                     % (args.mx,mzfine,args.Href))
     PETSc.Sys.Print('element dimensions:  dx=%.2f m, dz_min=%.2f m, ratio=%.1f'
