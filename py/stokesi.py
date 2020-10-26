@@ -15,7 +15,7 @@
 
 import sys,argparse
 from firedrake import *
-from src.constants import secpera
+from src.constants import secpera, rho
 from src.meshes import basemesh, extrudedmesh, deformlimitmesh
 from src.spaces import vectorspaces
 from src.halfar import t0_2d, t0_3d, halfar_2d, halfar_3d
@@ -68,6 +68,8 @@ parser.add_argument('-Href', type=float, default=200.0, metavar='X',
                     help='minimum thickness in m of reference domain (default=200)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
+parser.add_argument('-miasma', type=float, default=10.0, metavar='X',
+                    help='miasma density factor: rho_m = rho_i / miasma (default=10)')
 parser.add_argument('-mx', type=int, default=30, metavar='N',
                     help='number of equal subintervals in x-direction (default=30)')
 parser.add_argument('-my', type=int, default=-1, metavar='N',
@@ -76,14 +78,14 @@ parser.add_argument('-mz', type=int, default=4, metavar='N',
                     help='number of layers in each vertical column (default=4)')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save to output file name ending with .pvd')
+parser.add_argument('-pvert', type=int, default=0, metavar='N',
+                    help='p-refinement level in vertical; use 0,1,2,3 only (default=0)')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of initial ice sheet (default=50e3)')
 parser.add_argument('-refine', type=int, default=-1, metavar='N',
                     help='number of vertical (z) mesh refinement levels')
 parser.add_argument('-saveextra', action='store_true', default=False,
                     help='add stresses and SIA velocity to -o output file')
-parser.add_argument('-spectralvert', type=int, default=0, metavar='N',
-                    help='stages for p-refinement in vertical; use 0,1,2,3 only (default=0)')
 parser.add_argument('-stokesihelp', action='store_true', default=False,
                     help='print help for stokesi.py and quit')
 args, unknown = parser.parse_known_args()
@@ -166,7 +168,7 @@ else:
                     % (dxelem,dzrefelem,dxelem/dzrefelem))
 
 # set up mixed finite element space
-Vu, Vp, Vc = vectorspaces(mesh,vertical_higher_order=args.spectralvert)
+Vu, Vp, Vc = vectorspaces(mesh,vertical_higher_order=args.pvert)
 Z = Vu * Vp * Vc
 
 # report on vector spaces sizes
@@ -259,5 +261,5 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
 
 # save ParaView-readable file
 if args.o:
-    writeresult(args.o,mesh,im,upc,hinitialextruded,saveextra=args.saveextra)
+    writeresult(args.o,mesh,im,upc,hinitialextruded,saveextra=args.saveextra,miasma=args.miasma)
 

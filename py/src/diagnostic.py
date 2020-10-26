@@ -68,8 +68,7 @@ def phydrostatic(mesh):
 
 # density as a piecewise constant
 def densityicemiasma(mesh,hcurrentextruded,rhom):
-    x = fd.SpatialCoordinate(mesh)
-    z = x[mesh._base_mesh.cell_dimension()]
+    z = fd.SpatialCoordinate(mesh)[mesh._base_mesh.cell_dimension()]
     Q0 = fd.FunctionSpace(mesh,'DQ',0)
     rhofield = fd.Function(Q0).project(fd.conditional(z < hcurrentextruded, rho, rhom))
     rhofield.rename('density ice/miasma')
@@ -104,7 +103,7 @@ def siahorizontalvelocity(mesh):
     return uv
 
 # save ParaView-readable file
-def writeresult(filename,mesh,icemodel,upc,hinitialextruded,saveextra=False):
+def writeresult(filename,mesh,icemodel,upc,hinitialextruded,saveextra=False,miasma=10.0):
     assert filename.split('.')[-1] == 'pvd'
     written = 'u,p,c'
     if mesh.comm.size > 1:
@@ -119,7 +118,7 @@ def writeresult(filename,mesh,icemodel,upc,hinitialextruded,saveextra=False):
     c.rename('displacement')
     if saveextra:
         tau, nu = stresses(mesh,icemodel,u)
-        rhofield = densityicemiasma(mesh,hinitialextruded,rho / 10.0)
+        rhofield = densityicemiasma(mesh,hinitialextruded,rho/miasma)
         ph = phydrostatic(mesh)
         jw = jweight(mesh,icemodel,c)
         velocitySIA = siahorizontalvelocity(mesh)
