@@ -8,10 +8,9 @@ __all__ = ['IceModel', 'IceModel2D']
 class IceModel(object):
     '''Physics of the coupled ice flow and surface kinematical problems.'''
 
-    def __init__(self, almost, mesh, a, Href, eps, Dtyp):
+    def __init__(self, almost, mesh, Href, eps, Dtyp):
         self.almost = almost
         self.mesh = mesh
-        self.a = a
         self.Href = Href
         self.eps = eps
         self.Dtyp = Dtyp
@@ -70,6 +69,10 @@ class IceModel(object):
         return 0.5 * (fd.grad(u)+fd.grad(u).T) - self._ell(c) * self._Mcu(u,c) \
                + (self._ell(c) - 1.0) * self._Lu(u,c)
 
+    def _zcoord(self,mesh):  # 3D
+        _,_,z = fd.SpatialCoordinate(mesh)
+        return z
+
     def _Ftrue(self,u,p,c,v,q,e):
         '''This version includes the  x -> xi  mapping.'''
         divu = self._divmapped(u,c)
@@ -93,24 +96,20 @@ class IceModel(object):
         else:
             return self._Ftrue(u,p,c,v,q,e)
 
-    def _zcoord(self,mesh):  # 3D
-        _,_,z = fd.SpatialCoordinate(mesh)
-        return z
-
     def _tangentu(self,u,z):  # 3D
         return u[0] * z.dx(0) + u[1] * z.dx(1)
 
-    def smbref(self,dt,z,smb):
+    def smbref(self,smb,dt,z):
         '''The surface mass balance value on the top of the reference domain.'''
         return fd.conditional(z > self.Href, dt * smb, dt * smb - self.Href)
 
-    def Fsmb(self,mesh,Z,dt,u,c,e):
+    def Fsmb(self,mesh,a,dt,u,c,e):
         '''Return the weak form Fsmb(c;e) of the top boundary condition
         for the displacement problem so we may apply the surface kinematical
         equation weakly.  This weak form also depends on u.'''
         z = self._zcoord(mesh)
-        smb = self.a - self._tangentu(u,z) + self._w(u)
-        return (c - self.smbref(dt,z,smb)) * e * fd.ds_t
+        smb = a - self._tangentu(u,z) + self._w(u)
+        return (c - self.smbref(smb,dt,z)) * e * fd.ds_t
 
 
 class IceModel2D(IceModel):

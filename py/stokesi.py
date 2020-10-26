@@ -201,25 +201,29 @@ u,p,c = split(upc)
 v,q,e = TestFunctions(Z)
 
 # get physics of the coupled problem
-a = Constant(0.0) # FIXME only correct for Halfar
 if ThreeD:
-    im = IceModel(almost=args.almost, mesh=mesh, a=a, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
+    im = IceModel(almost=args.almost, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
     zerovelocity = Constant((0.0, 0.0, 0.0))
     sides = (1,2,3,4)
 else:
-    im = IceModel2D(almost=args.almost, mesh=mesh, a=a, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
+    im = IceModel2D(almost=args.almost, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
     zerovelocity = Constant((0.0, 0.0))
     sides = (1,2)
+
 # coupled weak form
 F = im.F(u,p,c,v,q,e)
-# boundary conditions
+
+# boundary conditions other than SMB
 bcs = [DirichletBC(Z.sub(0), zerovelocity, 'bottom'),
        DirichletBC(Z.sub(0), zerovelocity, sides),
        DirichletBC(Z.sub(2), Constant(0.0), 'bottom')]  # for displacement
+
+# top SMB boundary condition
+a = Constant(0.0) # FIXME only correct for Halfar
 if args.dirichletsmb: # artifically set Dirichlet condition on top
-    bcs.append(DirichletBC(Z.sub(2), im.smbref(dt,z,a), 'top'))
+    bcs.append(DirichletBC(Z.sub(2), im.smbref(a,dt,z), 'top'))
 else:                 # weakly-apply SKE equation on top
-    Fsmb = im.Fsmb(mesh,Z,dt,u,c,e)
+    Fsmb = im.Fsmb(mesh,a,dt,u,c,e)
     bcs.append(EquationBC(Fsmb == 0, upc, 'top', V=Z.sub(2)))
 
 # solver parameters; some are defaults which are deliberately made explicit here
