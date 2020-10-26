@@ -8,10 +8,10 @@
 #   * get semicoarsening to work with mg; use pool.py as testing ground
 
 # serial 2D example: runs in about a minute with 5/2 element ratio and N=1.6e5
-# timer ./stokesi.py -almost -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 1920 -refine 1 -saveextra -o foo2.pvd
+# timer ./stokesi.py -almost -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 1920 -refine 1 -saveextra -o foo2a.pvd
 
 # parallel 3D example: runs in under 2 minutes with 80/1 element ratio and N=1.1e5
-# tmpg -n 8 ./stokesi.py -almost -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 30 -my 30 -saveextra -o foo3.pvd
+# tmpg -n 8 ./stokesi.py -almost -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 30 -my 30 -saveextra -o foo3a.pvd
 
 import sys,argparse
 from firedrake import *
@@ -110,6 +110,7 @@ else:
                     % (-args.L/1000.0,args.L/1000.0))
     PETSc.Sys.Print('base mesh:           %d elements (intervals)' % args.mx)
 
+# are we 3D or 2D
 ThreeD = args.my > 0
 
 def deforminitial(mesh):
@@ -200,20 +201,16 @@ upc = Function(Z)
 u,p,c = split(upc)
 v,q,e = TestFunctions(Z)
 
-# get physics of the coupled problem
+# coupled weak form
 if ThreeD:
     im = IceModel(almost=args.almost, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
-    zerovelocity = Constant((0.0, 0.0, 0.0))
-    sides = (1,2,3,4)
 else:
     im = IceModel2D(almost=args.almost, mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
-    zerovelocity = Constant((0.0, 0.0))
-    sides = (1,2)
-
-# coupled weak form
 F = im.F(u,p,c,v,q,e)
 
 # boundary conditions other than SMB
+zerovelocity = Constant((0.0, 0.0, 0.0)) if ThreeD else Constant((0.0, 0.0))
+sides = (1,2,3,4) if ThreeD else (1,2)
 bcs = [DirichletBC(Z.sub(0), zerovelocity, 'bottom'),
        DirichletBC(Z.sub(0), zerovelocity, sides),
        DirichletBC(Z.sub(2), Constant(0.0), 'bottom')]  # for displacement
