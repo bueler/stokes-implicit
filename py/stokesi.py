@@ -17,6 +17,7 @@ import sys,argparse
 from firedrake import *
 from src.constants import secpera
 from src.meshes import basemesh, extrudedmesh, deformlimitmesh
+from src.spaces import vectorspaces
 from src.halfar import t0_2d, t0_3d, halfar_2d, halfar_3d
 from src.functionals import IceModel, IceModel2D
 from src.diagnostic import writeresult
@@ -164,30 +165,8 @@ else:
     PETSc.Sys.Print('element dimensions:  dx=%.2f m, dz_min=%.2f m, ratio=%.1f'
                     % (dxelem,dzrefelem,dxelem/dzrefelem))
 
-# optional: p-refinement in vertical for (u,p); note args.spectralvert is in {0,1,2,3}
-degreexz = [(2,1),(3,2),(4,3),(5,4)]
-zudeg,zpdeg = degreexz[args.spectralvert]
-
-# construct component spaces by explicitly applying TensorProductElement()
-# * velocity u
-xuE = FiniteElement('Q',quadrilateral,2) if ThreeD else FiniteElement('P',interval,2)
-zuE = FiniteElement('P',interval,zudeg)
-uE = TensorProductElement(xuE,zuE)
-Vu = VectorFunctionSpace(mesh, uE)
-# * pressure p; note Isaac et al (2015) recommend discontinuous pressure space
-#               to get mass conservation but using dQ0 seems unstable and dQ1
-#               notably more expensive
-xpE = FiniteElement('Q',quadrilateral,1) if ThreeD else FiniteElement('P',interval,1)
-zpE = FiniteElement('P',interval,zpdeg)
-pE = TensorProductElement(xpE,zpE)
-Vp = FunctionSpace(mesh, pE)
-# * displacement c
-xcE = FiniteElement('Q',quadrilateral,1) if ThreeD else FiniteElement('P',interval,1)
-zcE = FiniteElement('P',interval,1)  # consider raising to 2: field "looks better?"
-cE = TensorProductElement(xcE,zcE)
-Vc = FunctionSpace(mesh, cE)
-
-# mixed space
+# set up mixed finite element space
+Vu, Vp, Vc = vectorspaces(mesh,vertical_higher_order=args.spectralvert)
 Z = Vu * Vp * Vc
 
 # report on vector spaces sizes
