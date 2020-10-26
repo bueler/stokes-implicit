@@ -25,7 +25,7 @@ def jweight(mesh,icemodel,c):
     jweight.rename('jweight')
     return jweight
 
-# h(x,y) on the base mesh
+# compute h(x,y), defined on the base mesh, from the top coordinate of the extruded mesh
 def surfaceelevation(mesh):
     Q1 = fd.FunctionSpace(mesh,'Q',1)
     if mesh._base_mesh.cell_dimension() == 2:

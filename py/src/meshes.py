@@ -32,7 +32,7 @@ def extrudedmesh(base_mesh, mz, refine=-1, temporary_height=1.0):
         return mesh
 
 def deformlimitmesh(mesh, Hinitial, Href):
-    '''Change vertical coordinate on extruded mesh to max(Hinitial,Href).'''
+    '''Modify an extruded mesh: Change vertical coordinate to max(Hinitial,Href).'''
     # FIXME allow for nonzero bed elevation
     Hlimited = fd.max_value(Href, Hinitial)
     Vcoord = mesh.coordinates.function_space()
@@ -45,4 +45,5 @@ def deformlimitmesh(mesh, Hinitial, Href):
     else:
         raise ValueError('only 2D and 3D extruded meshes can be deformed')
     mesh.coordinates.assign(f)
+    return 0
 
