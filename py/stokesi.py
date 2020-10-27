@@ -56,8 +56,8 @@ parser.add_argument('-almost', action='store_true', default=False,
                     help='use the draft weak forms which did not fully couple')
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
-parser.add_argument('-dta', type=float, default=1.0, metavar='X',
-                    help='length of time step in years (default=1.0 a)')
+parser.add_argument('-dta', type=float, default=0.01, metavar='X',
+                    help='length of time step in years (default=0.01 a)')
 parser.add_argument('-Dtyp', type=float, default=2.0, metavar='X',
                     help='typical strain rate in "+(eps Dtyp)^2" (default=2.0 a-1)')
 parser.add_argument('-eps', type=float, default=0.0001, metavar='X',
