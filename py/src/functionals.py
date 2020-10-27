@@ -84,7 +84,7 @@ class IceModel(object):
         Dv = self._Dmapped(v,c)
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
         tau = Bn * Du2**(-1.0/n) * Du  # = 2 nu_e Du
-        h = self.hcurrent # FIXME add c(x,y,hcurrent(x,y))?
+        h = self.hcurrent # FIXME + c(x,y,hcurrent(x,y))   [HOW?]
         cond = fd.conditional(self._zcoord() < h, rho, self.rhom)
         Q0 = fd.FunctionSpace(self.mesh,'DQ',0)
         rhofield = fd.Function(Q0).project(cond)
