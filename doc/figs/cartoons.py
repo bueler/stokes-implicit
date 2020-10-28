@@ -119,26 +119,26 @@ figsave('domainnotation.pdf')
 # current time figure
 plt.figure(figsize=(10,4))
 genbasicfig()
-plt.text(x[600]-1.0,b[600]+0.4*h[600],r'$\Omega^{n-1}$',fontsize=fsize,color='k')
+plt.text(x[600]-1.0,b[600]+0.4*h[600],r'$\Omega^{n-1}$',fontsize=bigfsize,color='k')
 figsave('currenttime.pdf')
 
 # reference domain figure
 plt.figure(figsize=(10,4))
 genbasicfig(reference=True)
-plt.text(x[600]-1.0,b[600]+0.4*h[600],r'$\Lambda$',fontsize=fsize,color='k')
+plt.text(x[600]-1.0,b[600]+0.4*h[600],r'$\Lambda$',fontsize=bigfsize,color='k')
 Href = 0.5
 Hrloc = 100
 plt.arrow(x[Hrloc],b[Hrloc],0.0,Href,lw=1.5,head_width=0.1,
           length_includes_head=True,color='k')
 plt.arrow(x[Hrloc],b[Hrloc]+Href,0.0,-Href,lw=1.5,head_width=0.1,
           length_includes_head=True,color='k')
-plt.text(x[Hrloc],b[Hrloc]+1.2*Href,r'$H_{\mathrm{ref}}$',fontsize=fsize)
+plt.text(x[Hrloc],b[Hrloc]+1.2*Href,r'$H_{\mathrm{ref}}$',fontsize=bigfsize)
 figsave('referencedomain.pdf')
 
 # next time figure
 plt.figure(figsize=(10,4))
 genbasicfig(perturb=True,dottedcurrent=True)
-plt.text(x[600]-1.0,b[600]+0.4*h[600],r'$\Omega^{n}$',fontsize=fsize,color='k')
+plt.text(x[600]-1.0,b[600]+0.4*h[600],r'$\Omega^{n}$',fontsize=bigfsize,color='k')
 figsave('nexttime.pdf')
 
 # Laplace problem for c
