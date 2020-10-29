@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * "miasma" above current iterate surface in Href area; add where-miasma diagnostic
+#   * change regularization so that instead of j() having a discontinuous derivative, the top boundary value of c never reaches -Href
+#   * save the new domain into a separate file so I can look at it
 #   * combine solver parameters into something like the packages in mccarthy/stokes/
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
