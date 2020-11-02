@@ -182,7 +182,7 @@ Note that the mass balance $a_{\perp}(t,x,y,z)$ is computed using a separate mod
 Appendix A summarizes a simplified model of our main coupled problem, namely the shallow ice approximation (SIA), but we will only need it as a source of initial conditions and in performance comparisons.
 
 
-\section{Implicit time-stepping and the domain update} \label{sec:implicitstep}
+\section{Implicit time-stepping via a domain mapping} \label{sec:implicitstep}
 
 Our main purpose is to demonstrate an implicit scheme to simultaneously solve the Glen-Stokes problem \eqref{stokes}--\eqref{basebc} and the surface kinematical equation \eqref{surfacekinematical}.  The only time derivative in this coupled problem appears in equation \eqref{surfacekinematical}.  Because the remaining equations and boundary conditions lack time derivatives, but they apply at all times, the coupled problem should be understood as an infinite-dimensional differential algebraic equation (DAE) problem \cite{AscherPetzold1998}.  In this section, using a discrete-time and continuous-space formulation, we state our scheme for solving this problem.  A new feature is that at each time step we compute a vertical-only displacement field which captures the effect of the surface kinematical equation along the boundary but which is defined everywhere within the same (reference) domain as the velocity and pressure.  The coupled solution, once found, includes this vertical displacement which then determines the new 3D domain of ice at the end of the time step.
 
@@ -254,7 +254,9 @@ h(\xi,\eta)>b(\xi,\eta) \quad \implies \quad h - h^{n-1} = \Delta t\left(a + \bu
 \end{equation}
 The quantities on the right are evaluated at the solution ice surface $\zeta=h(\xi,\eta)$ and the new time $t_n$.  For instance, from section \ref{sec:stronggeometry} we have $\bu=\bu(\xi,\eta,h(\xi,\eta))$ where $\bu(\bxi)$ is the velocity solution on $\Lambda$.  We emphasize, however, that \eqref{backwardeulerske} applies only where ice is present in the solution geometry; recall we are actually seeking to solve NCP \eqref{strongadmissibility}--\eqref{strongcomplementarity}.
 
-We now have multiple requirements on the scalar function $c(\bxi)$, specifically equations \eqref{mapbasetobase}, \eqref{maptoptotop}, \eqref{mapmonotonic},\eqref{mapcrushes}, and \eqref{backwardeulerske}.  These requirements can perhaps all be satisfied as long as the computed velocity and surface mass balance in \eqref{backwardeulerske} are compatible with the admissibility requirement $h>b$ in such columns.  However, the resulting function $c$ will have low regularity because when we move from an ice-free location \eqref{mapcrushes} to one with ice \eqref{backwardeulerske} we should expect $c$ to change abruptly.\footnote{More precisely, we can offer no regularity theorem.}
+FIXME INSERT COLUMN-WISE FIGURE HERE THAT SHOWS \eqref{mapcrushes} ON LEFT AND \eqref{backwardeulerske} ON RIGHT
+
+We now have multiple requirements on the scalar function $c(\bxi)$, specifically equations \eqref{mapbasetobase}, \eqref{maptoptotop}, \eqref{mapmonotonic}, \eqref{mapcrushes}, and \eqref{backwardeulerske}.  These requirements can perhaps all be satisfied as long as the computed velocity and surface mass balance in \eqref{backwardeulerske} are compatible with the admissibility requirement $h>b$ in such columns.  However, the resulting function $c$ will at least have low regularity because, as one passes from an ice-free location \eqref{mapcrushes} to one with ice \eqref{backwardeulerske}, i.e.~across an ice margin, we should expect $c$ to change abruptly.\footnote{We can offer no regularity theorem.}
 
 Our plan is, therefore, to compute a regularized function $c$ which is smooth within $\Lambda$ but satisfies the requirements along the boundary $\partial \Lambda$.  It will satisfy \eqref{mapbasetobase} on the base: $c=0$.  In locations where the solution has no ice, on the top boundary of $\Lambda$ we set the value given by \eqref{mapcrushes}: $c=b-\lambda$.  By substituting \eqref{maptoptotop} into \eqref{backwardeulerske}, in locations where the solution has ice we have $c=h^{n-1}-\lambda + \Delta t\left(a + \bu \cdot \bn\right)$ on the top boundary.  Note that in this last case the unknown velocity enters, and indeed $c$ actually appears on both sides of the equation because $\bn$ uses the surface slope and \eqref{maptoptotop} applies.
 
@@ -275,52 +277,58 @@ In the complicated top boundary condition we use $\mathbbm{1}_S$ as the indicato
 \label{fig:claplaceproblem}
 \end{figure}
 
-FIXME: NEEDS GRADIENT OF $\lambda$ NOT $h^{n-1}$: Also
-\begin{equation}
-\grad_{\xi,\eta} h = \left(1+\frac{\partial c}{\partial\zeta}\right) \grad_{\xi,\eta} h^{n-1} + \left<\frac{\partial c}{\partial\xi},\frac{\partial c}{\partial\eta}\right> \label{hgradient}
-\end{equation}
-where the derivatives of $c$ are evaluated at points $(\xi,\eta,h^{n-1}(\xi,\eta))$ along the top surface of $\Lambda$.
+However, the top boundary condition \eqref{claplacetop}, which will be included weakly into the coupled system (see section \ref{sec:finiteelement}), needs comment.  As one passes across the glacier margin the top surface value in problem \eqref{claplace} changes continuously from the one in \eqref{backwardeulerske} to that in \eqref{mapcrushes}.  Note that the value of ``$h$'' in \eqref{claplacetop} is the new (solution) surface elevation, that is, the elevation of the top of the ice domain \emph{after} applying the map $\bxi\mapsto \bx$.  Therefore boundary condition \eqref{claplacetop} is in fact a Robin boundary condition in the Laplace equation problem for $c$.
 
-However, the top boundary condition \eqref{claplacetop}, which will be included weakly into the coupled system (see section \ref{sec:finiteelement}), needs comment.  In locations where the solution surface elevation $h$ is greater than $\Href$ above the bed, the given boundary value is the same as the surface kinematical quantity in \eqref{backwardeulerske}.  By contrast, in ice-free areas where $h=b$ and $\bu=\bzero$, marked ``$\ast$'' in Figure \ref{fig:claplaceproblem}, the value is
+In fact, in computing $\bn$ in \eqref{claplacetop} we need the two-dimensional gradient $\grad h=\grad_{\xi,\eta} h$.  By \eqref{maptoptotop} the following applies: 
 \begin{equation}
-    c = - \Href + \Delta t\,a. \label{icefreehrefske}
+\grad h = \left(1+\frac{\partial c}{\partial\zeta}\right) \grad \lambda + \left<\frac{\partial c}{\partial\xi},\frac{\partial c}{\partial\eta}\right> \label{hgradient}
 \end{equation}
-As one passes across the glacier margin the top surface value in problem \eqref{claplace} changes continuously from the one in \eqref{backwardeulerske} to that in \eqref{icefreehrefske}.  Note that the value of ``$h$'' in \eqref{claplacetop} is the new (solution) surface elevation, that is, the elevation of the top of the ice domain \emph{after} applying the map $\bxi\mapsto \bx$.    Therefore boundary condition \eqref{claplacetop} is in fact a Robin boundary condition in the Laplace equation problem for $c$.
+where the derivatives of $c$ are evaluated at points $(\xi,\eta,\lambda(\xi,\eta))$ along the top surface of $\Lambda$.
 
-Intuitively, solving problem \eqref{claplace}--\eqref{claplacesides} yields a smooth 3D function $c$ which, in a vertical column of $\Lambda$, connects the surface kinematical quantity \eqref{backwardeulerske}, or its modified form \eqref{icefreehrefske}, as linearly as possible to zero at the base.  Mathematically, $c$ satisfies the maximum principle in $\Lambda$ \cite{Evans2010}, and the direction of $\grad_{\bxi} c$ changes direction as little as possible (in the energy norm) while smoothly meeting the boundary data.  In fact, the solution to \eqref{claplace} behaves better than solving independent-column two-point boundary value problems $c''=0$, $c(h)=X$, $c(b)=0$ on $\zeta\in[h,b]$, where ``$X$'' represents the right side of \eqref{backwardeulerske} or \eqref{icefreehrefske}.  This problem yields $c(\zeta)=(X-b)\zeta/(h-b)$, essentially the vertical ``linear mapping'' used for explicit domain evolution and remeshing in \cite[equation (22)]{Lengetal2012}.
+In addition to regularizing the values of $c$ in the interior of $\Lambda$, our interpretation of problem \eqref{claplace}--\eqref{claplacesides} will represent an approximation.  Specifically the velocity $\bu$ in \eqref{claplacetop} is evaluated along the top of $\Lambda$, i.e.~at $\zeta=\lambda$, and not along the surface of the solution ice, which is at location $\zeta=h$.
 
-The shaded area of the Figure, the portion of the reference domain not occupied by ice, is the volume of the atmosphere where the ice currently extends less than $\Href$ above the bed.  On the top of this volume the ``$\max$'' in \eqref{claplacetop} adds nontrivially to the value from \eqref{backwardeulerske}, giving \eqref{icefreehrefske} when ice-free.  Within this volume our model will include an incompressible regularizing fluid which we call ``miasma,''\footnote{Defined as an oppressive or unpleasant atmosphere which surrounds something, often settling into low areas.} with density much smaller than ice.  Specifically, \eqref{forcebalance} is replaced by
-\begin{equation}
-- \nabla \cdot \tau + \nabla p = \rhom \bg \label{miasma}
-\end{equation}
-in the shaded area, and equations \eqref{incompressible} and \eqref{viscflowlaw} are unchanged.  In our numerical experiments (section \ref{sec:results} below) we will use $\rhom = \rhoi/10$.  Such a light fluid should cause minimal impact on the dynamics of the ice while also occupying a part of the domain which the ice may come to occupy during the solution process for the coupled equations.
+FIXME THOUGHTS AT THIS POINT: (A) ADD $+\epsilon$ WHERE $\epsilon$ IS A DISTANCE LIKE $\Href/10$ TO \eqref{claplacetop}, (B) GO BACK AND MAKE $\lambda$ smooth
+
+Intuitively, solving problem \eqref{claplace}--\eqref{claplacesides} yields a smooth 3D function $c$ which, in each vertical column of $\Lambda$, connects either the surface kinematical quantity \eqref{backwardeulerske} or the ice-free case \eqref{mapcrushes} as linearly as possible to zero at the base.  Mathematically, $c$ satisfies the maximum principle in $\Lambda$ \cite{Evans2010}, and the direction of $\grad c$ changes direction as little as possible (in the energy norm) while smoothly meeting the boundary data.
 
 The weak form of the coupled problem, stated in the next section, will require derivatives of coordinate transformation \eqref{changecoords}.  The Jacobian is
 \begin{equation}
-J(\bxi) = \frac{\partial \bx}{\partial \bm{\xi}} = \begin{pmatrix} 1 & 0 & 0 \\ \strut 0 & 1 & 0 \\ {\Large \strut} \frac{\partial c}{\partial \xi} & \frac{\partial c}{\partial \eta} & 1+\frac{\partial c}{\partial \zeta} \end{pmatrix}, \label{changejac}
+J(\bxi) = \frac{\partial \bx}{\partial \bm{\xi}} = \begin{pmatrix} 1 & 0 & 0 \\ \strut 0 & 1 & 0 \\ \strut \frac{\partial c}{\partial \xi} & \frac{\partial c}{\partial \eta} & 1+\frac{\partial c}{\partial \zeta} \end{pmatrix}, \label{changejac}
 \end{equation}
 with determinant $\det(J) = 1+\frac{\partial c}{\partial \zeta}$.  For a generic, smooth function $f(\bx)$ defined on $\Omega^n$ the transformation defines $\tilde f(\bxi) = f(\bx(\bxi))$ on $\Lambda$ with gradient $\grad_{\bxi} \tilde f = J^\top \grad_{\bx} f$.  Thus
 \begin{equation}
-\grad_{\bx} f = (J^\top)^{-1} \grad_{\bxi} \tilde f = \begin{pmatrix} {\Large \strut} 1 & 0 & - \frac{\partial c}{\partial \xi} \hat\ell \\ {\Large \strut} 0 & 1 & -\frac{\partial c}{\partial \eta} \hat\ell \\ {\Large \strut} 0 & 0 & \hat\ell \end{pmatrix} \grad_{\bxi} \tilde f. \label{changegrad}
+\grad_{\bx} f = (J^\top)^{-1} \grad_{\bxi} \tilde f = \begin{pmatrix} \strut 1 & 0 & - \frac{\partial c}{\partial \xi} \hat\ell \\ \strut 0 & 1 & -\frac{\partial c}{\partial \eta} \hat\ell \\ \strut 0 & 0 & \hat\ell \end{pmatrix} \grad_{\bxi} \tilde f. \label{changegrad}
 \end{equation}
-where $\hat\ell(\bxi) = \left(1+\frac{\partial c}{\partial \zeta}\right)^{-1}=\det(J)^{-1}$.  Regarding derivatives of vector fields, it follows from \eqref{changegrad} that for $\tilde \bu(\bxi) = \bu(\bx(\bxi)) = \left<\tilde u,\tilde v, \tilde w\right>$ we have
+where $\hat\ell(\bxi) = \left(1+\frac{\partial c}{\partial \zeta}\right)^{-1}=\det(J)^{-1}$.
+
+Regarding derivatives of vector fields, it follows from \eqref{changegrad} that for $\tilde \bu(\bxi) = \bu(\bx(\bxi)) = \left<\tilde u,\tilde v, \tilde w\right>$ we have
 \begin{equation}
 \grad_{\bx} \cdot \bu = \grad_{\bxi} \cdot \tilde\bu - \hat\ell \left(\frac{\partial c}{\partial \xi} \frac{\partial \tilde u}{\partial \zeta} + \frac{\partial c}{\partial \eta} \frac{\partial \tilde v}{\partial \zeta}\right) + (\hat\ell-1) \frac{\partial \tilde w}{\partial \zeta} \label{changediv}
 \end{equation}
 and
 \begin{equation}
 D_{\bx}\bu = D_{\bxi} \tilde\bu
-             - \hat\ell \begin{pmatrix} \frac{\partial c}{\partial \xi} \frac{\partial \tilde u}{\partial \zeta} & \frac{1}{2} \left(\frac{\partial c}{\partial \eta} \frac{\partial \tilde u}{\partial \zeta} + \frac{\partial c}{\partial \xi} \frac{\partial \tilde v}{\partial \zeta}\right) & \frac{1}{2} \frac{\partial c}{\partial \xi} \frac{\partial \tilde w}{\partial \zeta} \\ \square & \frac{\partial c}{\partial \eta} \frac{\partial \tilde v}{\partial \zeta} & {\Large\strut} \frac{1}{2} \frac{\partial c}{\partial \eta} \frac{\partial \tilde w}{\partial \zeta} \\ {\Large\strut} \square & \square & 0 \end{pmatrix}
-             + (\hat\ell-1) \begin{pmatrix} 0 & 0 & \frac{1}{2} \frac{\partial \tilde u}{\partial \zeta} \\ \square & 0 & {\Large\strut} \frac{1}{2} \frac{\partial \tilde v}{\partial \zeta} \\ \square & \square & {\Large\strut} \frac{\partial \tilde w}{\partial \zeta} \end{pmatrix},  \label{changeDu}
+             - \hat\ell \begin{pmatrix} \frac{\partial c}{\partial \xi} \frac{\partial \tilde u}{\partial \zeta} & \frac{1}{2} \left(\frac{\partial c}{\partial \eta} \frac{\partial \tilde u}{\partial \zeta} + \frac{\partial c}{\partial \xi} \frac{\partial \tilde v}{\partial \zeta}\right) & \frac{1}{2} \frac{\partial c}{\partial \xi} \frac{\partial \tilde w}{\partial \zeta} \\ \square & \frac{\partial c}{\partial \eta} \frac{\partial \tilde v}{\partial \zeta} & \strut \frac{1}{2} \frac{\partial c}{\partial \eta} \frac{\partial \tilde w}{\partial \zeta} \\ \strut \square & \square & 0 \end{pmatrix}
+             + (\hat\ell-1) \begin{pmatrix} 0 & 0 & \frac{1}{2} \frac{\partial \tilde u}{\partial \zeta} \\ \square & 0 & \strut \frac{1}{2} \frac{\partial \tilde v}{\partial \zeta} \\ \square & \square & \strut \frac{\partial \tilde w}{\partial \zeta} \end{pmatrix},  \label{changeDu}
 \end{equation}
 where the squares indicate symmetric entries.
 
-Observe that the change of coordinates $\bxi \mapsto \bx$ is not locally invertible where $\frac{\partial c}{\partial \zeta}=-1$.  Noting $c$ has dimensions of distance, this dimensionless value of $-1$ is significant because the map would eliminate all the ice at a location $(\xi,\eta)$ if $\frac{\partial c}{\partial \zeta}=-1$ identically in that column.  While we will (and must) allow for such a possibility, we also need to compute well-posed time steps over the reference domain $\Lambda$, thus we make one more regularization.  Let $\delta > 0$ be a small number and define the (unhatted) functions
+Observe that the change of coordinates $\bxi \mapsto \bx$ is not locally invertible where $\frac{\partial c}{\partial \zeta}=-1$.  If $\Delta t$ is not too long and the glacier is nearly in equilibrium with its climate then we expect $|\partial c/\partial \zeta| \ll 1$, in which case local invertibility is not a concern.
+
+FIXME REGARDING POINT (A) ABOVE:  Regarding boundary condition \eqref{claplacetop}, the observant reader will have noticed that in icy areas ($h>b$), if the glacier is in equilibrium with the climate then $h-h^{n-1}=0$ and $a+\bu\cdot\bn=0$, thus the boundary condition is $c=0$.  However, in ice free areas ($h=b$), because by construction the domain $\Lambda$ always has thickness at least $\Href$, we have $b-\lambda \le -\Href$.  For glaciers near equilibrium, and also for short time steps $\Delta t$, we thus expect $c$ to be about zero in the ice but significantly negative in ice-free areas.  FIXME: THUS WE MAY AVOID CONDITIONAL IN DEFINING $j$ BY $+\epsilon$ IN \eqref{claplacetop}?
+
+FIXME: Conversely, and noting $c$ has dimensions of distance, the dimensionless value of $-1$ is significant because the map would eliminate all the ice at a location $(\xi,\eta)$ if $\frac{\partial c}{\partial \zeta}=-1$ identically in that column.  While we will (and must) allow for such a possibility, we also need to compute well-posed time steps over the reference domain $\Lambda$, thus we make one more regularization.  Let $\delta > 0$ be a small number and define the (unhatted) functions
 \begin{equation}
-j(\bxi) = \begin{cases} 1 + {\displaystyle \frac{\partial c}{\partial \zeta}}, & {\displaystyle \frac{\partial c}{\partial \zeta} \ge -1 + \delta}, \\ \delta, & \text{otherwise}, \end{cases} \qquad \text{and} \qquad \ell(\bxi) = j(\bxi)^{-1}. \label{definejell}
+j(\bxi) = \max\left\{1+\frac{\partial c}{\partial \zeta}, \delta\right\} \qquad \text{and} \qquad \ell(\bxi) = j(\bxi)^{-1}. \label{definejell}
 \end{equation}
 
-Formulas \eqref{changediv} and \eqref{changeDu} will be used in stating the coupled weak form in the next section, with $\ell$ replacing $\hat\ell$.  In fact, functions $j$ and $\ell$ will appear as coefficients in the weak form integrals over $\Lambda$, and regularization \eqref{definejell} makes these integrals finite even in areas where ice is rapidly being removed, i.e.~even when $\partial c/\partial \zeta$ is negative and $O(1)$ or larger.
+Formulas \eqref{changediv} and \eqref{changeDu} will be used in stating the coupled weak form in the next section, with $\ell$ from \eqref{definejell} replacing $\hat\ell$.  In fact, functions $j$ and $\ell$ will appear as coefficients in the weak form integrals over $\Lambda$, and regularization \eqref{definejell} makes these integrals finite even in areas where ice is rapidly being removed, i.e.~even when $\partial c/\partial \zeta$ is negative and $O(1)$ or larger.  Such rapid removal will generate a mass conservation error, of a type not that different from errors forced by the free boundary nature of the problem \cite{Bueler2020}.
+
+FIXME: AFTER LOOKING AT THE COUPLED WEAK FORM IN THE NEXT SECTION, MIASMA IS \emph{NOT} NEEDED, I THINK: The shaded area of the Figure, the portion of the reference domain not occupied by ice \emph{in the solution}, is the volume of the atmosphere where the ice extends less than $\Href$ above the bed.  As an additional approximation, within this volume our model will include an incompressible regularizing fluid which we call ``miasma,''\footnote{Defined as an oppressive or unpleasant atmosphere which surrounds something, often settling into low areas.} with density much smaller than ice.  Specifically, \eqref{forcebalance} is replaced by
+\begin{equation}
+- \nabla \cdot \tau + \nabla p = \rhom \bg \label{miasma}
+\end{equation}
+in the shaded area, and equations \eqref{incompressible} and \eqref{viscflowlaw} are unchanged.  In our numerical experiments (section \ref{sec:results} below) we will use $\rhom = \rhoi/10$.  Such a light fluid should cause minimal impact on the dynamics of the ice while also occupying a part of the domain which the ice may come to occupy during the solution process for the coupled equations.
 
 
 \section{Weak form of the coupled equations} \label{sec:weakformcoupled}
