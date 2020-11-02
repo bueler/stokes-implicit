@@ -193,20 +193,20 @@ else:
                     hcurrent=hinitialextruded, rhom=rho/args.miasma)
 F = im.F(u,p,c,v,q,e)
 
-# boundary conditions other than SMB
+# apply surface kinematical equation by adding to weak form
+a = Constant(0.0) # FIXME only correct for Halfar
+if not args.dirichletsmb:
+    F += im.Fsmb(a,dt,u,c,e)
+
+# boundary conditions
 zerovelocity = Constant((0.0, 0.0, 0.0)) if ThreeD else Constant((0.0, 0.0))
 sides = (1,2,3,4) if ThreeD else (1,2)
 bcs = [DirichletBC(Z.sub(0), zerovelocity, 'bottom'),
        DirichletBC(Z.sub(0), zerovelocity, sides),
        DirichletBC(Z.sub(2), Constant(0.0), 'bottom')]  # for displacement
-
-# top SMB boundary condition
-a = Constant(0.0) # FIXME only correct for Halfar
-if args.dirichletsmb: # artifically set Dirichlet condition on top
+if args.dirichletsmb: # artificial, for testing
+    # set Dirichlet condition on top
     bcs.append(DirichletBC(Z.sub(2), im.smbref(a,dt,z), 'top'))
-else:                 # weakly-apply SKE equation on top
-    Fsmb = im.Fsmb(a,dt,u,c,e)
-    bcs.append(EquationBC(Fsmb == 0, upc, 'top', V=Z.sub(2)))
 
 # solver parameters; some are defaults which are deliberately made explicit here
 # note 'lu' = mumps, both in serial and parallel (faster)
