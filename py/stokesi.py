@@ -205,7 +205,7 @@ a = Constant(0.0) # FIXME only correct for Halfar
 if args.dirichletsmb: # artifically set Dirichlet condition on top
     bcs.append(DirichletBC(Z.sub(2), im.smbref(a,dt,z), 'top'))
 else:                 # weakly-apply SKE equation on top
-    Fsmb = im.Fsmb(mesh,a,dt,u,c,e)
+    Fsmb = im.Fsmb(a,dt,u,c,e)
     bcs.append(EquationBC(Fsmb == 0, upc, 'top', V=Z.sub(2)))
 
 # solver parameters; some are defaults which are deliberately made explicit here

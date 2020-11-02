@@ -109,7 +109,7 @@ class IceModel(object):
         '''The surface mass balance value on the top of the reference domain.'''
         return fd.conditional(z > self.Href, dt * smb, dt * smb - self.Href)
 
-    def Fsmb(self,mesh,a,dt,u,c,e):
+    def Fsmb(self,a,dt,u,c,e):
         '''Return the weak form Fsmb(c;e) of the top boundary condition
         for the displacement problem so we may apply the surface kinematical
         equation weakly.  This weak form also depends on u.'''
