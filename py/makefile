@@ -1,7 +1,7 @@
 # testing
 
 runpool_1:
-	-@./../testit.sh pool.py "-mx 2 -my 2 -refine 1 -schurcoarsegamg -s_ksp_converged_reason" 1 1
+	-@./../testit.sh pool.py "-stage 1 -refine 1 -s_ksp_converged_reason" 1 1
 
 runstokesi_1:
 	-@./../testit.sh stokesi.py "-almost -dirichletsmb -dta 1.0 -s_snes_type ksponly -s_ksp_converged_reason -mx 20 -refine 1" 1 1
