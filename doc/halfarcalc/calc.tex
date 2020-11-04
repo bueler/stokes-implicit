@@ -1,0 +1,79 @@
+\documentclass[letterpaper,final,12pt,reqno]{amsart}
+
+\usepackage[total={6.3in,9.2in},top=1.1in,left=1.1in]{geometry}
+
+\usepackage{times,bm,bbm,empheq,fancyvrb,graphicx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+
+% hyperref should be the last package we load
+\usepackage[pdftex,
+colorlinks=true,
+plainpages=false, % only if colorlinks=true
+linkcolor=blue,   % ...
+citecolor=Red,    % ...
+urlcolor=black    % ...
+]{hyperref}
+
+\renewcommand{\baselinestretch}{1.05}
+
+\newtheorem{lemma}{Lemma}
+
+\newcommand{\Matlab}{\textsc{Matlab}\xspace}
+\newcommand{\eps}{\epsilon}
+\newcommand{\RR}{\mathbb{R}}
+
+\newcommand{\grad}{\nabla}
+\newcommand{\Div}{\nabla\cdot}
+\newcommand{\trace}{\operatorname{tr}}
+
+\newcommand{\hbn}{\hat{\mathbf{n}}}
+
+\newcommand{\bg}{\mathbf{g}}
+\newcommand{\bn}{\mathbf{n}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bx}{\mathbf{x}}
+
+\newcommand{\bV}{\mathbf{V}}
+\newcommand{\bX}{\mathbf{X}}
+
+\newcommand{\bxi}{\bm{\xi}}
+
+\newcommand{\bzero}{\bm{0}}
+
+\newcommand{\rhoi}{\rho_{\text{i}}}
+
+\newcommand{\cref}{c_{\text{ref}}}
+\newcommand{\Href}{H_{\text{ref}}}
+\newcommand{\num}{\nu_{\text{m}}}
+\newcommand{\rhom}{\rho_{\text{m}}}
+
+
+\begin{document}
+\title{Velocity for the 2D Halfar solution}
+
+\author{Ed Bueler}
+
+\maketitle
+
+\thispagestyle{empty}
+\bigskip
+
+From the appendix to the main paper,\footnote{Current title: ``Evolving-geometry glacier and ice sheet simulations using Stokes dynamics.''} in 2D the Halfar thickness and surface elevation solution is
+    $$h(t,x) = C_0(t) \left(1 - (C_1(t) x)^{4/3}\right)^{3/7}$$
+where $C_0(t) = H_0 (t/t_0)^{-1/11}$ and $C_1(t) = (t/t_0)^{-1/11} / R_0$.  On the other hand, also from the appendix, the SIA velocity is
+    $$u = - C_2 \left(h^4 - (h-z)^4\right) (h_x)^3.$$
+where $C_2 = 2 A_3 (\rho_{\text{i}} g)^3 / 4$.
+
+Thus I compute
+    $$(h_x)^3 = \frac{4^3 C_0^3 C_1^4}{7^3} x \left(1 - (C_1 x)^{4/3}\right)^{-12/7}$$
+and so
+    $$u(t,x,z) = - \frac{4^3 C_0(t)^3 C_1(t)^4 C_2}{7^3} \left[h(t,x)^4 - \left(h(t,x) - z\right)^4\right] x \left(1 - (C_1(t) x)^{4/3}\right)^{-12/7}.$$
+\small
+
+\bigskip
+\bibliography{simp}
+\bibliographystyle{siam}
+
+\end{document}
