@@ -17,20 +17,20 @@ All stages have nonslip conditions on base and sides, i.e. these are swimming
 pools, and use Q2xQ1 mixed elements on hexahedra.  At each stage the best
 solver, among the options tested of course, is identified.''',
            add_help=False)
-parser.add_argument('-mx', type=int, default=2, metavar='N',
-                    help='number of equal subintervals in x-direction (default=2)')
-parser.add_argument('-my', type=int, default=2, metavar='N',
-                    help='number of equal subintervals in y-direction (default=2)')
-parser.add_argument('-mz', type=int, default=2, metavar='N',
-                    help='number of layers in each vertical column (default=2)')
+parser.add_argument('-mx', type=int, default=1, metavar='N',
+                    help='number of equal subintervals in x-direction (default=1)')
+parser.add_argument('-my', type=int, default=1, metavar='N',
+                    help='number of equal subintervals in y-direction (default=1)')
+parser.add_argument('-mz', type=int, default=1, metavar='N',
+                    help='number of layers in each vertical column (default=1)')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save mesh and solution (u,p) to .pvd file')
 parser.add_argument('-poolhelp', action='store_true', default=False,
                     help='print help for stokes2D.py and quit')
 parser.add_argument('-printparams', action='store_true', default=False,
                     help='print dictionary of solver parameters')
-parser.add_argument('-refine', type=int, default=0, metavar='N',
-                    help='number of vertical (z) mesh refinements (default=0)')
+parser.add_argument('-refine', type=int, default=1, metavar='N',
+                    help='number of vertical (z) mesh refinements (default=1)')
 parser.add_argument('-stage', type=int, default=1, metavar='S',
                     help='problem stage 1,...,6 (default=1)')
 args, unknown = parser.parse_known_args()
@@ -79,6 +79,14 @@ v, q = TestFunctions(Z)
 # symmetric gradient & divergence terms in F
 F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(Constant((0, 0, 0)), v))*dx
 
+# some methods may use a mass matrix for preconditioning the Schur block
+class Mass(AuxiliaryOperatorPC):
+
+    def form(self, pc, test, trial):
+        a = inner(test, trial)*dx
+        bcs = None
+        return (a, bcs)
+
 # boundary conditions
 # (for stages 1,2,3: velocity on lid is (1,1) equal in both x and y directions
 if args.stage == 1:
@@ -92,12 +100,28 @@ else:
 nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 
 params = {'snes_type': 'ksponly',
-          'ksp_type':  'gmres',
+          'ksp_type':  'gmres',    # on -stage 1, fgmres adds 10% to iterations and 3% to time
+                                   #     and gcr acts the same as fgmres
+          'ksp_converged_reason': None,
           'pc_type': 'fieldsplit',
           'pc_fieldsplit_type': 'schur',
           'pc_fieldsplit_schur_fact_type': 'lower',
           'pc_fieldsplit_schur_precondition': 'selfp'}
+          #'pc_fieldsplit_schur_precondition': 'a11',
+          #'pc_fieldsplit_schur_scale': -1.0,  # only active for diag
+          #'fieldsplit_1_pc_type': 'python',
+          #'fieldsplit_1_pc_python_type': '__main__.Mass',
+          #'fieldsplit_1_aux_pc_type': 'bjacobi',
+          #'fieldsplit_1_aux_sub_pc_type': 'icc'}
 
+# turn on Newton and counting if nonlinear
+if args.stage >= 4:
+    params['snes_type'] = 'newtonls'
+    params['snes_converged_reason'] = None
+
+# only -stage 1 CAN use nest, because aij is required for extruded meshes,
+#     but it is hard to argue from profiling that it makes any difference
+#     even for -stage 1
 if args.stage == 1:
     params['mat_type'] = 'nest'
 else:
@@ -105,6 +129,10 @@ else:
 
 params['fieldsplit_0_ksp_type'] = 'preonly'
 params['fieldsplit_0_pc_type'] = 'mg'
+# the next three settings are actually faster (about 10%) than the default
+#     (i.e. chebyshev,sor) on -stage 1, and FIXME PRESUMABLY more capable in high aspect ratio
+params['fieldsplit_0_mg_levels_ksp_type'] = 'richardson'
+params['fieldsplit_0_mg_levels_pc_type'] = 'ilu'
 params['fieldsplit_0_mg_coarse_ksp_type'] = 'preonly'
 
 if args.stage == 1:
@@ -126,6 +154,7 @@ params['fieldsplit_1_pc_jacobi_type'] = 'diagonal'
 #params['fieldsplit_1_pc_type'] = 'bjacobi'
 #params['fieldsplit_1_sub_pc_type'] = 'ilu'
 
+# note that the printed parameters *do not* include -s_xxx_yyy type overrides
 if args.printparams:
     pprint(params)
 
