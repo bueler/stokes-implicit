@@ -76,7 +76,8 @@ PETSc.Sys.Print('vector space dims:  n_u=%d, n_p=%d  -->  N=%d' % (n_u,n_p,N))
 up = Function(Z)
 u, p = split(up)
 v, q = TestFunctions(Z)
-F = (inner(grad(u), grad(v)) - p * div(v) + div(u) * q - inner(Constant((0, 0, 0)), v))*dx
+# symmetric gradient & divergence terms in F
+F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(Constant((0, 0, 0)), v))*dx
 
 # boundary conditions
 # (for stages 1,2,3: velocity on lid is (1,1) equal in both x and y directions
