@@ -1,7 +1,7 @@
 # testing
 
 runsole_1:
-	-@./../testit.sh sole.py "-stage 3 -refine 2" 1 1
+	-@./../testit.sh sole.py "-stage 3 -mx 4 -my 4 -mz 1 -refine 2" 1 1
 
 runpool_1:
 	-@./../testit.sh pool.py "-stage 1 -refine 2" 1 1

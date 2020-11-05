@@ -101,7 +101,7 @@ ThreeD = args.my > 0
 Dtyp = args.Dtyp / secpera
 dt = args.dta * secpera
 
-# set up base mesh
+# set up base mesh; note refinement is NOT used here
 base_mesh = basemesh(L=args.L,mx=args.mx,my=args.my)
 
 # report on base mesh

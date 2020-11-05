@@ -48,13 +48,15 @@ if args.stage in {1,2}:
 else:
     L = 100.0e3
     H = 1000.0
-mx = args.mx * 2**args.refine
-my = args.my * 2**args.refine
 mz = args.mz * 2**args.refine
 if args.stage == 1:
+    mx = args.mx * 2**args.refine
+    my = args.my * 2**args.refine
     mesh = UnitCubeMesh(args.mx, args.my, args.mz)
     hierarchy = MeshHierarchy(mesh, args.refine)
 else:
+    mx = args.mx
+    my = args.my
     base = RectangleMesh(mx,my,L,L,quadrilateral=True)
     hierarchy = SemiCoarsenedExtrudedHierarchy(base,H,base_layer=args.mz,nref=args.refine)
 mesh = hierarchy[-1]

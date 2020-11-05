@@ -39,26 +39,28 @@ if args.stage in {1,2}:
 else:
     L = 1.0
     H = 0.1  # FIXME decrease to 0.01 once I get it
-mx = args.mx * 2**args.refine
-my = args.my * 2**args.refine
 mz = args.mz * 2**args.refine
 if args.stage == 1:
+    mx = args.mx * 2**args.refine
+    my = args.my * 2**args.refine
     mesh = UnitCubeMesh(args.mx, args.my, args.mz)
     hierarchy = MeshHierarchy(mesh, args.refine)
+    el = 'P1'
 else:
+    mx = args.mx
+    my = args.my
     base = RectangleMesh(mx,my,L,L,quadrilateral=True)
     hierarchy = SemiCoarsenedExtrudedHierarchy(base,H,base_layer=args.mz,nref=args.refine)
+    el = 'Q1'
 mesh = hierarchy[-1]
+PETSc.Sys.Print('mesh:               %d x %d x %d mesh of %s elements on %.2f x %.2f x %.2f domain' \
+                % (mx,my,mz,el,L,L,H))
 
 # function spaces: P1 or Q1
 if args.stage == 1:
     V = FunctionSpace(mesh, 'P', 1)
-    el = 'P1'
 else:
     V = FunctionSpace(mesh, 'Q', 1)
-    el = 'Q1'
-PETSc.Sys.Print('mesh:               %d x %d x %d mesh of %s elements on %.2f x %.2f x %.2f domain' \
-                % (mx,my,mz,el,L,L,H))
 PETSc.Sys.Print('vector space dim:   N=%d' % V.dim())
 
 # source function f
