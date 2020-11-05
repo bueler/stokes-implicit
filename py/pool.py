@@ -26,7 +26,7 @@ parser.add_argument('-mz', type=int, default=1, metavar='N',
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save mesh and solution (u,p) to .pvd file')
 parser.add_argument('-poolhelp', action='store_true', default=False,
-                    help='print help for stokes2D.py and quit')
+                    help='print help for this program and quit')
 parser.add_argument('-printparams', action='store_true', default=False,
                     help='print dictionary of solver parameters')
 parser.add_argument('-refine', type=int, default=1, metavar='N',
@@ -137,7 +137,7 @@ params['fieldsplit_0_mg_coarse_ksp_type'] = 'preonly'
 
 if args.stage == 1:
     params['fieldsplit_0_mg_coarse_pc_type'] = 'lu'
-    parameters['fieldsplit_0_mg_coarse_pc_factor_mat_solver_type'] = 'mumps'
+    params['fieldsplit_0_mg_coarse_pc_factor_mat_solver_type'] = 'mumps'
 else:
     params['fieldsplit_0_mg_coarse_pc_type'] = 'gamg'
 
