@@ -1,7 +1,10 @@
 # testing
 
+runsole_1:
+	-@./../testit.sh sole.py "-stage 3 -refine 2" 1 1
+
 runpool_1:
-	-@./../testit.sh pool.py "-stage 1 -refine 2 -s_ksp_converged_reason" 1 1
+	-@./../testit.sh pool.py "-stage 1 -refine 2" 1 1
 
 runstokesi_1:
 	-@./../testit.sh stokesi.py "-almost -dirichletsmb -dta 1.0 -s_snes_type ksponly -s_ksp_converged_reason -mx 20 -refine 1" 1 1
@@ -18,13 +21,15 @@ runstokesi_4:
 runstokesi_5:
 	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2" 1 5
 
+test_sole: runsole_1
+
 test_pool: runpool_1
 
 test_stokesi: runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5
 
-test: test_pool test_stokesi
+test: test_sole test_pool test_stokesi
 
-.PHONY: clean runpool_1 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5 test_pool test_stokesi test
+.PHONY: clean runsole_1 runpool_1 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5 test_pool test_stokesi test
 
 clean:
 	@rm -f *.pdf *.geo *.msh *.pvd *.vtu *.pvtu *.m
