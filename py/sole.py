@@ -38,7 +38,7 @@ if args.stage in {1,2}:
     H = 1.0
 else:
     L = 1.0
-    H = 0.1  # FIXME decrease to 0.01 once I get it
+    H = 0.01
 mz = args.mz * 2**args.refine
 if args.stage == 1:
     mx = args.mx * 2**args.refine
