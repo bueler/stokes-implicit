@@ -38,16 +38,20 @@ from pprint import pprint
 
 parser = argparse.ArgumentParser(description='''
 Three stages of multigrid Poisson solvers in 3D, always using regular meshes
-with hexahedra.  The last stage is a high-aspect ratio box with small height.
+with hexahedra.  Stage 3 is a high-aspect ratio box with small height.
 (Note that a sole is a kind of flat fish.)  Set the coarsest grid with
--mx, -my, -mz.  The default grid is (mx,my,mz)=(1,1,1) and the default
--refine is 0.  For stage 1 -refine acts equally in all dimensions.  For
-stages 2,3 the refinement is only in z.  In stages 2,3 the z refinement uses
-a default factor of 2 but with -aggressive this is 4.
-The plan is to have the first three stages in pool.py be analogs of here.''',
+-mx, -my, -mz; defaults are (mx,my,mz)=(1,1,1) and the default -refine is 0.
+For stage 1 -refine acts equally in all dimensions and the solution is ordinary
+GMG.  For stages 2,3 the GMG refinement is only in z (semi-coarsening) and the
+coarse grid problem is solved by AMG (-mg_coarse_pc_type gamg).  In stages 2,3
+the semi-coarsening uses a default factor of 2 but with -aggressive this is 4.
+The plan is to have the first three stages in pool.py be analogs of here,
+but for Stokes problems.''',
            add_help=False)
 parser.add_argument('-aggressive', action='store_true', default=False,
                     help='for extruded hierarchy, refine aggressively in the vertical (factor 4 instead of 2)')
+parser.add_argument('-big', action='store_true', default=False,
+                    help='multiply all domain dimensions by 10^5 = 100.0e3; should make no difference')
 parser.add_argument('-mx', type=int, default=1, metavar='N',
                     help='for coarse/base mesh, number of equal subintervals in x-direction (default=1)')
 parser.add_argument('-my', type=int, default=1, metavar='N',
@@ -81,6 +85,9 @@ if args.stage in {1,2}:
 else:
     L = 1.0
     H = 0.01
+if args.big:
+    L *= 100.0e3
+    H *= 100.0e3
 if args.stage == 1:
     basecoarse = RectangleMesh(args.mx,args.my,L,L,quadrilateral=True)
     mx = args.mx * 2**args.refine
@@ -107,8 +114,8 @@ PETSc.Sys.Print('vector space dim:   N=%d' % V.dim())
 
 # source function f
 x, y, z = SpatialCoordinate(mesh)
-uexact = Function(V).interpolate( sin(2.0*pi*x) * sin(2.0*pi*y) * sin(pi*z/(2.0*H)) )
-f = Function(V).interpolate( pi**2 * (8.0 + (1.0/(2.0*H))**2) * uexact )
+uexact = Function(V).interpolate( sin(2.0*pi*x/L) * sin(2.0*pi*y/L) * sin(pi*z/(2.0*H)) )
+f = Function(V).interpolate( pi**2 * ( 8.0/L**2 + 1.0/(4.0*H**2) ) * uexact )
 
 # weak form
 u = Function(V)
