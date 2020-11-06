@@ -30,3 +30,10 @@ Note that rich diagnostic information is generated with `-saveextra` including t
 
 FIXME multigrid schemes based on semicoarsening; see fixed-boundary analog in `pool.py`
 
+For a reminder of how fast it is for Poisson in 2D:
+        (firedrake) ~/repos/p4pdes/python/ch13[master]$ tmpg -n 8 ./fish.py -refine 12 -quad -s_ksp_converged_reason -s_pc_type mg -s_mg_levels_ksp_type richardson -s_mg_levels_pc_type bjacobi -s_mg_levels_sub_pc_type icc -s_ksp_rtol 1.0e-10
+          Linear s_ solve converged due to CONVERGED_RTOL iterations 6
+        done on 8193 x 8193 grid with Q_1 elements:
+          error |u-uexact|_inf = 6.034e-10, |u-uexact|_h = 2.631e-10
+        real 651.31
+
