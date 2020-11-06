@@ -21,6 +21,17 @@
 #     GMG levels = 4, coarse-level AMG levels = 4          # same # of levels as 3D GMG
 #   real 151.58                                            # only 16% loss over 3D GMG
 
+# result: high performance on a ice-sheet relevant grid aspect, with small discretization error;
+# note runtime is less than 2 minutes for N=8.7e7 degrees of freedom; achieved here without matrix-free
+#   $ tmpg -n 8 ./sole.py -mx 512 -my 512 -mz 2 -refine 2 -stage 3 -aggressive -s_ksp_rtol 1.0e-10
+#   extruded mesh:      512 x 512 x 32 mesh of Q1 elements on 1.00 x 1.00 x 0.01 domain
+#   vector space dim:   N=8684577
+#     Linear s_ solve converged due to CONVERGED_RTOL iterations 8
+#     GMG levels = 3, coarse-level AMG levels = 5
+#     L_2 error norm = 7.07559e-06
+#   real 104.97
+
+
 from firedrake import *
 import sys, argparse
 from pprint import pprint
