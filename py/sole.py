@@ -6,12 +6,13 @@ from pprint import pprint
 
 parser = argparse.ArgumentParser(description='''
 Three stages of Poisson in 3D, analogs of the first three stages in pool.py.
-Note that a sole is a kind of flat fish.''',
+The default grid is (mx,my,mz)=(2,2,1) with refine=1 giving (4,4,2) grid in
+stage 1 and (2,2,2) in stages 2,3.  Note that a sole is a kind of flat fish.''',
            add_help=False)
-parser.add_argument('-mx', type=int, default=1, metavar='N',
-                    help='number of equal subintervals in x-direction (default=1)')
-parser.add_argument('-my', type=int, default=1, metavar='N',
-                    help='number of equal subintervals in y-direction (default=1)')
+parser.add_argument('-mx', type=int, default=2, metavar='N',
+                    help='number of equal subintervals in x-direction (default=2)')
+parser.add_argument('-my', type=int, default=2, metavar='N',
+                    help='number of equal subintervals in y-direction (default=2)')
 parser.add_argument('-mz', type=int, default=1, metavar='N',
                     help='number of layers in each vertical column (default=1)')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
@@ -46,15 +47,17 @@ if args.stage == 1:
     mesh = UnitCubeMesh(args.mx, args.my, args.mz)
     hierarchy = MeshHierarchy(mesh, args.refine)
     el = 'P1'
+    PETSc.Sys.Print('mesh:               %d x %d x %d mesh of %s elements on %.2f x %.2f x %.2f domain' \
+                    % (mx,my,mz,el,L,L,H))
 else:
     mx = args.mx
     my = args.my
     base = RectangleMesh(mx,my,L,L,quadrilateral=True)
     hierarchy = SemiCoarsenedExtrudedHierarchy(base,H,base_layer=args.mz,nref=args.refine)
     el = 'Q1'
+    PETSc.Sys.Print('extruded mesh:      %d x %d x %d mesh of %s elements on %.2f x %.2f x %.2f domain' \
+                    % (mx,my,mz,el,L,L,H))
 mesh = hierarchy[-1]
-PETSc.Sys.Print('mesh:               %d x %d x %d mesh of %s elements on %.2f x %.2f x %.2f domain' \
-                % (mx,my,mz,el,L,L,H))
 
 # function spaces: P1 or Q1
 if args.stage == 1:
@@ -80,12 +83,12 @@ else:
     bcs = [DirichletBC(V, Constant(0), (1, 2, 3, 4)),
            DirichletBC(V, Constant(0), 'bottom')]
 
+# solver parameters
 params = {'snes_type': 'ksponly',
           'ksp_type': 'cg',
           'ksp_converged_reason': None,
           'pc_type': 'mg',
           'mg_coarse_ksp_type': 'preonly'}
-
 if args.stage == 1:
     params['mg_coarse_pc_type'] = 'lu'
     params['mg_coarse_pc_factor_mat_solver_type'] = 'mumps'
@@ -95,13 +98,30 @@ else:
 # note that the printed parameters *do not* include -s_xxx_yyy type overrides
 if args.printparams:
     pprint(params)
+mesh._topology_dm.viewFromOptions('-dm_view')  # shows DMPlex view for base mesh in stages 2,3
 
-# solve and report numerical error
-solve(F == 0, u, bcs=bcs, solver_parameters=params,
-      options_prefix='s')
+# set up solver and report MG structure
+problem = NonlinearVariationalProblem(F, u, bcs=bcs)
+solver = NonlinearVariationalSolver(problem,solver_parameters=params,options_prefix='s')
+pc = solver.snes.ksp.pc
+coarsepc = pc.getMGCoarseSolve().pc
+
+# solve
+solver.solve()
+
+# report on GMG and AMG levels (latter only known after solve)
+if args.stage == 1:
+    assert(coarsepc.getMGLevels() == 0)
+    PETSc.Sys.Print('  GMG levels = %d' % pc.getMGLevels())
+else:
+    PETSc.Sys.Print('  GMG levels = %d, coarse-level AMG levels = %d' \
+                    % (pc.getMGLevels(),coarsepc.getMGLevels()))
+
+# report numerical error
 L2err = sqrt(assemble(dot(u - uexact, u - uexact) * dx))
-PETSc.Sys.Print('L_2 error norm = %g' % L2err)
+PETSc.Sys.Print('  L_2 error norm = %g' % L2err)
 
+# optionally save to file
 if args.o:
     u.rename('solution')
     if mesh.comm.size > 1:
