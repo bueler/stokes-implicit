@@ -9,28 +9,42 @@ from pprint import pprint
 
 parser = argparse.ArgumentParser(description='''
 Six stages of Stokes in 3D domains with fixed geometry, so that performance
-loss can be assessed.  Starting point is linear Stokes with lid-driven
-Dirichlet boundary conditions on a unit cube.  Final destination is
-regularized Glen-Stokes physics with a stress-free surface and hilly topography
-on a high aspect ratio (100-to-1) domain with glacier-realistic dimensions.
-All stages have nonslip conditions on base and sides, i.e. these are swimming
-pools, and use Q2xQ1 mixed elements on hexahedra.  At each stage the best
-solver, among the options tested of course, is identified.''',
+degradation can be assessed as we build toward a real ice sheet.  (Compare
+stokesi.py for a real case, and sole.py for the even easier Poisson problem.)
+Starting point is linear Stokes with lid-driven Dirichlet boundary conditions
+on a unit cube.  Final destination is regularized Glen-Stokes physics with a
+stress-free surface and hilly topography on a high aspect ratio (100-to-1)
+domain with ice sheet realistic dimensions.  All stages have nonslip conditions
+on base and sides, i.e. these are swimming pools of ice.  We use only Q2xQ1
+mixed elements on hexahedra.  All solvers are based on Schur fieldsplit
+solvers with GMG for the u-u block, but in stage > 1 cases the GMG is only via
+vertical semi-coarsening, and the coarse mesh is solved by AMG
+(-mg_coarse_pc_type gamg).  At each stage the best solver, among the options
+tested, is identified.
+
+Set the coarsest grid with -mx, -my, -mz; defaults are (mx,my,mz)=(1,1,1) and
+the default -refine is 0.
+FIXME For stage 1 -refine acts equally in all dimensions and the solution is ordinary
+GMG.  In stages 2,3
+the semi-coarsening uses a default factor of 2 but with -aggressive this is 4.
+''',
            add_help=False)
+parser.add_argument('-aggressive', action='store_true', default=False,
+                    help='for extruded hierarchy, refine aggressively in the vertical (factor 4 instead of 2)')
 parser.add_argument('-mx', type=int, default=1, metavar='N',
-                    help='number of equal subintervals in x-direction (default=1)')
+                    help='for coarse/base mesh, number of equal subintervals in x-direction (default=1)')
 parser.add_argument('-my', type=int, default=1, metavar='N',
-                    help='number of equal subintervals in y-direction (default=1)')
+                    help='for coarse/base mesh, number of equal subintervals in y-direction (default=1)')
 parser.add_argument('-mz', type=int, default=1, metavar='N',
-                    help='number of layers in each vertical column (default=1)')
+                    help='for coarse/base mesh, number of element layers in each vertical column (default=1)')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
-                    help='save mesh and solution (u,p) to .pvd file')
+                    help='save results to .pvd file')
 parser.add_argument('-poolhelp', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-printparams', action='store_true', default=False,
                     help='print dictionary of solver parameters')
-parser.add_argument('-refine', type=int, default=1, metavar='N',
-                    help='number of vertical (z) mesh refinements (default=1)')
+parser.add_argument('-refine', type=int, default=0, metavar='N',
+                    help='refine all dimensions in stage 1, otherwise number of vertical (z) mesh refinements when extruding (default=0)')
 parser.add_argument('-stage', type=int, default=1, metavar='S',
                     help='problem stage 1,...,6 (default=1)')
 args, unknown = parser.parse_known_args()
@@ -40,6 +54,8 @@ if args.poolhelp:
 
 if args.stage > 3:
     raise NotImplementedError('only stages 1,2,3 so far')
+if args.stage == 1 and args.aggressive:
+    raise NotImplementedError('aggressive vertical coarsening only in stages > 1')
 
 # mesh and geometry: stage > 1 use extruded mesh
 if args.stage in {1,2}:
@@ -48,6 +64,9 @@ if args.stage in {1,2}:
 else:
     L = 100.0e3
     H = 1000.0
+
+FIXME from here: build mesh as in sole.py
+
 mz = args.mz * 2**args.refine
 if args.stage == 1:
     mx = args.mx * 2**args.refine
