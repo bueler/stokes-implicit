@@ -1,5 +1,5 @@
 extruded mesh:      5 x 5 x 2 mesh of Q1 elements on 1.00 x 1.00 x 1.00 domain
 vector space dim:   N=108
   Linear s_ solve converged due to CONVERGED_RTOL iterations 4
-  GMG levels = 2, coarse-level AMG levels = 2
+  semi-coarsening:  GMG levels = 2, coarse-level AMG levels = 2
   L_2 error norm = 0.0306387

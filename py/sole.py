@@ -139,18 +139,18 @@ mesh._topology_dm.viewFromOptions('-dm_view')  # shows DMPlex view for base mesh
 # set up solver and report MG structure
 problem = NonlinearVariationalProblem(F, u, bcs=bcs)
 solver = NonlinearVariationalSolver(problem,solver_parameters=params,options_prefix='s')
-pc = solver.snes.ksp.pc
-coarsepc = pc.getMGCoarseSolve().pc
 
 # solve
 solver.solve()
 
 # report on GMG and AMG levels; the latter are only known *after* solve (i.e. PCSetup)
+pc = solver.snes.ksp.pc
+coarsepc = pc.getMGCoarseSolve().pc
 if args.stage == 1:
     assert(coarsepc.getMGLevels() == 0)
-    PETSc.Sys.Print('  GMG levels = %d' % pc.getMGLevels())
+    PETSc.Sys.Print('  3D coarsening:    GMG levels = %d' % pc.getMGLevels())
 else:
-    PETSc.Sys.Print('  GMG levels = %d, coarse-level AMG levels = %d' \
+    PETSc.Sys.Print('  semi-coarsening:  GMG levels = %d, coarse-level AMG levels = %d' \
                     % (pc.getMGLevels(),coarsepc.getMGLevels()))
 
 # report numerical error
