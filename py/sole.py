@@ -1,28 +1,56 @@
 #!/usr/bin/env python3
 
+# notes: compare the following 5 solvers, all of which give 16x16x16 meshes of Q1 hexahedra:
+#   ./sole.py -refine 4 -stage 1
+#   ./sole.py -mx 16 -my 16 -refine 4 -stage 2
+#   ./sole.py -mx 16 -my 16 -refine 2 -stage 2 -aggressive
+#   ./sole.py -mx 16 -my 16 -refine 4 -stage 3
+#   ./sole.py -mx 16 -my 16 -refine 2 -stage 3 -aggressive
+
+# result: on 128x128x128 meshes, higher performance from aggressive semi-coarsening:
+#   $ tmpg -n 1 ./sole.py -refine 7 -stage 1               # for reference: 3D GMG refinement
+#     Linear s_ solve converged due to CONVERGED_RTOL iterations 2
+#     GMG levels = 8
+#   real 130.58
+#   $ tmpg -n 1 ./sole.py -mx 128 -my 128 -mz 2 -refine 6 -stage 3
+#     Linear s_ solve converged due to CONVERGED_RTOL iterations 3
+#     GMG levels = 7, coarse-level AMG levels = 4
+#   real 226.49
+#   $ tmpg -n 1 ./sole.py -mx 128 -my 128 -mz 2 -refine 3 -stage 3 -aggressive
+#     Linear s_ solve converged due to CONVERGED_RTOL iterations 3
+#     GMG levels = 4, coarse-level AMG levels = 4          # same # of levels as 3D GMG
+#   real 151.58                                            # only 16% loss over 3D GMG
+
 from firedrake import *
 import sys, argparse
 from pprint import pprint
 
 parser = argparse.ArgumentParser(description='''
-Three stages of Poisson in 3D, analogs of the first three stages in pool.py.
-The default grid is (mx,my,mz)=(2,2,1) with refine=1 giving (4,4,2) grid in
-stage 1 and (2,2,2) in stages 2,3.  Note that a sole is a kind of flat fish.''',
+Three stages of multigrid Poisson solvers in 3D, always using regular meshes
+with hexahedra.  The last stage is a high-aspect ratio box with small height.
+(Note that a sole is a kind of flat fish.)  Set the coarsest grid with
+-mx, -my, -mz.  The default grid is (mx,my,mz)=(1,1,1) and the default
+-refine is 0.  For stage 1 -refine acts equally in all dimensions.  For
+stages 2,3 the refinement is only in z.  In stages 2,3 the z refinement uses
+a default factor of 2 but with -aggressive this is 4.
+The plan is to have the first three stages in pool.py be analogs of here.''',
            add_help=False)
-parser.add_argument('-mx', type=int, default=2, metavar='N',
-                    help='number of equal subintervals in x-direction (default=2)')
-parser.add_argument('-my', type=int, default=2, metavar='N',
-                    help='number of equal subintervals in y-direction (default=2)')
+parser.add_argument('-aggressive', action='store_true', default=False,
+                    help='for extruded hierarchy, refine aggressively in the vertical (factor 4 instead of 2)')
+parser.add_argument('-mx', type=int, default=1, metavar='N',
+                    help='for coarse/base mesh, number of equal subintervals in x-direction (default=1)')
+parser.add_argument('-my', type=int, default=1, metavar='N',
+                    help='for coarse/base mesh, number of equal subintervals in y-direction (default=1)')
 parser.add_argument('-mz', type=int, default=1, metavar='N',
-                    help='number of layers in each vertical column (default=1)')
+                    help='for coarse/base mesh, number of element layers in each vertical column (default=1)')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
-                    help='save mesh and solution to .pvd file')
+                    help='save results to .pvd file')
 parser.add_argument('-solehelp', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-printparams', action='store_true', default=False,
                     help='print dictionary of solver parameters')
-parser.add_argument('-refine', type=int, default=1, metavar='N',
-                    help='number of vertical (z) mesh refinements (default=1)')
+parser.add_argument('-refine', type=int, default=0, metavar='N',
+                    help='refine all dimensions in stage 1, otherwise number of vertical (z) mesh refinements when extruding (default=0)')
 parser.add_argument('-stage', type=int, default=1, metavar='S',
                     help='problem stage 1,2,3 (default=1)')
 args, unknown = parser.parse_known_args()
@@ -32,6 +60,8 @@ if args.solehelp:
 
 if args.stage > 3:
     raise NotImplementedError('only stages 1,2,3 exist')
+if args.stage == 1 and args.aggressive:
+    raise NotImplementedError('aggressive vertical coarsening only in stages 2,3')
 
 # mesh and geometry: stage > 1 use extruded mesh
 if args.stage in {1,2}:
@@ -40,30 +70,28 @@ if args.stage in {1,2}:
 else:
     L = 1.0
     H = 0.01
-mz = args.mz * 2**args.refine
 if args.stage == 1:
+    basecoarse = RectangleMesh(args.mx,args.my,L,L,quadrilateral=True)
     mx = args.mx * 2**args.refine
     my = args.my * 2**args.refine
-    mesh = UnitCubeMesh(args.mx, args.my, args.mz)
-    hierarchy = MeshHierarchy(mesh, args.refine)
-    el = 'P1'
-    PETSc.Sys.Print('mesh:               %d x %d x %d mesh of %s elements on %.2f x %.2f x %.2f domain' \
-                    % (mx,my,mz,el,L,L,H))
+    basehierarchy = MeshHierarchy(basecoarse,args.refine)
+    mz = args.mz * 2**args.refine
+    hierarchy = ExtrudedMeshHierarchy(basehierarchy,H,base_layer=args.mz,
+                                      refinement_ratio=2)
 else:
     mx = args.mx
     my = args.my
     base = RectangleMesh(mx,my,L,L,quadrilateral=True)
-    hierarchy = SemiCoarsenedExtrudedHierarchy(base,H,base_layer=args.mz,nref=args.refine)
-    el = 'Q1'
-    PETSc.Sys.Print('extruded mesh:      %d x %d x %d mesh of %s elements on %.2f x %.2f x %.2f domain' \
-                    % (mx,my,mz,el,L,L,H))
+    rz = 4 if args.aggressive else 2
+    mz = args.mz * rz**args.refine
+    hierarchy = SemiCoarsenedExtrudedHierarchy(base,H,base_layer=args.mz,
+                                               refinement_ratio=rz,nref=args.refine)
 mesh = hierarchy[-1]
+PETSc.Sys.Print('extruded mesh:      %d x %d x %d mesh of Q1 elements on %.2f x %.2f x %.2f domain' \
+                 % (mx,my,mz,L,L,H))
 
-# function spaces: P1 or Q1
-if args.stage == 1:
-    V = FunctionSpace(mesh, 'P', 1)
-else:
-    V = FunctionSpace(mesh, 'Q', 1)
+# function space
+V = FunctionSpace(mesh, 'Q', 1)
 PETSc.Sys.Print('vector space dim:   N=%d' % V.dim())
 
 # source function f
@@ -77,11 +105,8 @@ v = TestFunction(V)
 F = (inner(grad(u), grad(v)) - inner(f, v))*dx
 
 # boundary conditions: natural on top but otherwise zero Dirichlet all around
-if args.stage == 1:
-    bcs = [DirichletBC(V, Constant(0), (1, 2, 3, 4, 5))]
-else:
-    bcs = [DirichletBC(V, Constant(0), (1, 2, 3, 4)),
-           DirichletBC(V, Constant(0), 'bottom')]
+bcs = [DirichletBC(V, Constant(0), (1, 2, 3, 4)),
+       DirichletBC(V, Constant(0), 'bottom')]
 
 # solver parameters
 params = {'snes_type': 'ksponly',
@@ -109,7 +134,7 @@ coarsepc = pc.getMGCoarseSolve().pc
 # solve
 solver.solve()
 
-# report on GMG and AMG levels (latter only known after solve)
+# report on GMG and AMG levels; the latter are only known *after* solve (i.e. PCSetup)
 if args.stage == 1:
     assert(coarsepc.getMGLevels() == 0)
     PETSc.Sys.Print('  GMG levels = %d' % pc.getMGLevels())
