@@ -1,32 +1,40 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * implement stages 4,5,6
+#   * implement stage 5
 
 from firedrake import *
 import sys, argparse
 from pprint import pprint
 
 parser = argparse.ArgumentParser(description='''
-Six stages of Stokes in 3D domains with fixed geometry, so that performance
+Five stages of Stokes in 3D domains with fixed geometry, so that performance
 degradation can be assessed as we build toward a real ice sheet.  (Compare
-stokesi.py for a real case, and sole.py for the even easier Poisson problem.)
+stokesi.py for a real case, and sole.py for the easier Poisson problem.)
 Starting point is linear Stokes with lid-driven Dirichlet boundary conditions
 on a unit cube.  Final destination is regularized Glen-Stokes physics with a
 stress-free surface and hilly topography on a high aspect ratio (100-to-1)
 domain with ice sheet realistic dimensions.  All stages have nonslip conditions
-on base and sides, i.e. these are swimming pools of ice.  We use only Q2xQ1
-mixed elements on hexahedra.  All solvers are based on Schur fieldsplit
-solvers with GMG for the u-u block, but in stage > 1 cases the GMG is only via
+on base and sides, i.e. these are swimming pools of fluid/ice.  All use Q2xQ1
+mixed elements on hexahedra, and all solvers are based on Schur fieldsplit
+solvers with GMG for the u-u block.  In stages > 1 cases the GMG is only via
 vertical semi-coarsening, and the coarse mesh is solved by AMG
 (-mg_coarse_pc_type gamg).  At each stage the best solver, among the options
 tested, is identified.
 
+Stages:
+  1. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, 3D GMG
+  2. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, *
+  3. linear Stokes, topography, stress-free surface, unit cube, *
+  4. linear Stokes, topography, stress-free surface, high-aspect geometry, *
+  5. Glen-law Stokes, topography, stress-free surface, high-aspect geometry, *
+For stages 2-5:
+  * = GMG vertical semicoarsening with AMG on the 2D base mesh.
+
 Set the coarsest grid with -mx, -my, -mz; defaults are (mx,my,mz)=(1,1,1) and
-the default -refine is 0.
-FIXME For stage 1 -refine acts equally in all dimensions and the solution is ordinary
-GMG.  In stages 2,3
-the semi-coarsening uses a default factor of 2 but with -aggressive this is 4.
+the default -refine is 0.  For stage 1 -refine acts equally in all dimensions
+(and GMG acts equally).  In stages 2-5 the semi-coarsening uses the default
+refinement ratio of 2 but with -aggressive the factor is 4.
 ''',
            add_help=False)
 parser.add_argument('-aggressive', action='store_true', default=False,
@@ -57,41 +65,55 @@ if args.stage > 3:
 if args.stage == 1 and args.aggressive:
     raise NotImplementedError('aggressive vertical coarsening only in stages > 1')
 
-# mesh and geometry: stage > 1 use extruded mesh
-if args.stage in {1,2}:
-    L = 1.0
-    H = 1.0
-else:
+# geometry
+if args.stage > 3:
     L = 100.0e3
     H = 1000.0
+else:
+    L = 1.0
+    H = 1.0
 
-FIXME from here: build mesh as in sole.py
-
-mz = args.mz * 2**args.refine
+# mesh:  fine mesh is mx x my x mz;  base mesh has hierarchy only in stage 1
 if args.stage == 1:
+    basecoarse = RectangleMesh(args.mx,args.my,L,L,quadrilateral=True)
     mx = args.mx * 2**args.refine
     my = args.my * 2**args.refine
-    mesh = UnitCubeMesh(args.mx, args.my, args.mz)
-    hierarchy = MeshHierarchy(mesh, args.refine)
+    basehierarchy = MeshHierarchy(basecoarse,args.refine)
+    mz = args.mz * 2**args.refine
+    hierarchy = ExtrudedMeshHierarchy(basehierarchy,H,base_layer=args.mz,
+                                      refinement_ratio=2)
 else:
     mx = args.mx
     my = args.my
     base = RectangleMesh(mx,my,L,L,quadrilateral=True)
-    hierarchy = SemiCoarsenedExtrudedHierarchy(base,H,base_layer=args.mz,nref=args.refine)
+    rz = 4 if args.aggressive else 2   # vertical refinement ratio
+    mz = args.mz * rz**args.refine
+    hierarchy = SemiCoarsenedExtrudedHierarchy(base,H,base_layer=args.mz,
+                                               refinement_ratio=rz,nref=args.refine)
 mesh = hierarchy[-1]
-PETSc.Sys.Print('mesh:               %d x %d x %d mesh on %.2f x %.2f x %.2f domain' \
-                % (mx,my,mz,L,L,H))
+PETSc.Sys.Print('extruded mesh:      %d x %d x %d hex mesh on %.2f x %.2f x %.2f domain' \
+                 % (mx,my,mz,L,L,H))
+
+if args.stage > 3: #FIXME
+    raise NotImplementedError('only stages 1,2,3 so far')
+
+# deform mesh coordinates
+if args.stage > 2:
+    for kmesh in hierarchy:
+        Vcoord = kmesh.coordinates.function_space()
+        x,y,z = SpatialCoordinate(kmesh)
+        h = 1.0 + sin(3.0*pi*x) * sin(2.0*pi*y)  # FIXME suitable only for 1,2,3
+        f = Function(Vcoord).interpolate(as_vector([x,y,h*z]))
+        kmesh.coordinates.assign(f)
 
 # function spaces
-if args.stage == 1:
-    V = VectorFunctionSpace(mesh, 'P', 2)
-    W = FunctionSpace(mesh, 'P', 1)
-else:
-    V = VectorFunctionSpace(mesh, 'Q', 2)
-    W = FunctionSpace(mesh, 'Q', 1)
+V = VectorFunctionSpace(mesh, 'Q', 2)
+W = FunctionSpace(mesh, 'Q', 1)
 Z = V * W
 n_u,n_p,N = V.dim(),W.dim(),Z.dim()
 PETSc.Sys.Print('vector space dims:  n_u=%d, n_p=%d  -->  N=%d' % (n_u,n_p,N))
+
+FIXME add g body force
 
 # weak form
 up = Function(Z)
@@ -108,6 +130,8 @@ class Mass(AuxiliaryOperatorPC):
         bcs = None
         return (a, bcs)
 
+FIXME add stress-free surface as appropriate
+
 # boundary conditions
 # (for stages 1,2,3: velocity on lid is (1,1) equal in both x and y directions
 if args.stage == 1:
@@ -117,6 +141,8 @@ else:
     bcs = [DirichletBC(Z.sub(0), Constant((1.0, 1.0, 0)), 'top'),
            DirichletBC(Z.sub(0), Constant((0, 0, 0)), (1, 2, 3, 4)),
            DirichletBC(Z.sub(0), Constant((0, 0, 0)), 'bottom')]
+
+FIXME nullspace only when lid-driven
 
 nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 
