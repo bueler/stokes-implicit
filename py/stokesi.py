@@ -7,6 +7,7 @@
 #   * initialize with u=(SIA velocity), p=(hydrostatic) and c=0
 #   * option -sialaps N: do SIA evals N times and quit; for timing; defines work unit
 #   * get semicoarsening to work with mg; use pool.py as testing ground
+#   * test nonlinear full MG cycle for semicoarsening (i.e. roll -snes_grid_sequence by hand) using (p - rho g depth)^2 penalty on coarser
 
 # serial 2D example: runs in about a minute with 5/2 element ratio and N=1.6e5
 # timer ./stokesi.py -almost -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 1920 -refine 1 -saveextra -o foo2a.pvd
