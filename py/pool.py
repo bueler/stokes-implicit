@@ -8,11 +8,11 @@ import sys, argparse
 from pprint import pprint
 
 parser = argparse.ArgumentParser(description='''
-Five stages of Stokes in 3D domains with fixed geometry, so that performance
+Five stages of Stokes solvers in fixed 3D domains, so that performance
 degradation can be assessed as we build toward a real ice sheet.  (Compare
 stokesi.py for a real case, and sole.py for the easier Poisson problem.)
-Starting point is linear Stokes with lid-driven Dirichlet boundary conditions
-on a unit cube.  Final destination is regularized Glen-Stokes physics with a
+Starting point (stage 1) is linear Stokes with lid-driven Dirichlet boundary
+conditions on a unit cube.  Stage 5 is regularized Glen-Stokes physics with a
 stress-free surface and hilly topography on a high aspect ratio (100-to-1)
 domain with ice sheet realistic dimensions.  All stages have nonslip conditions
 on base and sides, i.e. these are swimming pools of fluid/ice.  All use Q2xQ1
@@ -23,13 +23,13 @@ vertical semi-coarsening, and the coarse mesh is solved by AMG
 tested, is identified.
 
 Stages:
-  1. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, 3D GMG
-  2. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, *
-  3. linear Stokes, topography, stress-free surface, unit cube, *
-  4. linear Stokes, topography, stress-free surface, high-aspect geometry, *
-  5. Glen-law Stokes, topography, stress-free surface, high-aspect geometry, *
+    1. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, 3D GMG
+    2. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, *
+    3. linear Stokes, topography, stress-free surface, unit cube, *
+    4. linear Stokes, topography, stress-free surface, high-aspect geometry, *
+    5. Glen-law Stokes, topography, stress-free surface, high-aspect geometry, *
 For stages 2-5:
-  * = GMG vertical semicoarsening with AMG on the 2D base mesh.
+    * = GMG vertical semicoarsening with AMG on the 2D base mesh.
 
 Set the coarsest grid with -mx, -my, -mz; defaults are (mx,my,mz)=(1,1,1) and
 the default -refine is 0.  For stage 1 -refine acts equally in all dimensions
@@ -38,7 +38,7 @@ refinement ratio of 2 but with -aggressive the factor is 4.
 ''',
            add_help=False)
 parser.add_argument('-aggressive', action='store_true', default=False,
-                    help='for extruded hierarchy, refine aggressively in the vertical (factor 4 instead of 2)')
+                    help='refine by 4 in vertical semicoarsening (instead of 2)')
 parser.add_argument('-mx', type=int, default=1, metavar='N',
                     help='for coarse/base mesh, number of equal subintervals in x-direction (default=1)')
 parser.add_argument('-my', type=int, default=1, metavar='N',
@@ -73,7 +73,7 @@ else:
     L = 1.0
     H = 1.0
 
-# mesh:  fine mesh is mx x my x mz;  base mesh has hierarchy only in stage 1
+# mesh:  fine mesh is mx x my x mz;  use base mesh hierarchy only in stage 1
 if args.stage == 1:
     basecoarse = RectangleMesh(args.mx,args.my,L,L,quadrilateral=True)
     mx = args.mx * 2**args.refine
