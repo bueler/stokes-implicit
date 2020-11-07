@@ -3,6 +3,19 @@
 # TODO:
 #   * implement stage 5
 
+# evidence of stage 1 optimality on 4^3,8^3,16^3,32^3,64^3 meshes; note KSPSolve is only 63% of time on last grid
+#$ for LEV in 0 1 2 3 4; do tmpg -n 1 ./pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine $LEV -log_view &> lev$LEV.txt; 'grep' "KSPSolve " lev$LEV.txt; 'grep' "solve converged" lev$LEV.txt; done
+#KSPSolve               1 1.0 1.7344e-01 1.0 8.45e+07 1.0 0.0e+00 0.0e+00 0.0e+00 11100  ...
+#  Linear s_ solve converged due to CONVERGED_RTOL iterations 23
+#KSPSolve               1 1.0 3.6765e+00 1.0 1.41e+10 1.0 0.0e+00 0.0e+00 0.0e+00 65100  ...
+#  Linear s_ solve converged due to CONVERGED_RTOL iterations 18
+#KSPSolve               1 1.0 1.4665e+01 1.0 2.40e+10 1.0 0.0e+00 0.0e+00 0.0e+00 68100  ...
+#  Linear s_ solve converged due to CONVERGED_RTOL iterations 20
+#KSPSolve               1 1.0 1.0338e+02 1.0 9.43e+10 1.0 0.0e+00 0.0e+00 0.0e+00 66100  ...
+#  Linear s_ solve converged due to CONVERGED_RTOL iterations 21
+#KSPSolve               1 1.0 8.0955e+02 1.0 6.45e+11 1.0 0.0e+00 0.0e+00 0.0e+00 63100  .
+#  Linear s_ solve converged due to CONVERGED_RTOL iterations 21
+
 from firedrake import *
 import sys, argparse
 from pprint import pprint
@@ -60,8 +73,8 @@ if args.poolhelp:
     parser.print_help()
     sys.exit(0)
 
-if args.stage > 3:
-    raise NotImplementedError('only stages 1,2,3 so far')
+if args.stage > 4:
+    raise NotImplementedError('only stages 1--4 so far')
 if args.stage == 1 and args.aggressive:
     raise NotImplementedError('aggressive vertical coarsening only in stages > 1')
 
@@ -94,15 +107,12 @@ mesh = hierarchy[-1]
 PETSc.Sys.Print('extruded mesh:      %d x %d x %d hex mesh on %.2f x %.2f x %.2f domain' \
                  % (mx,my,mz,L,L,H))
 
-if args.stage > 3: #FIXME
-    raise NotImplementedError('only stages 1,2,3 so far')
-
 # deform mesh coordinates
 if args.stage > 2:
     for kmesh in hierarchy:
         Vcoord = kmesh.coordinates.function_space()
         x,y,z = SpatialCoordinate(kmesh)
-        h = 1.0 + sin(3.0*pi*x) * sin(2.0*pi*y)  # FIXME suitable only for 1,2,3
+        h = H + sin(3.0*pi*x/L) * sin(2.0*pi*y/L)  # FIXME not o.k. for stage 5?
         f = Function(Vcoord).interpolate(as_vector([x,y,h*z]))
         kmesh.coordinates.assign(f)
 
@@ -113,84 +123,73 @@ Z = V * W
 n_u,n_p,N = V.dim(),W.dim(),Z.dim()
 PETSc.Sys.Print('vector space dims:  n_u=%d, n_p=%d  -->  N=%d' % (n_u,n_p,N))
 
-FIXME add g body force
-
 # weak form
 up = Function(Z)
 u, p = split(up)
 v, q = TestFunctions(Z)
-# symmetric gradient & divergence terms in F
-F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(Constant((0, 0, 0)), v))*dx
+if args.stage == 1:
+    f_body = Constant((0, 0, 0))
+elif args.stage in {2,3}:
+    from src.constants import g
+    f_body = Constant((0, 0, -g))  # density = 1.0
+elif args.stage in {4,5}:
+    from src.constants import rho, g
+    f_body = Constant((0, 0, -rho*g))
+# note symmetric gradient & divergence terms in F
+F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx  # FIXME change for stage 5
 
 # some methods may use a mass matrix for preconditioning the Schur block
 class Mass(AuxiliaryOperatorPC):
 
     def form(self, pc, test, trial):
-        a = inner(test, trial)*dx
+        a = inner(test, trial)*dx  # FIXME use viscosity?
         bcs = None
         return (a, bcs)
 
-FIXME add stress-free surface as appropriate
-
 # boundary conditions
-# (for stages 1,2,3: velocity on lid is (1,1) equal in both x and y directions
-if args.stage == 1:
-    bcs = [DirichletBC(Z.sub(0), Constant((1.0, 1.0, 0)), 6),
-           DirichletBC(Z.sub(0), Constant((0, 0, 0)), (1, 2, 3, 4, 5))]
-else:
-    bcs = [DirichletBC(Z.sub(0), Constant((1.0, 1.0, 0)), 'top'),
-           DirichletBC(Z.sub(0), Constant((0, 0, 0)), (1, 2, 3, 4)),
-           DirichletBC(Z.sub(0), Constant((0, 0, 0)), 'bottom')]
+bcs = [DirichletBC(Z.sub(0), Constant((0, 0, 0)), (1, 2, 3, 4)),
+       DirichletBC(Z.sub(0), Constant((0, 0, 0)), 'bottom')]
+nullspace = None
+# normally stress-free surface but otherwise lid velocity is equal in x,y
+if args.stage in {1,2}:
+    bcs.append(DirichletBC(Z.sub(0), Constant((1.0, 1.0, 0)), 'top'))
+    nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 
-FIXME nullspace only when lid-driven
-
-nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
-
-params = {'snes_type': 'ksponly',
-          'ksp_type':  'gmres',    # on -stage 1, fgmres adds 10% to iterations and 3% to time
+params = {'mat_type': 'aij',       # FIXME experiment with matfree
+          'ksp_type':  'gmres',    # OLD INFO: fgmres adds 10% to iterations and 3% to time
                                    #     and gcr acts the same as fgmres
           'ksp_converged_reason': None,
           'pc_type': 'fieldsplit',
           'pc_fieldsplit_type': 'schur',
-          'pc_fieldsplit_schur_fact_type': 'lower',
-          'pc_fieldsplit_schur_precondition': 'selfp'}
-          #'pc_fieldsplit_schur_precondition': 'a11',
-          #'pc_fieldsplit_schur_scale': -1.0,  # only active for diag
-          #'fieldsplit_1_pc_type': 'python',
-          #'fieldsplit_1_pc_python_type': '__main__.Mass',
-          #'fieldsplit_1_aux_pc_type': 'bjacobi',
-          #'fieldsplit_1_aux_sub_pc_type': 'icc'}
+          'pc_fieldsplit_schur_fact_type': 'lower',  # 'upper' worse (why?); 'diag' much worse; 'full' worse
+          'fieldsplit_0_ksp_type': 'preonly',
+          'fieldsplit_0_pc_type': 'mg',
+          'fieldsplit_0_mg_coarse_ksp_type': 'preonly'}
 
-# turn on Newton and counting if nonlinear
-if args.stage >= 4:
+# turn on Newton and iteration counting if nonlinear
+if args.stage == 5:
     params['snes_type'] = 'newtonls'
     params['snes_converged_reason'] = None
-
-# only -stage 1 CAN use nest, because aij is required for extruded meshes,
-#     but it is hard to argue from profiling that it makes any difference
-#     even for -stage 1
-if args.stage == 1:
-    params['mat_type'] = 'nest'
 else:
-    params['mat_type'] = 'aij'
+    params['snes_type'] = 'ksponly'
 
-params['fieldsplit_0_ksp_type'] = 'preonly'
-params['fieldsplit_0_pc_type'] = 'mg'
-# the next three settings are actually faster (about 10%) than the default
-#     (i.e. chebyshev,sor) on -stage 1, and FIXME PRESUMABLY more capable in high aspect ratio
-params['fieldsplit_0_mg_levels_ksp_type'] = 'richardson'
-params['fieldsplit_0_mg_levels_pc_type'] = 'ilu'
-params['fieldsplit_0_mg_coarse_ksp_type'] = 'preonly'
+# these smoother settings may be more capable in high aspect ratio;
+# they are essentially the same speed in stage 1
+#params['fieldsplit_0_mg_levels_ksp_type'] = 'richardson'
+#params['fieldsplit_0_mg_levels_pc_type'] = 'ilu'
 
 if args.stage == 1:
+    #pass
+    # either parallel LU via MUMPS or serial LU on each process
     params['fieldsplit_0_mg_coarse_pc_type'] = 'lu'
     params['fieldsplit_0_mg_coarse_pc_factor_mat_solver_type'] = 'mumps'
+    #params['fieldsplit_0_mg_coarse_pc_type'] = 'redundant'
+    #params['fieldsplit_0_mg_coarse_sub_pc_type'] = 'lu'
+    #params['fieldsplit_0_mg_coarse_pc_type'] = 'ilu'
 else:
     params['fieldsplit_0_mg_coarse_pc_type'] = 'gamg'
 
 params['fieldsplit_1_ksp_type'] = 'preonly'
-params['fieldsplit_1_pc_type'] = 'jacobi'
-params['fieldsplit_1_pc_jacobi_type'] = 'diagonal'
 
 #params['fieldsplit_1_ksp_type'] = 'richardson'
 #params['fieldsplit_1_ksp_max_it'] = 3
@@ -200,6 +199,25 @@ params['fieldsplit_1_pc_jacobi_type'] = 'diagonal'
 #params['fieldsplit_1_ksp_rtol'] = 0.1
 #params['fieldsplit_1_pc_type'] = 'bjacobi'
 #params['fieldsplit_1_sub_pc_type'] = 'ilu'
+
+## from advice on PETSc man page for PCFieldSplitSetSchurPre
+## but seems to actually give more iters and be slower than selp/jacobi strategy below
+#params['pc_fieldsplit_schur_precondition'] = 'self'
+#params['fieldsplit_1_pc_type'] = 'lsc'
+
+params['pc_fieldsplit_schur_precondition'] = 'selfp'
+params['fieldsplit_1_mat_schur_complement_ainv_type'] = 'lump'  # a bit faster than default 'diag'
+params['fieldsplit_1_pc_type'] = 'jacobi'
+params['fieldsplit_1_pc_jacobi_type'] = 'diagonal'
+
+#params['pc_fieldsplit_schur_precondition'] = 'a11'
+#params['fieldsplit_1_pc_type'] = 'python'
+#params['fieldsplit_1_pc_python_type'] = '__main__.Mass'
+##params['fieldsplit_1_aux_pc_type'] = 'jacobi'
+#params['fieldsplit_1_aux_pc_type'] = 'bjacobi'
+#params['fieldsplit_1_aux_sub_pc_type'] = 'icc'
+
+#'pc_fieldsplit_schur_scale': -1.0,  # only active for diag
 
 # note that the printed parameters *do not* include -s_xxx_yyy type overrides
 if args.printparams:
