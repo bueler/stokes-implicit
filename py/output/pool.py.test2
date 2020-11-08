@@ -1,4 +1,5 @@
-extruded mesh:      4 x 4 x 4 hex mesh on 1.00 x 1.00 x 1.00 domain
+extruded mesh:      4 x 4 x 4 hexahedra
+domain:             1.00 x 1.00 x 1.00
 vector space dims:  n_u=2187, n_p=125  -->  N=2312
   Linear s_ solve converged due to CONVERGED_RTOL iterations 19
   semi-coarsening:  GMG levels = 2, coarse-level AMG levels = 2

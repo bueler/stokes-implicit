@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 # TODO:
+#   * demonstrate that   ./pool.py -stage 1|2   is really lid-driven cavity solution (e.g. by making sides stress-free?)
+#   * diagnose why   ./pool.py -stage 3 -topomag 0.0   is wrong solution (on various meshes)
 #   * implement stage 5
 
 # evidence of stage 1 optimality on 4^3,8^3,16^3,32^3,64^3 meshes; note KSPSolve is only 63% of time on last grid
@@ -79,6 +81,8 @@ parser.add_argument('-refine', type=int, default=0, metavar='N',
                     help='refine all dimensions in stage 1, otherwise number of vertical (z) mesh refinements when extruding (default=0)')
 parser.add_argument('-stage', type=int, default=1, metavar='S',
                     help='problem stage 1,...,6 (default=1)')
+parser.add_argument('-topomag', type=float, default=0.3, metavar='N',
+                    help='for stages 3,4,5: the relative magnitude of surface topography (default=0.3)')
 args, unknown = parser.parse_known_args()
 if args.poolhelp:
     parser.print_help()
@@ -115,17 +119,38 @@ else:
     hierarchy = SemiCoarsenedExtrudedHierarchy(base,H,base_layer=args.mz,
                                                refinement_ratio=rz,nref=args.refine)
 mesh = hierarchy[-1]
-PETSc.Sys.Print('extruded mesh:      %d x %d x %d hex mesh on %.2f x %.2f x %.2f domain' \
-                 % (mx,my,mz,L,L,H))
+PETSc.Sys.Print('extruded mesh:      %d x %d x %d hexahedra' % (mx,my,mz))
 
-# deform mesh coordinates
+# deform z coordinate of mesh
 if args.stage in {3,4,5}:
     for kmesh in hierarchy:
         Vcoord = kmesh.coordinates.function_space()
         x,y,z = SpatialCoordinate(kmesh)
-        h = H + sin(3.0*pi*x/L) * sin(2.0*pi*y/L)  # FIXME not o.k. for stage 5?
+        h = H * (1.0 + args.topomag * sin(3.0*pi*x/L) * sin(2.0*pi*y/L))  # FIXME not o.k. for stage 5?
         f = Function(Vcoord).interpolate(as_vector([x,y,h*z]))
         kmesh.coordinates.assign(f)
+
+# mesh coordinates
+xyz = SpatialCoordinate(mesh)
+
+# report on geometry
+if args.stage in {1,2}:
+    PETSc.Sys.Print('domain:             %.2f x %.2f x %.2f' % (L,L,H))
+else:
+    # get surface elevation back from fine mesh
+    Q1 = FunctionSpace(mesh,'Q',1)
+    hbc = DirichletBC(Q1,1.0,'top')  # we use hbc.nodes below
+    Q1base = FunctionSpace(mesh._base_mesh,'Q',1)
+    hfcn = Function(Q1base)
+    # z=xyz[2] itself is an 'Indexed' object, so use a Function with a .dat attribute
+    zfcn = Function(Q1).interpolate(xyz[2])
+    # add halos for parallelizability of the interpolation
+    hfcn.dat.data_with_halos[:] = zfcn.dat.data_with_halos[hbc.nodes]
+    with hfcn.dat.vec_ro as vhfcn:
+        zmin = vhfcn.min()[1]
+        zmax = vhfcn.max()[1]
+    PETSc.Sys.Print('domain:             %.2f x %.2f base domain with %.2f < z < %.2f at surface' \
+                    % (L,L,zmin,zmax))
 
 # function spaces
 V = VectorFunctionSpace(mesh, 'Q', 2)
@@ -147,21 +172,22 @@ elif args.stage in {4,5}:
 # note symmetric gradient & divergence terms in F
 F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx  # FIXME change for stage 5
 
-# some methods may use a mass matrix for preconditioning the Schur block
-class Mass(AuxiliaryOperatorPC):
+## some methods may use a mass matrix for preconditioning the Schur block
+#class Mass(AuxiliaryOperatorPC):
+#
+#    def form(self, pc, test, trial):
+#        a = inner(test, trial)*dx  # FIXME use viscosity?
+#        bcs = None
+#        return (a, bcs)
 
-    def form(self, pc, test, trial):
-        a = inner(test, trial)*dx  # FIXME use viscosity?
-        bcs = None
-        return (a, bcs)
-
-# boundary conditions
+# boundary conditions:  normally stress-free surface
 bcs = [DirichletBC(Z.sub(0), Constant((0, 0, 0)), (1, 2, 3, 4)),
        DirichletBC(Z.sub(0), Constant((0, 0, 0)), 'bottom')]
 nullspace = None
-# normally stress-free surface but otherwise lid velocity is equal in x,y
 if args.stage in {1,2}:
+    # lid velocity equal in x,y
     bcs.append(DirichletBC(Z.sub(0), Constant((1.0, 1.0, 0)), 'top'))
+    # set nullspace to constant pressure fields
     nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 
 params = {'mat_type': 'aij',       # FIXME experiment with matfree
