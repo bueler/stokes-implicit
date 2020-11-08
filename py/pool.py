@@ -228,13 +228,34 @@ params['fieldsplit_1_pc_jacobi_type'] = 'diagonal'
 
 #'pc_fieldsplit_schur_scale': -1.0,  # only active for diag
 
-# note that the printed parameters *do not* include -s_xxx_yyy type overrides
+# note that the printed parameters *do not* include -s_xxx_yyy overrides
 if args.printparams:
     pprint(params)
 
-solve(F == 0, up, bcs=bcs, nullspace=nullspace, solver_parameters=params,
-      options_prefix='s')
+# set up solver and report MG structure
+problem = NonlinearVariationalProblem(F, up, bcs=bcs)
+solver = NonlinearVariationalSolver(problem,
+                                    nullspace=nullspace,
+                                    solver_parameters=params,
+                                    options_prefix='s')
 
+# solve
+solver.solve()
+
+## report on GMG and AMG levels; the latter are only known *after* solve (i.e. PCSetup)
+pc = solver.snes.ksp.pc
+assert(pc.getType() == 'fieldsplit')
+pc0 = pc.getFieldSplitSubKSP()[0].pc
+assert(pc0.getType() == 'mg')
+coarsepc0 = pc0.getMGCoarseSolve().pc
+if args.stage == 1:
+    assert(coarsepc0.getMGLevels() == 0)
+    PETSc.Sys.Print('  3D coarsening:    GMG levels = %d' % pc0.getMGLevels())
+else:
+    PETSc.Sys.Print('  semi-coarsening:  GMG levels = %d, coarse-level AMG levels = %d' \
+                    % (pc0.getMGLevels(),coarsepc0.getMGLevels()))
+
+# optionally save result
 if args.o:
     u, p = up.split()
     u.rename('velocity')
