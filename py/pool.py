@@ -16,9 +16,20 @@
 #KSPSolve               1 1.0 8.0955e+02 1.0 6.45e+11 1.0 0.0e+00 0.0e+00 0.0e+00 63100  .
 #  Linear s_ solve converged due to CONVERGED_RTOL iterations 21
 
-from firedrake import *
+# for stage 2, measure these runs on 4^3,8^3,16^3,32^3,64^3 meshes:
+#   $ tmpg -n 1 ./pool.py -stage 2 -mx 4 -my 4 -refine 1 -aggressive
+#   $ tmpg -n 1 ./pool.py -stage 2 -mx 8 -my 8 -mz 2 -refine 1 -aggressive
+#   $ tmpg -n 1 ./pool.py -stage 2 -mx 16 -my 16 -refine 2 -aggressive
+#   $ tmpg -n 1 ./pool.py -stage 2 -mx 32 -my 32 -mz 2 -refine 2 -aggressive
+#   $ tmpg -n 1 ./pool.py -stage 2 -mx 64 -my 64 -refine 3 -aggressive
+
 import sys, argparse
 from pprint import pprint
+
+from firedrake import *
+#possibly: PETSc.Sys.popErrorHandler()
+
+import src.constants as consts
 
 parser = argparse.ArgumentParser(description='''
 Five stages of Stokes solvers in fixed 3D domains, so that performance
@@ -78,8 +89,8 @@ if args.stage > 4:
 if args.stage == 1 and args.aggressive:
     raise NotImplementedError('aggressive vertical coarsening only in stages > 1')
 
-# geometry
-if args.stage > 3:
+# geometry: L x L x H
+if args.stage in {4,5}:
     L = 100.0e3
     H = 1000.0
 else:
@@ -108,7 +119,7 @@ PETSc.Sys.Print('extruded mesh:      %d x %d x %d hex mesh on %.2f x %.2f x %.2f
                  % (mx,my,mz,L,L,H))
 
 # deform mesh coordinates
-if args.stage > 2:
+if args.stage in {3,4,5}:
     for kmesh in hierarchy:
         Vcoord = kmesh.coordinates.function_space()
         x,y,z = SpatialCoordinate(kmesh)
@@ -130,11 +141,9 @@ v, q = TestFunctions(Z)
 if args.stage == 1:
     f_body = Constant((0, 0, 0))
 elif args.stage in {2,3}:
-    from src.constants import g
-    f_body = Constant((0, 0, -g))  # density = 1.0
+    f_body = Constant((0, 0, -consts.g))  # density = 1.0
 elif args.stage in {4,5}:
-    from src.constants import rho, g
-    f_body = Constant((0, 0, -rho*g))
+    f_body = Constant((0, 0, -consts.rho*consts.g))
 # note symmetric gradient & divergence terms in F
 F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx  # FIXME change for stage 5
 
