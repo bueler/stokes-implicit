@@ -40,7 +40,7 @@ nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)]
 
 params = {'snes_type': 'ksponly',
           'mat_type': 'nest',  # or 'aij'; both work and 'nest' slightly faster?
-          'mat_type': 'aij',
+          #'mat_type': 'aij',
           'ksp_type': 'gmres',
           'pc_type': 'fieldsplit',
           'pc_fieldsplit_type': 'schur',
