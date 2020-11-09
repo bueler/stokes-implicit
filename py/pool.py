@@ -185,9 +185,8 @@ bcs = [DirichletBC(Z.sub(0), Constant((0, 0, 0)), (1, 2, 3, 4)),
        DirichletBC(Z.sub(0), Constant((0, 0, 0)), 'bottom')]
 nullspace = None
 if args.stage in {1,2}:
-    # lid velocity equal in x,y
-    bcs.append(DirichletBC(Z.sub(0), Constant((1.0, 1.0, 0)), 'top'))
-    # set nullspace to constant pressure fields
+    bcs.append(DirichletBC(Z.sub(0), Constant((1.0, 0.0, 0.0)), 'top'))
+    ## set nullspace to constant pressure fields
     nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 
 params = {'mat_type': 'aij',       # FIXME experiment with matfree
