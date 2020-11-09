@@ -37,3 +37,6 @@ For a reminder of how fast it is for Poisson in 2D:
           error |u-uexact|_inf = 6.034e-10, |u-uexact|_h = 2.631e-10
         real 651.31
 
+FIXME paper title:  How fast are 3D Stokes solvers for ice sheets?: Performance analysis and expectations.
+
+
