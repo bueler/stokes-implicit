@@ -126,8 +126,8 @@ if args.stage in {3,4,5}:
     for kmesh in hierarchy:
         Vcoord = kmesh.coordinates.function_space()
         x,y,z = SpatialCoordinate(kmesh)
-        h = H * (1.0 + args.topomag * sin(3.0*pi*x/L) * sin(2.0*pi*y/L))  # FIXME not o.k. for stage 5?
-        f = Function(Vcoord).interpolate(as_vector([x,y,h*z]))
+        hmult = 1.0 + args.topomag * sin(3.0*pi*x/L) * sin(2.0*pi*y/L)  # FIXME not o.k. for stage 5?
+        f = Function(Vcoord).interpolate(as_vector([x,y,hmult*z]))
         kmesh.coordinates.assign(f)
 
 # mesh coordinates
