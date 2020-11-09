@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * check this is fixed: diagnose why   ./pool.py -stage 3 -topomag 0.0   is wrong solution (on various meshes)
-#   * optimality scripts for stage 1 (below), stage 2 (below), stage 3 (TODO), stage 4 (TODO)
+#   * optimality scripts for stage 1 (below), stage 2 (below), stage 3 (below), stage 4 (below)
 #   * implement stage 5
 
 # evidence of stage 1 optimality on 4^3,8^3,16^3,32^3,64^3 meshes; note KSPSolve is only 63% of time on last grid
@@ -24,6 +23,15 @@
 #   $ tmpg -n 1 ./pool.py -stage 2 -mx 16 -my 16 -refine 2 -aggressive
 #   $ tmpg -n 1 ./pool.py -stage 2 -mx 32 -my 32 -mz 2 -refine 2 -aggressive
 #   $ tmpg -n 1 ./pool.py -stage 2 -mx 64 -my 64 -refine 3 -aggressive
+
+# similar refinement path for stage 3
+
+# for stage 4, measure these runs on 8x8x1, 16x16x2, 32x32x4, 64x64x8, 128x128x16 meshes:
+#   $ tmpg -n 8 ./pool.py -stage 4 -mx 8 -my 8 -refine 0
+#   $ tmpg -n 8 ./pool.py -stage 4 -mx 16 -my 16 -mz 2 -refine 0
+#   $ tmpg -n 8 ./pool.py -stage 4 -mx 32 -my 32 -refine 1 -aggressive
+#   $ tmpg -n 8 ./pool.py -stage 4 -mx 64 -my 64 -mz 2 -refine 1 -aggressive
+#   $ tmpg -n 8 ./pool.py -stage 4 -mx 128 -my 128 -refine 2 -aggressive
 
 import sys, argparse
 from pprint import pprint
@@ -159,16 +167,18 @@ Z = V * W
 n_u,n_p,N = V.dim(),W.dim(),Z.dim()
 PETSc.Sys.Print('vector space dims:  n_u=%d, n_p=%d  -->  N=%d' % (n_u,n_p,N))
 
-# weak form
-up = Function(Z)
-u, p = split(up)
-v, q = TestFunctions(Z)
+# body force is gravity for stage > 1
 if args.stage == 1:
     f_body = Constant((0, 0, 0))
 elif args.stage in {2,3}:
     f_body = Constant((0, 0, -consts.g))  # density = 1.0
 elif args.stage in {4,5}:
     f_body = Constant((0, 0, -consts.rho*consts.g))
+
+# weak form
+up = Function(Z)
+u, p = split(up)
+v, q = TestFunctions(Z)
 # note symmetric gradient & divergence terms in F
 F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx  # FIXME change for stage 5
 
