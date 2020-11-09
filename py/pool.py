@@ -2,6 +2,7 @@
 
 # TODO:
 #   * check this is fixed: diagnose why   ./pool.py -stage 3 -topomag 0.0   is wrong solution (on various meshes)
+#   * optimality scripts for stage 1 (below), stage 2 (below), stage 3 (TODO), stage 4 (TODO)
 #   * implement stage 5
 
 # evidence of stage 1 optimality on 4^3,8^3,16^3,32^3,64^3 meshes; note KSPSolve is only 63% of time on last grid
