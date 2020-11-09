@@ -241,9 +241,11 @@ params['fieldsplit_1_ksp_type'] = 'preonly'
 #params['fieldsplit_1_pc_type'] = 'lsc'
 
 params['pc_fieldsplit_schur_precondition'] = 'selfp'
-params['fieldsplit_1_mat_schur_complement_ainv_type'] = 'lump'  # a bit faster than default 'diag'
 params['fieldsplit_1_pc_type'] = 'jacobi'
 params['fieldsplit_1_pc_jacobi_type'] = 'diagonal'
+
+# WARNING: do not use following option which is faster than default 'diag' BUT CHANGES VELOCITY SOLUTION !?!?
+#params['fieldsplit_1_mat_schur_complement_ainv_type'] = 'lump'
 
 #params['pc_fieldsplit_schur_precondition'] = 'a11'
 #params['fieldsplit_1_pc_type'] = 'python'
