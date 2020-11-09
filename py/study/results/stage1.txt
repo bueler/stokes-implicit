@@ -1,0 +1,55 @@
+
+mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine 0 -log_view
+extruded mesh:      4 x 4 x 4 hexahedra
+domain:             1.00 x 1.00 x 1.00
+vector space dims:  n_u=2187, n_p=125  -->  N=2312
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 25
+  3D coarsening:    GMG levels = 1
+  solution norms:   |u|_2 = 2.016e-01,  |p|_2 = 4.055e+00
+PCSetUp                3 1.0 7.5898e-02 1.0 2.54e+06 7.1 1.4e+03 9.9e+02 1.2e+02  4 17 16 11 26   4 17 16 11 26   162
+KSPSolve               1 1.0 9.9483e-02 1.0 1.53e+07 6.8 4.6e+03 7.7e+02 2.2e+02  5100 54 28 49   5100 54 28 50   750
+Time (sec):           2.006e+00     1.000   2.006e+00
+
+mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine 1 -log_view
+extruded mesh:      8 x 8 x 8 hexahedra
+domain:             1.00 x 1.00 x 1.00
+vector space dims:  n_u=14739, n_p=729  -->  N=15468
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 27
+  3D coarsening:    GMG levels = 2
+  solution norms:   |u|_2 = 1.941e-01,  |p|_2 = 3.832e+00
+PCSetUp                3 1.0 2.1742e+00 1.0 1.72e+07 2.4 2.2e+03 4.2e+03 1.7e+02 41  1 13 14 27  41  1 13 14 27    47
+KSPSolve               1 1.0 3.3007e+00 1.0 6.88e+0914.4 1.1e+04 2.6e+03 2.9e+02 62100 66 45 46  62100 66 45 46  4900
+Time (sec):           5.297e+00     1.000   5.297e+00
+
+mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine 2 -log_view
+extruded mesh:      16 x 16 x 16 hexahedra
+domain:             1.00 x 1.00 x 1.00
+vector space dims:  n_u=107811, n_p=4913  -->  N=112724
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 29
+  3D coarsening:    GMG levels = 3
+  solution norms:   |u|_2 = 1.926e-01,  |p|_2 = 3.769e+00
+PCSetUp                3 1.0 2.9778e+00 1.0 1.38e+08 1.5 3.1e+03 1.2e+04 2.4e+02 32  3 12 15 29  32  3 12 15 29   316
+KSPSolve               1 1.0 6.3570e+00 1.0 8.94e+09 4.9 1.8e+04 7.0e+03 3.6e+02 69100 70 47 44  69100 70 47 44  4458
+Time (sec):           9.178e+00     1.000   9.178e+00
+
+mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine 3 -log_view
+extruded mesh:      32 x 32 x 32 hexahedra
+domain:             1.00 x 1.00 x 1.00
+vector space dims:  n_u=823875, n_p=35937  -->  N=859812
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 29
+  3D coarsening:    GMG levels = 4
+  solution norms:   |u|_2 = 1.923e-01,  |p|_2 = 3.751e+00
+PCSetUp                3 1.0 8.0971e+00 1.0 1.05e+09 1.2 4.2e+03 3.7e+04 3.0e+02 21  7 12 15 30  21  7 12 15 30   959
+KSPSolve               1 1.0 2.7930e+01 1.0 2.09e+10 1.8 2.4e+04 2.0e+04 4.3e+02 73100 71 47 43  73100 71 47 43  4218
+Time (sec):           3.799e+01     1.000   3.799e+01
+
+mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine 4 -log_view
+extruded mesh:      64 x 64 x 64 hexahedra
+domain:             1.00 x 1.00 x 1.00
+vector space dims:  n_u=6440067, n_p=274625  -->  N=6714692
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 28
+  3D coarsening:    GMG levels = 5
+  solution norms:   |u|_2 = 1.922e-01,  |p|_2 = 3.747e+00
+PCSetUp                3 1.0 4.7190e+01 1.0 8.19e+09 1.1 5.2e+03 1.2e+05 3.7e+02 18  8 13 16 31  18  8 13 16 32  1332
+KSPSolve               1 1.0 1.9492e+02 1.0 1.11e+11 1.2 2.9e+04 6.3e+04 5.0e+02 73100 72 46 42  73100 72 46 42  4169
+Time (sec):           2.661e+02     1.000   2.661e+02
