@@ -11,10 +11,11 @@ for LEV in 0 1 2 3 4; do
     echo
     CMD="mpiexec --bind-to hwthread --map-by core -n $NP ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine $LEV -log_view"
     echo $CMD
-    rm -f stage1lev$LEV.txt 
-    $CMD &> stage1lev$LEV.txt
-    head -n 6 stage1lev$LEV.txt
-    grep "PCSetUp " stage1lev$LEV.txt
-    grep "KSPSolve " stage1lev$LEV.txt
-    grep "Time (sec):" stage1lev$LEV.txt
+    TNAME=stage1_lev$LEV.txt
+    rm -f $TNAME
+    $CMD &> $TNAME
+    head -n 6 $TNAME
+    grep "PCSetUp " $TNAME
+    grep "KSPSolve " $TNAME
+    grep "Time (sec):" $TNAME
 done

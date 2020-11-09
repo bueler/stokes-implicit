@@ -2,5 +2,5 @@
 .PHONY: clean
 
 clean:
-	@rm -f *.txt
+	@rm -f *lev*.txt
 
