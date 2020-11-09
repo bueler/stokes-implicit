@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * demonstrate that   ./pool.py -stage 1|2   is really lid-driven cavity solution (e.g. by making sides stress-free?)
-#   * diagnose why   ./pool.py -stage 3 -topomag 0.0   is wrong solution (on various meshes)
+#   * check this is fixed: diagnose why   ./pool.py -stage 3 -topomag 0.0   is wrong solution (on various meshes)
 #   * implement stage 5
 
 # evidence of stage 1 optimality on 4^3,8^3,16^3,32^3,64^3 meshes; note KSPSolve is only 63% of time on last grid
