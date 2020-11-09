@@ -131,7 +131,7 @@ if args.stage in {3,4,5}:
         kmesh.coordinates.assign(f)
 
 # mesh coordinates
-xyz = SpatialCoordinate(mesh)
+x,y,z = SpatialCoordinate(mesh)
 
 # report on geometry
 if args.stage in {1,2}:
@@ -142,8 +142,8 @@ else:
     hbc = DirichletBC(Q1,1.0,'top')  # we use hbc.nodes below
     Q1base = FunctionSpace(mesh._base_mesh,'Q',1)
     hfcn = Function(Q1base)
-    # z=xyz[2] itself is an 'Indexed' object, so use a Function with a .dat attribute
-    zfcn = Function(Q1).interpolate(xyz[2])
+    # z itself is an 'Indexed' object, so use a Function with a .dat attribute
+    zfcn = Function(Q1).interpolate(z)
     # add halos for parallelizability of the interpolation
     hfcn.dat.data_with_halos[:] = zfcn.dat.data_with_halos[hbc.nodes]
     with hfcn.dat.vec_ro as vhfcn:
@@ -185,7 +185,8 @@ bcs = [DirichletBC(Z.sub(0), Constant((0, 0, 0)), (1, 2, 3, 4)),
        DirichletBC(Z.sub(0), Constant((0, 0, 0)), 'bottom')]
 nullspace = None
 if args.stage in {1,2}:
-    bcs.append(DirichletBC(Z.sub(0), Constant((1.0, 0.0, 0.0)), 'top'))
+    u_lid = Function(V).interpolate(as_vector([4.0 * x * (1.0 - x),0.0,0.0]))
+    bcs.append(DirichletBC(Z.sub(0), u_lid, 'top'))
     ## set nullspace to constant pressure fields
     nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 
@@ -281,6 +282,11 @@ if args.stage == 1:
 else:
     PETSc.Sys.Print('  semi-coarsening:  GMG levels = %d, coarse-level AMG levels = %d' \
                     % (pc0.getMGLevels(),coarsepc0.getMGLevels()))
+
+# report solution norms
+uL2 = sqrt(assemble(inner(u, u) * dx))
+pL2 = sqrt(assemble(inner(p, p) * dx))
+PETSc.Sys.Print('  solution norms:   |u|_2 = %.3e,  |p|_2 = %.3e' % (uL2,pL2))
 
 # optionally save result
 if args.o:

@@ -1,5 +1,6 @@
 extruded mesh:      4 x 4 x 4 hexahedra
 domain:             1.00 x 1.00 x 1.00
 vector space dims:  n_u=2187, n_p=125  -->  N=2312
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 17
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 20
   3D coarsening:    GMG levels = 3
+  solution norms:   |u|_2 = 2.016e-01,  |p|_2 = 4.055e+00
