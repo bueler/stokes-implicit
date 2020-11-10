@@ -30,8 +30,8 @@ stress-free surface and hilly topography on a high aspect ratio (100-to-1)
 domain with ice sheet dimensions.  All stages have nonslip conditions on their
 base and sides, i.e. these are swimming pools of fluid/ice.
 
-The FEM uses Q2xQ1 mixed elements on hexahedra.  The solver are all based
-on Schur fieldsplit with GMG for the u-u block.  In stages > 1 cases the GMG
+The FEM uses Q2xQ1 mixed elements on hexahedra.  The solvers are all based
+on Schur fieldsplit with GMG for the u-u block.  In stages > 1 the GMG
 is only via vertical semi-coarsening, and the coarse mesh is solved by AMG
 (-mg_coarse_pc_type gamg).  At each stage the best solver, among the options
 tested, is identified.
@@ -192,7 +192,8 @@ if args.stage in {1,2}:
     ## set nullspace to constant pressure fields
     nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 
-params = {'mat_type': 'aij',       # FIXME experiment with matfree
+params = {'mat_type': 'aij',       # matfree does not work with Schur fieldsplit selfp (which assembles Bt A B),
+                                   # but see https://www.firedrakeproject.org/demos/stokes.py.html
           'ksp_type':  'gmres',    # OLD INFO: fgmres adds 10% to iterations and 3% to time
                                    #     and gcr acts the same as fgmres
           'ksp_converged_reason': None,
