@@ -1,0 +1,6 @@
+extruded mesh:      4 x 4 x 2 hexahedra
+domain:             100000.00 x 100000.00 base domain with 500.00 < z < 1500.00 at surface
+vector space dims:  n_u=1215, n_p=75  -->  N=1290
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 49
+  semi-coarsening:  GMG levels = 1, coarse-level AMG levels = 0
+  solution norms:   |u|_2 = 8.748e+00,  |p|_2 = 1.673e+13

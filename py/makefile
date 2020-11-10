@@ -12,6 +12,12 @@ runpool_1:
 runpool_2:
 	-@./../testit.sh pool.py "-stage 2 -mx 4 -my 4 -refine 1 -aggressive" 1 2
 
+runpool_3:
+	-@./../testit.sh pool.py "-stage 3 -mx 4 -my 4 -refine 1 -aggressive" 1 3
+
+runpool_4:
+	-@./../testit.sh pool.py "-stage 4 -mx 4 -my 4 -mz 2" 2 4
+
 runstokesi_1:
 	-@./../testit.sh stokesi.py "-almost -dirichletsmb -dta 1.0 -s_snes_type ksponly -s_ksp_converged_reason -mx 20 -refine 1" 1 1
 
@@ -29,13 +35,13 @@ runstokesi_5:
 
 test_sole: runsole_1 runsole_2
 
-test_pool: runpool_1 runpool_2
+test_pool: runpool_1 runpool_2 runpool_3 runpool_4
 
 test_stokesi: runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5
 
 test: test_sole test_pool test_stokesi
 
-.PHONY: clean runsole_1 runsole_2 runpool_1 runpool_2 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5 test_pool test_stokesi test
+.PHONY: clean runsole_1 runsole_2 runpool_1 runpool_2 runpool_3 runpool_4 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5 test_pool test_stokesi test
 
 clean:
 	@rm -f *.pdf *.geo *.msh *.pvd *.vtu *.pvtu *.m
