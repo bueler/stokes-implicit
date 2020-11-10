@@ -155,12 +155,24 @@ elif args.stage in {2,3}:
 elif args.stage in {4,5}:
     f_body = Constant((0, 0, -consts.rho*consts.g))
 
+# viscosity
+if args.stage in {1,2,3}:
+    nu = 0.5
+elif args.stage == 4:
+    nu = 1.0e13  # corresponds to secpera = 31556926.0, A3 = 1.0e-16/secpera,
+                 #                B3 = A3**(-1/3), Du = 6.2806e-09, nu = 0.5 * B3 * Du^(-2/3)
+elif args.stage == 5:
+    raise NotImplementedError  # FIXME change for stage 5
+
 # weak form
 up = Function(Z)
 u, p = split(up)
 v, q = TestFunctions(Z)
 # note symmetric gradient & divergence terms in F
-F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx  # FIXME change for stage 5
+if args.stage in {1,2,3,4}:
+    F = (2.0 * nu * inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx
+elif args.stage == 5:
+    raise NotImplementedError  # FIXME change for stage 5
 
 ## some methods may use a mass matrix for preconditioning the Schur block
 #class Mass(AuxiliaryOperatorPC):
