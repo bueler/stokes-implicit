@@ -69,8 +69,8 @@ parser.add_argument('-refine', type=int, default=0, metavar='N',
                     help='refine all dimensions in stage 1, otherwise number of vertical (z) mesh refinements when extruding (default=0)')
 parser.add_argument('-stage', type=int, default=1, metavar='S',
                     help='problem stage 1,...,6 (default=1)')
-parser.add_argument('-topomag', type=float, default=0.3, metavar='N',
-                    help='for stages 3,4,5: the relative magnitude of surface topography (default=0.3)')
+parser.add_argument('-topomag', type=float, default=0.5, metavar='N',
+                    help='for stages 3,4,5: the relative magnitude of surface topography (default=0.5)')
 args, unknown = parser.parse_known_args()
 if args.poolhelp:
     parser.print_help()
