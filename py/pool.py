@@ -1,30 +1,9 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * optimality scripts for stage 1 (below), stage 2 (below), stage 3 (below), stage 4 (below)
+#   * rethink scaling in stage 4,5 problems
+#   * optimality scripts for stage 4 (below)
 #   * implement stage 5
-
-# evidence of stage 1 optimality on 4^3,8^3,16^3,32^3,64^3 meshes; note KSPSolve is only 63% of time on last grid
-#$ for LEV in 0 1 2 3 4; do tmpg -n 1 ./pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine $LEV -log_view &> lev$LEV.txt; 'grep' "KSPSolve " lev$LEV.txt; 'grep' "solve converged" lev$LEV.txt; done
-#KSPSolve               1 1.0 1.7344e-01 1.0 8.45e+07 1.0 0.0e+00 0.0e+00 0.0e+00 11100  ...
-#  Linear s_ solve converged due to CONVERGED_RTOL iterations 23
-#KSPSolve               1 1.0 3.6765e+00 1.0 1.41e+10 1.0 0.0e+00 0.0e+00 0.0e+00 65100  ...
-#  Linear s_ solve converged due to CONVERGED_RTOL iterations 18
-#KSPSolve               1 1.0 1.4665e+01 1.0 2.40e+10 1.0 0.0e+00 0.0e+00 0.0e+00 68100  ...
-#  Linear s_ solve converged due to CONVERGED_RTOL iterations 20
-#KSPSolve               1 1.0 1.0338e+02 1.0 9.43e+10 1.0 0.0e+00 0.0e+00 0.0e+00 66100  ...
-#  Linear s_ solve converged due to CONVERGED_RTOL iterations 21
-#KSPSolve               1 1.0 8.0955e+02 1.0 6.45e+11 1.0 0.0e+00 0.0e+00 0.0e+00 63100  .
-#  Linear s_ solve converged due to CONVERGED_RTOL iterations 21
-
-# for stage 2, measure these runs on 4^3,8^3,16^3,32^3,64^3 meshes:
-#   $ tmpg -n 1 ./pool.py -stage 2 -mx 4 -my 4 -refine 1 -aggressive
-#   $ tmpg -n 1 ./pool.py -stage 2 -mx 8 -my 8 -mz 2 -refine 1 -aggressive
-#   $ tmpg -n 1 ./pool.py -stage 2 -mx 16 -my 16 -refine 2 -aggressive
-#   $ tmpg -n 1 ./pool.py -stage 2 -mx 32 -my 32 -mz 2 -refine 2 -aggressive
-#   $ tmpg -n 1 ./pool.py -stage 2 -mx 64 -my 64 -refine 3 -aggressive
-
-# similar refinement path for stage 3
 
 # for stage 4, measure these runs on 8x8x1, 16x16x2, 32x32x4, 64x64x8, 128x128x16 meshes:
 #   $ tmpg -n 8 ./pool.py -stage 4 -mx 8 -my 8 -refine 0
@@ -44,21 +23,22 @@ import src.constants as consts
 parser = argparse.ArgumentParser(description='''
 Five stages of Stokes solvers in fixed 3D domains, so that performance
 degradation can be assessed as we build toward a real ice sheet.  (Compare
-stokesi.py for a real case, and sole.py for the easier Poisson problem.)
-Starting point (stage 1) is linear Stokes with lid-driven Dirichlet boundary
+stokesi.py for a real case, and sole.py for the easier Poisson problem.)  The
+starting point (stage 1) is linear Stokes with lid-driven Dirichlet boundary
 conditions on a unit cube.  Stage 5 is regularized Glen-Stokes physics with a
 stress-free surface and hilly topography on a high aspect ratio (100-to-1)
-domain with ice sheet realistic dimensions.  All stages have nonslip conditions
-on base and sides, i.e. these are swimming pools of fluid/ice.  All use Q2xQ1
-mixed elements on hexahedra, and all solvers are based on Schur fieldsplit
-solvers with GMG for the u-u block.  In stages > 1 cases the GMG is only via
-vertical semi-coarsening, and the coarse mesh is solved by AMG
+domain with ice sheet dimensions.  All stages have nonslip conditions on their
+base and sides, i.e. these are swimming pools of fluid/ice.
+
+The FEM uses Q2xQ1 mixed elements on hexahedra.  The solver are all based
+on Schur fieldsplit with GMG for the u-u block.  In stages > 1 cases the GMG
+is only via vertical semi-coarsening, and the coarse mesh is solved by AMG
 (-mg_coarse_pc_type gamg).  At each stage the best solver, among the options
 tested, is identified.
 
 Stages:
     1. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, 3D GMG
-    2. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, *
+    2. linear Stokes, flat top, lid-driven top, unit cube, *
     3. linear Stokes, topography, stress-free surface, unit cube, *
     4. linear Stokes, topography, stress-free surface, high-aspect geometry, *
     5. Glen-law Stokes, topography, stress-free surface, high-aspect geometry, *
