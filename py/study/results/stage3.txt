@@ -1,55 +1,55 @@
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 3 -mx 4 -my 4 -refine 1 -aggressive -log_view
 extruded mesh:      4 x 4 x 4 hexahedra
-domain:             1.00 x 1.00 base domain with 0.70 < z < 1.30 at surface
+domain:             1.00 x 1.00 base domain with 0.50 < z < 1.50 at surface
 vector space dims:  n_u=2187, n_p=125  -->  N=2312
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 30
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 40
   semi-coarsening:  GMG levels = 2, coarse-level AMG levels = 2
-  solution norms:   |u|_2 = 1.999e-02,  |p|_2 = 5.607e+00
-PCSetUp                4 1.0 2.0591e+00 1.0 3.85e+06 6.1 5.7e+03 5.0e+02 3.8e+02 44  9 21 15 59  44  9 21 15 60     9
-KSPSolve               1 1.0 2.8017e+00 1.0 4.39e+07 6.4 2.3e+04 4.6e+02 4.5e+02 60100 86 54 69  60100 86 54 69    77
-Time (sec):           4.697e+00     1.000   4.697e+00
+  solution norms:   |u|_2 = 4.972e-02,  |p|_2 = 5.442e+00
+PCSetUp                4 1.0 2.1145e+00 1.0 3.85e+06 6.1 5.7e+03 5.0e+02 3.8e+02 44  7 17 13 57  44  7 17 13 58     9
+KSPSolve               1 1.0 2.9211e+00 1.0 5.79e+07 6.4 2.9e+04 4.5e+02 4.7e+02 61100 88 60 70  61100 88 60 70    98
+Time (sec):           4.779e+00     1.000   4.778e+00
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 3 -mx 8 -my 8 -mz 2 -refine 1 -aggressive -log_view
 extruded mesh:      8 x 8 x 8 hexahedra
-domain:             1.00 x 1.00 base domain with 0.70 < z < 1.30 at surface
+domain:             1.00 x 1.00 base domain with 0.50 < z < 1.50 at surface
 vector space dims:  n_u=14739, n_p=729  -->  N=15468
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 39
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 45
   semi-coarsening:  GMG levels = 2, coarse-level AMG levels = 2
-  solution norms:   |u|_2 = 4.158e-02,  |p|_2 = 5.485e+00
-PCSetUp                4 1.0 2.1656e+00 1.0 2.60e+07 2.6 4.2e+03 3.3e+03 3.8e+02 41  7 19 16 57  41  7 19 16 58    74
-KSPSolve               1 1.0 3.2820e+00 1.0 3.77e+08 2.8 1.9e+04 2.6e+03 4.6e+02 62100 85 56 69  62100 85 56 70   689
-Time (sec):           5.318e+00     1.000   5.318e+00
+  solution norms:   |u|_2 = 1.069e-01,  |p|_2 = 5.072e+00
+PCSetUp                4 1.0 2.2628e+00 1.0 2.60e+07 2.6 4.2e+03 3.3e+03 3.8e+02 41  6 18 15 56  41  6 18 15 57    70
+KSPSolve               1 1.0 3.4644e+00 1.0 4.29e+08 2.8 2.1e+04 2.6e+03 4.8e+02 62100 87 58 70  62100 87 58 71   741
+Time (sec):           5.579e+00     1.001   5.577e+00
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 3 -mx 16 -my 16 -refine 2 -aggressive -log_view
 extruded mesh:      16 x 16 x 16 hexahedra
-domain:             1.00 x 1.00 base domain with 0.70 < z < 1.30 at surface
+domain:             1.00 x 1.00 base domain with 0.50 < z < 1.50 at surface
 vector space dims:  n_u=107811, n_p=4913  -->  N=112724
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 35
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 46
   semi-coarsening:  GMG levels = 3, coarse-level AMG levels = 3
-  solution norms:   |u|_2 = 5.278e-02,  |p|_2 = 5.419e+00
-PCSetUp                4 1.0 3.0967e+00 1.0 1.68e+08 1.3 5.1e+03 8.2e+03 6.4e+02 30  7 17 14 69  30  7 17 14 70   377
-KSPSolve               1 1.0 7.3214e+00 1.0 2.51e+09 1.3 2.6e+04 5.8e+03 7.1e+02 70100 89 52 77  70100 89 52 78  2386
-Time (sec):           1.038e+01     1.000   1.038e+01
+  solution norms:   |u|_2 = 1.396e-01,  |p|_2 = 4.867e+00
+PCSetUp                4 1.0 3.0838e+00 1.0 1.68e+08 1.3 5.1e+03 8.2e+03 6.4e+02 27  5 14 13 68  27  5 14 13 68   378
+KSPSolve               1 1.0 8.3127e+00 1.0 3.21e+09 1.3 3.2e+04 5.7e+03 7.4e+02 74100 91 57 78  74100 91 57 78  2685
+Time (sec):           1.130e+01     1.000   1.130e+01
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 3 -mx 32 -my 32 -mz 2 -refine 2 -aggressive -log_view
 extruded mesh:      32 x 32 x 32 hexahedra
-domain:             1.00 x 1.00 base domain with 0.70 < z < 1.30 at surface
+domain:             1.00 x 1.00 base domain with 0.50 < z < 1.50 at surface
 vector space dims:  n_u=823875, n_p=35937  -->  N=859812
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 59
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 82
   semi-coarsening:  GMG levels = 3, coarse-level AMG levels = 4
-  solution norms:   |u|_2 = 5.609e-02,  |p|_2 = 5.400e+00
-PCSetUp                4 1.0 9.2859e+00 1.0 1.27e+09 1.1 6.9e+03 2.4e+04 7.3e+02 14  4 13 12 69  14  4 13 12 69  1026
-KSPSolve               1 1.0 5.3656e+01 1.0 3.05e+10 1.1 5.2e+04 1.6e+04 8.5e+02 84100 94 60 80  84100 94 60 81  4243
-Time (sec):           6.385e+01     1.000   6.385e+01
+  solution norms:   |u|_2 = 1.499e-01,  |p|_2 = 4.813e+00
+PCSetUp                4 1.0 9.2158e+00 1.0 1.27e+09 1.1 6.9e+03 2.4e+04 7.3e+02 11  3 10 10 66  11  3 10 10 66  1034
+KSPSolve               1 1.0 7.0152e+01 1.0 4.20e+10 1.1 6.9e+04 1.6e+04 9.0e+02 87100 96 67 81  87100 96 67 82  4467
+Time (sec):           8.032e+01     1.000   8.032e+01
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 3 -mx 64 -my 64 -refine 3 -aggressive -log_view
 extruded mesh:      64 x 64 x 64 hexahedra
-domain:             1.00 x 1.00 base domain with 0.70 < z < 1.30 at surface
+domain:             1.00 x 1.00 base domain with 0.50 < z < 1.50 at surface
 vector space dims:  n_u=6440067, n_p=274625  -->  N=6714692
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 111
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 160
   semi-coarsening:  GMG levels = 4, coarse-level AMG levels = 4
-  solution norms:   |u|_2 = 5.697e-02,  |p|_2 = 5.396e+00
-PCSetUp                4 1.0 5.5686e+01 1.0 9.59e+09 1.1 7.9e+03 8.1e+04 8.5e+02  7  2  7  8 66   7  2  7  8 66  1330
-KSPSolve               1 1.0 7.2723e+02 1.0 4.43e+11 1.1 1.1e+05 4.9e+04 1.1e+03 91100 97 72 83  91100 97 72 84  4701
-Time (sec):           8.004e+02     1.000   8.004e+02
+  solution norms:   |u|_2 = 1.529e-01,  |p|_2 = 4.801e+00
+PCSetUp                4 1.0 5.6464e+01 1.0 9.59e+09 1.1 7.9e+03 8.1e+04 8.5e+02  5  2  5  7 61   5  2  5  7 61  1312
+KSPSolve               1 1.0 1.0192e+03 1.0 6.35e+11 1.1 1.6e+05 4.9e+04 1.2e+03 93100 98 78 85  93100 98 78 85  4812
+Time (sec):           1.092e+03     1.000   1.092e+03
