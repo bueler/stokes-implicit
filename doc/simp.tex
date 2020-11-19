@@ -134,7 +134,7 @@ Glacier-suitable dynamic boundary conditions will be used, with an emphasis on i
 
 Optionally, to allow simulation of a certain laboratory experiment \cite{SayagWorster2013} (below), we also allow inflow.  Here a prescribed velocity is applied, $\bu = \bu_{\text{in}}$ on an inflow boundary $\partial_{\text{in}} \Omega^t$, subject to $\bu_{\text{in}}\cdot \bn \le 0$ where $\bn$ is an outward normal.
 
-Assuming the well-posedness of the above model \eqref{stokes}--\eqref{basebc}, as proven by \cite{JouvetRappaz2011}, if the ice geometry $\Omega^t$ is known then the solution is a unique pair $(\bu,p)$.  Note that the slowness of the fluid, i.e.~zero Reynolds number, implies that for a fixed domain $\Omega^t$ the boundary stresses and body forces determine velocity and pressure fields without any ``memory'' of prior states or influence from inertia, as would occur in the Navier-Stokes equations \cite{Fowler1997}.
+Assuming the well-posedness of the above model \eqref{regeffvisc}--\eqref{basebc}, as proven by \cite{JouvetRappaz2011}, if the ice geometry $\Omega^t$ is known then the solution is a unique pair $(\bu,p)$.  Note that the slowness of the fluid, i.e.~zero Reynolds number, implies that for a fixed domain $\Omega^t$ the boundary stresses and body forces determine velocity and pressure fields without any ``memory'' of prior states or influence from inertia, as would occur in the Navier-Stokes equations \cite{Fowler1997}.
 
 
 \section{Ice geometry evolution} \label{sec:stronggeometry}
@@ -175,11 +175,66 @@ These statements, which form a nonlinear complementarity problem (NCP) \cite{Bue
 
 The NCP \eqref{strongadmissibility}--\eqref{strongcomplementarity} can be regarded as having only the surface elevation $h$ as the unknown or state vector.  In particular, where $\bu$ appears in the NCP, being a solution $(\bu,p)$ of the Stokes problem \eqref{stokes}--\eqref{basebc}, it is the image of a nonlinear and nonlocal map from ice geometry to the surface value (trace) of the solution velocity $\bu$.  That is, the surface velocity $\bu$ in the surface kinematical equation, whether stated as the classic equation \eqref{surfacekinematical} or through the NCP, can be written as ``$\bu(h,b)$'' if desired.  (In the current paper, bed elevation $b$ is fixed data.)
 
-Informally, the surface kinematical equation describes how the ice surface elevation is updated: the climatically added or removed ice $a\,\Delta t$, plus the component of the ice motion in direction $\bn$, determines the vertical displacement of the surface.  Numerical glacier models therefore often evolve the time-dependent surface $z=h$ by explicit steps, i.e.~$\Delta h \approx \left(a + \bu\cdot \bn\right) \Delta t$ in the simplest forward-Euler case, based upon the current values of $a$, $\bu$, and $\bn$ (i.e.~$\grad h$).  However, we will be solving \eqref{surfacekinematical}, more precisely \eqref{strongadmissibility}--\eqref{strongcomplementarity}, implicitly and coupled with the Glen-Stokes system \eqref{stokes}--\eqref{basebc}.  The new ice surface will be compatible with the flow model when the solver has converged.
+Informally, the surface kinematical equation describes how the ice surface elevation is updated: the climatically added or removed ice $a\,\Delta t$, plus the component of the ice motion in direction $\bn$, determines the vertical displacement of the surface.  Numerical glacier models therefore often evolve the time-dependent surface $z=h$ by explicit steps, i.e.~$\Delta h \approx \left(a + \bu\cdot \bn\right) \Delta t$ in the simplest forward-Euler case, based upon the current values of $a$, $\bu$, and $\bn$ (i.e.~$\grad h$).  However, we will be solving \eqref{surfacekinematical}, more precisely \eqref{strongadmissibility}--\eqref{strongcomplementarity}, implicitly and coupled with the Glen-Stokes system \eqref{regeffvisc}--\eqref{basebc}.  The new ice surface will be compatible with the flow model when the solver has converged.
 
 Note that the mass balance $a_{\perp}(t,x,y,z)$ is computed using a separate model for the dynamical state of the atmosphere, one which computes snow precipitation, (atmospheric) energy-driven melt at snow/ice surfaces, and liquid water runoff.  How this is done is well beyond our scope, but it is important in moving-margin glacier simulations that $a$ have a well-defined value both at the current ice surface and elsewhere, or at least nearby.  This is because a simulated glacier can only move into new areas, retreat from ice-covered areas, and undergo changes of surface elevation, if the source term at the new (and intermediate) locations is well-defined.  This issue can be ignored for explicit time-steps, but not here.
 
 Appendix A summarizes a simplified model of our main coupled problem, namely the shallow ice approximation (SIA), but we will only need it as a source of initial conditions and in performance comparisons.
+
+
+\section{Time steps and geometry perturbations} \label{sec:perturb}
+
+We intend to solve the coupled problem \eqref{regeffvisc}--\eqref{basebc}, \eqref{strongadmissibility}--\eqref{strongcomplementarity} to yield a triple of functions $\bu,p,h$ where the surface elevation $h$ is defined on $(t,x,y) \in [0,\infty)\times R$.  By \eqref{Omegat}, the solution $h$ defines the domains $\Omega^t\subset \RR^d$ on which the velocity and pressure $\bu,p$ are defined.  However, inequalities \eqref{strongadmissibility} and \eqref{stronginequality} make it clear that we are not solving a true system of coupled PDEs.  In a preliminary manner in this section, then more completely in later sections, we describe function spaces suitable for this inequality-constrained evolving-geometry problem.  In preparation for examining the numerical stability of our implicit time-stepping method (section \ref{sec:implicitstep}), we also attempt to understand how small perturbations of surface elevation would evolve.
+
+\newcommand{\PiK}{\Pi_{\mathcal{K}}}
+
+Let $\mathcal{X}$ be a Banach space of real-valued functions on $R \subset \RR^{d-1}$ containing the bed elevation function $b$.  Let
+    $$\mathcal{K} = \{h \in \mathcal{X}\,:\,h \ge b\}$$
+be the closed and convex subset of admissible surface elevation functions.  Associated to this set we have a pointwise truncation map $\PiK : \mathcal{X} \to \mathcal{K}$ given by $\PiK f = \max\{b,f\}$.
+
+Because the gradient of $h$ appears in stating our problem---see \eqref{topbc}, \eqref{stronginequality}, \eqref{strongcomplementarity}---we suppose $\mathcal{X}$ is in fact a Sobolev space \cite{Evans2010}, perhaps $W^{1,p}(R)$ for some $p\ge 1$.  While it it is not apparent from the literature which is the correct or natural space $\mathcal{X}$, in the smooth-bed SIA simplified model one would regard it as the space of $n/(2n+2) = 3/8$ powers of functions from $W^{1,n+1}(R)=W^{1,4}(R)$ \cite{JouvetBueler2012}.  In fact, our only requirement in this section for $\mathcal{X}$ is that such functions are continuous, a property satisfied by $W^{1,p}(R)$ if $p>d-1$ \cite[theorem 5.6.5]{Evans2010}.
+
+\newcommand{\hin}{h_{\text{in}}}
+\newcommand{\hout}{h_{\text{out}}}
+
+\newcommand{\dhin}{\delta h_{\text{in}}}
+\newcommand{\dhout}{\delta h_{\text{out}}}
+
+Fix $h_0 \in \mathcal{K}$ and consider the coupled solution over an increment of time $[t,t+\Delta t]$ starting from this surface elevation.  This solution yields a final surface elevation $h_1 \in \mathcal{K}$ at $t+\Delta t$ (along with $\bu,p$ which are unimportant here).  If one perturbs the initial geometry to $h_0+\dhin$ then a coupled solution generates a different surface elevation $h_1 + \dhout$.  However, because parts of $R$ are not occupied by ice, even small-magnitude surface elevation perturbations are nontrivially constrained by the requirement that the surface be above the bed.  Therefore for $h_0$ and $h_1$ we define spaces of admissible geometry perturbations
+    $$\mathcal{K}_i = \left\{\delta h \in \mathcal{X} \,:\, \delta h \ge b - h_i\right\}.$$
+Note $h_i+\delta h \in \mathcal{K}$ is equivalent to $\delta h \in \mathcal{K}_i$.
+
+Now consider the exact (coupled) solution process as a nonlinear operator on surface elevation perturbations:
+\begin{equation}
+\Phi_{a,\Delta t} : \mathcal{K}_0 \to \mathcal{K}_1. \label{perturboperatorexact}
+\end{equation}
+This map is defined as follows: For $\dhin\in \mathcal{K}_0$ solve the coupled problem \eqref{regeffvisc}--\eqref{basebc}, \eqref{strongadmissibility}--\eqref{strongcomplementarity} using initial geometry $\hin=h_0+\dhin \in \mathcal{K}$ and the generally time-dependent surface mass balance $a$ over $[t,t+\Delta t]\times R$.  This generates $\hout \in \mathcal{K}$; compute $\dhout= \hout - h_1 \in \mathcal{K}_1$.
+
+We seek to compare the action of certain single stage time-stepping schemes to the exact operator in \eqref{perturboperatorexact}.  For this purpose we take the preferred surface mass balance field which may be applied in all such single stage schemes, namely the average
+\begin{equation}
+\bar a(x,y,z) = \frac{1}{\Delta t} \int_t^{t+\Delta t} a(\tau,x,y,z)\,d\tau.  \label{smbaverage}
+\end{equation}
+In the rest of the paper we will suppose that the surface mass balance used in solving the coupled problem is held at $\bar a$ over the duration of the time step $[t,t+\Delta t]$.
+
+Existing Stokes solvers for evolving ice sheet geometry \cite{Gudmundsson1999,HelanowAhlkrona2018,Jouvetetal2008,Larouretal2012,
+Lengetal2014b,Lengetal2012,LeysingerGudmundsson2004,PralongFunk2004,Seddiketal2012} % CHECK
+approximate the exact operator $\Phi_{a,\Delta t}$ in \eqref{perturboperatorexact} by a procedure which amounts to solving for $\bu,p$ first, then applying the explicit approximation of the surface kinematical equation \eqref{surfacekinematical}, and then truncating the resulting surface elevation.  The last step is required because the explicit approximation of \eqref{surfacekinematical}, even when only computed on the current ice surface, may, in places, go below the bed, and indeed this generically happens when the margin retreats.  The stability properties of such explicit solvers is largely unexplored, but it is clear that time steps cannot be arbitrarily large, and that computable estimates of time-step bounds would be useful to practitioners.
+
+To understand such explicit schemes as operators on perturbations comparable to the exact map $\Phi_{a,\Delta t}$, for clarity we present only the forward Euler case.  First we must define the unperturbed result $\hat h_1$ from the scheme.  For this we start from geometry $h_0$, solve only the Stokes problem \eqref{regeffvisc}--\eqref{basebc} to yield $\bu,p$, and use the velocity in the forward Euler approximation of the surface kinematical equation \eqref{surfacekinematical} to compute $\Delta h = \left(a + \bu\cdot \bn\right) \Delta t$.  However, $h_0+\Delta h$ is generally not admissible (in $\mathcal{K}$) so we truncate to get $h^E_1 = \Pi(h_0+\Delta h)$.  This defines a set $\mathcal{K}^E_1$ of admissible output perturbations so we may describe the map on perturbations as
+\begin{equation}
+\Phi^E_{\bar a,\Delta t} : \mathcal{K}_0 \to \mathcal{K}^E_1. \label{perturboperatorexplicit}
+\end{equation}
+It is computed by the following steps.  From $\dhin\in \mathcal{K}_0$ let $\hin=h_0+\dhin$ determine the ice geometry and solve only the Stokes problem \eqref{regeffvisc}--\eqref{basebc} to yield $\bu,p$.  Use the velocity $\bu$ in the forward Euler approximation of the surface kinematical equation \eqref{surfacekinematical} to update the surface, but then truncate to get an admissible geometry, and then subtract to get the admissible output perturbation:
+    $$\Phi^E_{\bar a,\Delta t}(\dhin) = \PiK\Big(\hin + \left(\bar a + \bu_{[\hin]} \cdot \bn_{[\hin]}\right) \Delta t\Big) - h^E_1.$$
+As a summary heuristic, the action of such an explicit scheme on geometry perturbations is
+    $$\Phi^E_{\bar a,\Delta t} = (\text{solve Stokes} \to \text{update surface} \to \text{truncate to geometry}).$$
+
+Compare the action of an implicit time-step scheme, here backward Euler for simplicity.  FIXME
+\begin{equation}
+\Phi^I_{\bar a,\Delta t} : \mathcal{K}_0 \to \mathcal{K}^I_1. \label{perturboperatorimplicit}
+\end{equation}
+
+FIXME note that the three $\Phi$ do not even have the same output spaces [FIXME: MAYBE FORCE THEM TO FOR THE ANALYSIS?], but still we expect both $\Phi^E_{\bar a,\Delta t} = \Phi_{\bar a,\Delta t} + O(\Delta t^1)$ and similarly for $\Phi^I$; but the ops are really different; for the linear heat equation $u_t=Lu$ on a bounded domain we have $\Phi_{\Delta t} = e^{\Delta t\,L}$, $\Phi^E_{\Delta t} = I + \Delta t\,L$, $\Phi^I_{\Delta t} = (I - \Delta t\,L)^{-1}$; here $\Phi^E$ is unbounded while $\Phi$, $\Phi^I$ are bounded and actually compact (send bounded sets to compact, thus nearly finite-dimensional, sets); we expect for the ice problem that $\Phi^E_{\bar a,\Delta t}$ generates large magnitude perturbations for some norm one inputs while $\Phi^I_{\bar a,\Delta t}$ (and the exact) are compact in the same sense as in the linear case
 
 
 \section{Implicit time-stepping via a domain mapping} \label{sec:implicitstep}
