@@ -5,7 +5,7 @@ secpera = 31556926.0
 g = 9.81              # m s-2; constants in SI units
 
 # ice
-rho = 910.0           # density; kg
+rho = 910.0           # density; kg m-3
 n = 3.0               # warning: this value is needed for some parts
 An = 1.0e-16/secpera  # softness; EISMINT 1 value
 
