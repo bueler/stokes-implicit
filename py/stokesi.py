@@ -55,7 +55,7 @@ diagonal blocks are solved (preconditioned) by LU using MUMPS.''',
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  add_help=False)
 parser.add_argument('-almost', action='store_true', default=False,
-                    help='use the draft weak forms which did not fully couple')
+                    help='use the draft weak forms which do not fully couple')
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
 parser.add_argument('-dta', type=float, default=0.01, metavar='X',
@@ -213,7 +213,7 @@ if args.dirichletsmb: # artificial, for testing
 # note 'lu' = mumps, both in serial and parallel (faster)
 parameters = {'snes_linesearch_type': 'bt',  # new firedrake default is "basic", i.e. NO linesearch
               'mat_type': 'aij',
-              'ksp_type': 'gmres',  # consider fgmres
+              'ksp_type': 'gmres',  # consider fgmres and -fieldsplit_0_ksp_type gmres fieldsplit_0_ksp_max_it 3
               'ksp_pc_side': 'right',  # consider left
               'pc_type': 'fieldsplit',
               'pc_fieldsplit_type': 'symmetric_multiplicative',  # 'multiplicative' or 'additive': more linear iters
