@@ -85,7 +85,9 @@ We do not, however, consider the conservation of energy, and neither thermomecha
 
 To discretize the continuum equations we apply the finite element (FE) method \cite{Elmanetal2014} by using the Firedrake library \cite{Rathgeberetal2016} in Python.\footnote{These Python programs are open-source at \href{https://github.com/bueler/stokes-implicit}{\texttt{github.com/bueler/stokes-implicit}}.  FIXME: MAKE REPO PUBLIC.}  We use meshes which are unstructured in the map-plane but which are extruded \cite{Bercea2016,Gibsonetal2019,McRaeetal2016} in the vertical direction.  As discussed below, mixed elements for velocity, pressure, and vertical ice strain are used, with stable and aspect-ratio robust choices for the velocity-pressure (i.e.~Stokes) block \cite{Elmanetal2014}.  Solutions of the resulting nonlinear discrete equations apply multigrid-preconditioned Newton-Krylov methods \cite{Bueler2021} via PETSc \cite{Balayetal2020}, with semicoarsening in the vertical direction \cite{Tuminaroetal2016}, and all computations are parallelized.
 
-FIXME compare literature of existing solvers:
+FIXME time-dependent numerical solvers for free surface flows exist outside of glacier applications; approaches like the marker-and-cell method \cite{HarlowWelch1965} make explicit updates to the fluid surface but these are understood to have diffusion-type stability limitations where the maximum time step scales with the square of spatial mesh sizes; we will see this along the way; in such terms our target here is the implementation of very long time steps, e.g.~hundreds to millions of times longer than stable explicit (diffusional) time-steps; indeed we seek the direct computation of steady states as has been demonstrated for the lubrication approximation (SIA) case in \cite{Bueler2016}
+
+FIXME compare literature of existing solvers for glaciers and ice sheets:
 \begin{itemize}
 \item  nonevolving surface Stokes \cite{IsaacStadlerGhattas2015,Lengetal2013,Lengetal2014a,Zwingeretal2007} (CHECK)
 \item  explicitly evolving surface \cite{Gudmundsson1999,HelanowAhlkrona2018,Jouvetetal2008,Larouretal2012,
@@ -235,6 +237,8 @@ Compare the action of an implicit time-step scheme, here backward Euler for simp
 \end{equation}
 
 FIXME note that the three $\Phi$ do not even have the same output spaces [FIXME: MAYBE FORCE THEM TO FOR THE ANALYSIS?], but still we expect both $\Phi^E_{\bar a,\Delta t} = \Phi_{\bar a,\Delta t} + O(\Delta t^1)$ and similarly for $\Phi^I$; but the ops are really different; for the linear heat equation $u_t=Lu$ on a bounded domain we have $\Phi_{\Delta t} = e^{\Delta t\,L}$, $\Phi^E_{\Delta t} = I + \Delta t\,L$, $\Phi^I_{\Delta t} = (I - \Delta t\,L)^{-1}$; here $\Phi^E$ is unbounded while $\Phi$, $\Phi^I$ are bounded and actually compact (send bounded sets to compact, thus nearly finite-dimensional, sets); we expect for the ice problem that $\Phi^E_{\bar a,\Delta t}$ generates large magnitude perturbations for some norm one inputs while $\Phi^I_{\bar a,\Delta t}$ (and the exact) are compact in the same sense as in the linear case
+
+FIXME positive $\delta h$ always allowed; small positive $\delta h$ with small support cause change in velocity field equivalent to the addition of a Stokeslet (if single hump $/\backslash$) or doublet (if $/\backslash/$ with zero added volume) \cite{ChwangWu1975}; the former is longer range and the latter short
 
 
 \section{Implicit time-stepping via a domain mapping} \label{sec:implicitstep}
