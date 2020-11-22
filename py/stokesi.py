@@ -12,7 +12,7 @@
 # serial 2D example: runs in about two minutes with 5/1 element ratio and N=8.2e4
 # timer ./stokesi.py -dta 0.01 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -refine 1 -saveextra -o foo2.pvd
 
-# parallel 3D example: runs in under 2 minutes with 80/1 element ratio and N=1.1e5
+# parallel 3D example: runs in about 10 minutes with 80/1 element ratio and N=1.1e5
 # tmpg -n 8 ./stokesi.py -dta 0.01 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 30 -my 30 -saveextra -o foo3.pvd
 
 import sys,argparse
