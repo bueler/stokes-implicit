@@ -70,8 +70,6 @@ parser.add_argument('-Href', type=float, default=200.0, metavar='X',
                     help='minimum thickness in m of reference domain (default=200)')
 parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
                     help='half-width in m of computational domain (default=60e3)')
-parser.add_argument('-miasma', type=float, default=10.0, metavar='X',
-                    help='miasma density factor: rho_m = rho_i / miasma (default=10)')
 parser.add_argument('-mx', type=int, default=30, metavar='N',
                     help='number of equal subintervals in x-direction (default=30)')
 parser.add_argument('-my', type=int, default=-1, metavar='N',
@@ -187,11 +185,11 @@ v,q,e = TestFunctions(Z)
 if ThreeD:
     im = IceModel(almost=args.almost, mesh=mesh,
                   Href=args.Href, eps=args.eps, Dtyp=Dtyp,
-                  hcurrent=hinitialextruded, rhom=rho/args.miasma)
+                  hcurrent=hinitialextruded)
 else:
     im = IceModel2D(almost=args.almost, mesh=mesh,
                     Href=args.Href, eps=args.eps, Dtyp=Dtyp,
-                    hcurrent=hinitialextruded, rhom=rho/args.miasma)
+                    hcurrent=hinitialextruded)
 F = im.F(u,p,c,v,q,e)
 
 # apply surface kinematical equation by adding to weak form
@@ -267,5 +265,5 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
 
 # save ParaView-readable file
 if args.o:
-    writeresult(args.o,mesh,im,upc,hinitialextruded,saveextra=args.saveextra,miasma=args.miasma)
+    writeresult(args.o,mesh,im,upc,hinitialextruded,saveextra=args.saveextra)
 

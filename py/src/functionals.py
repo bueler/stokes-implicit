@@ -8,19 +8,18 @@ __all__ = ['IceModel', 'IceModel2D']
 class IceModel(object):
     '''Physics of the coupled ice flow and surface kinematical problems.'''
 
-    def __init__(self, mesh=None, almost=None, Href=None, eps=None, Dtyp=None, hcurrent=None, rhom=None):
+    def __init__(self, mesh=None, almost=None, Href=None, eps=None, Dtyp=None, hcurrent=None):
         self.almost = almost
         self.mesh = mesh
         self.Href = Href
         self.eps = eps
         self.Dtyp = Dtyp
         self.hcurrent = hcurrent
-        self.rhom = rhom
         self.delta = 0.1
         self.qdegree = 3  # used in mapped weak form FIXME how to determine a wise value?
 
-    def _fbody(self, rhofield):  # 3D
-        return fd.as_vector([fd.Constant(0.0), fd.Constant(0.0), - rhofield * fd.Constant(g)])
+    def _fbody(self):  # 3D
+        return fd.as_vector([fd.Constant(0.0), fd.Constant(0.0), - rho * fd.Constant(g)])
 
     def _Falmost(self,u,p,c,v,q,e):
         '''This draft version uses the unmapped reference domain.'''
@@ -28,7 +27,7 @@ class IceModel(object):
         Dv = 0.5 * (fd.grad(v)+fd.grad(v).T)
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
         tau = Bn * Du2**(-1.0/n) * Du
-        source = fd.inner(self._fbody(fd.Constant(rho)),v)
+        source = fd.inner(self._fbody(),v)
         return fd.inner(tau, Dv) * fd.dx \
                + ( - p * fd.div(v) - fd.div(u) * q - source ) * fd.dx \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
@@ -85,10 +84,7 @@ class IceModel(object):
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
         tau = Bn * Du2**(-1.0/n) * Du  # = 2 nu_e Du
         h = self.hcurrent # FIXME + c(x,y,hcurrent(x,y))   [HOW?]
-        cond = fd.conditional(self._zcoord() < h, rho, self.rhom)
-        Q0 = fd.FunctionSpace(self.mesh,'DQ',0)
-        rhofield = fd.Function(Q0).project(cond)
-        source = fd.inner(self._fbody(rhofield),v)
+        source = fd.inner(self._fbody(),v)
         return (fd.inner(tau, Dv) - p * divv - divu * q - source ) \
                    * self.jweight(c) * fd.dx(degree=self.qdegree) \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
@@ -121,8 +117,8 @@ class IceModel(object):
 class IceModel2D(IceModel):
     '''The 2D (flowline) case of IceModel.'''
 
-    def _fbody(self, rhofield):
-        return fd.as_vector([fd.Constant(0.0), - rhofield * fd.Constant(g)])
+    def _fbody(self):
+        return fd.as_vector([fd.Constant(0.0), - rho * fd.Constant(g)])
 
     def _czeta(self,c):
         return c.dx(1)

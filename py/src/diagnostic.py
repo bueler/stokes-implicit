@@ -66,14 +66,6 @@ def phydrostatic(mesh):
     ph.rename('hydrostatic pressure')
     return ph
 
-# density as a piecewise constant
-def densityicemiasma(mesh,hcurrentextruded,rhom):
-    z = fd.SpatialCoordinate(mesh)[mesh._base_mesh.cell_dimension()]
-    Q0 = fd.FunctionSpace(mesh,'DQ',0)
-    rhofield = fd.Function(Q0).project(fd.conditional(z < hcurrentextruded, rho, rhom))
-    rhofield.rename('density ice/miasma')
-    return rhofield
-
 # horizontal velocity <u,v> from the shallow ice approximation (SIA)
 def siahorizontalvelocity(mesh):
     hbase = surfaceelevation(mesh)
@@ -103,13 +95,13 @@ def siahorizontalvelocity(mesh):
     return uv
 
 # save ParaView-readable file
-def writeresult(filename,mesh,icemodel,upc,hinitialextruded,saveextra=False,miasma=10.0):
+def writeresult(filename,mesh,icemodel,upc,hinitialextruded,saveextra=False):
     assert filename.split('.')[-1] == 'pvd'
     written = 'u,p,c'
     if mesh.comm.size > 1:
          written += ',rank'
     if saveextra:
-         written += ',tau,nu,rho,phydrostatic,jweight,velocitySIA'
+         written += ',tau,nu,phydrostatic,jweight,velocitySIA'
     fd.PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' \
                        % (written,filename))
     u,p,c = upc.split()
@@ -118,7 +110,6 @@ def writeresult(filename,mesh,icemodel,upc,hinitialextruded,saveextra=False,mias
     c.rename('displacement')
     if saveextra:
         tau, nu = stresses(mesh,icemodel,u)
-        rhofield = densityicemiasma(mesh,hinitialextruded,rho/miasma)
         ph = phydrostatic(mesh)
         jw = jweight(mesh,icemodel,c)
         velocitySIA = siahorizontalvelocity(mesh)
@@ -128,12 +119,12 @@ def writeresult(filename,mesh,icemodel,upc,hinitialextruded,saveextra=False,mias
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
         if saveextra:
-            fd.File(filename).write(u,p,c,rank,tau,nu,rhofield,ph,jw,velocitySIA)
+            fd.File(filename).write(u,p,c,rank,tau,nu,ph,jw,velocitySIA)
         else:
             fd.File(filename).write(u,p,c,rank)
     else:
         if saveextra:
-            fd.File(filename).write(u,p,c,tau,nu,rhofield,ph,jw,velocitySIA)
+            fd.File(filename).write(u,p,c,tau,nu,ph,jw,velocitySIA)
         else:
             fd.File(filename).write(u,p,c)
 
