@@ -97,13 +97,13 @@ def siahorizontalvelocity(mesh):
 # save ParaView-readable file
 def writeresult(filename,mesh,icemodel,upc,hinitialextruded,saveextra=False):
     assert filename.split('.')[-1] == 'pvd'
-    written = 'u,p,c'
+    variables = 'u,p,c'
     if mesh.comm.size > 1:
-         written += ',rank'
+         variables += ',rank'
     if saveextra:
-         written += ',tau,nu,phydrostatic,jweight,velocitySIA'
-    fd.PETSc.Sys.Print('writing solution variables (%s) to output file %s ... ' \
-                       % (written,filename))
+         variables += ',tau,nu,phydrostatic,jweight,velocitySIA'
+    fd.PETSc.Sys.Print('writing variables (%s) to output file %s ... ' \
+                       % (variables,filename))
     u,p,c = upc.split()
     u.rename('velocity')
     p.rename('pressure')
