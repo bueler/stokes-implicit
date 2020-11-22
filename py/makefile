@@ -25,10 +25,10 @@ runstokesi_2:
 	-@./../testit.sh stokesi.py "-almost -dta 0.1 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2" 2 2
 
 runstokesi_3:
-	-@./../testit.sh stokesi.py "-almost -dta 1.0 -s_snes_converged_reason -s_ksp_converged_reason -mx 4 -my 4 -s_snes_rtol 1.0e-2" 1 3
+	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -mx 4 -my 4 -s_snes_rtol 1.0e-2 -s_ksp_rtol 1.0e-2" 1 3
 
 runstokesi_4:
-	-@./../testit.sh stokesi.py "-almost -dta 1.0 -mx 5 -saveextra -o test4.pvd" 2 4
+	-@./../testit.sh stokesi.py "-dta 1.0 -mx 5 -s_snes_converged_reason -saveextra -o test4.pvd" 2 4
 
 runstokesi_5:
 	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2" 1 5
