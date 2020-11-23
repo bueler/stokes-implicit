@@ -481,9 +481,13 @@ By definition, the solution of the coupled weak form is a list of three function
 
 \section{Finite element approximation}  \label{sec:finiteelement}
 
+FIXME for 3D we start from an unstructured 2D base mesh of quadrilaterals and extrude to get tetrahedra; in 2D we extrude intervals to get quadrilateral elements
+
 FIXME the initial iterate for the (SNES-based) solver is clear: $\bu,p$ come from solution of previous time step, and $b$ starts at zero
 
 FIXME track down \cite{IsaacStadlerGhattas2015} claim that $Q_2\times Q_1$ is aspect ratio robust because that seems to be true!
+
+FIXME regarding $N$: in 3D scalar $Q_1$ has 8 nodes per element and scalar $Q_2$ has 27; however, in 3D $\bu,p,c$ in $Q_2\times Q_1 \times Q_1$ means (asymptotically) that there are $3\times 8 + 1 + 1 = 26$ degrees of freedom per tetrahedral element
 
 FIXME pseudocode algorithm
 
