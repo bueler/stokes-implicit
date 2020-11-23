@@ -360,6 +360,18 @@ DOI = {10.5194/gmd-11-3747-2018}
   year={2012},
 }
 
+% includes SKE but says it is hyperbolic and presumably solves it explicitly
+@article{LeMeuretal2004,
+author = "E. {Le Meur} and O. Gagliardini and T. Zwinger and J. Ruokolainen",
+title = "Glacier flow modelling: a comparison of the Shallow Ice Approximation and the full-Stokes solution",
+journal = "Comptes Rendus Physique",
+volume = "5",
+number = "7",
+pages = "709--722",
+year = "2004",
+doi = "https://doi.org/10.1016/j.crhy.2004.10.001",
+}
+
 @Article {Lengetal2012,
     AUTHOR = {Leng, W. and L. Ju and M. Gunzburger and S. Price and T. Ringler},
      TITLE = {A parallel high-order accurate finite element nonlinear {S}tokes
@@ -512,6 +524,18 @@ YEAR = {2011},
 PAGES = {715--726},
 }
 
+% notes variational inequality "S\ge B"; says SKE is "advection equation"; allows solution of this VI via SNESVI implicityly; "we introduced an artificial ice layer of thickness haf to construct a 3D volume mesh over the entire domain, this constraint is defined as \tilde B = B + h_{af}"
+% it has been accepted
+@Article{WirbelJarosch2020,
+AUTHOR = {Wirbel, A. and Jarosch, A. H.},
+TITLE = {Free–surface flow as a variational inequality (\textit{evolve}\_\textit{glacier v1.1}): {N}umerical aspects of a glaciological application},
+JOURNAL = {Geoscientific Model Development Discussions},
+VOLUME = {2020},
+YEAR = {2020},
+PAGES = {1--34},
+DOI = {10.5194/gmd-2020-58}
+}
+
 @article{Zwingeretal2007,
   title={A full {S}tokes-flow thermo-mechanical model for firn and ice applied to the {G}orshkov crater glacier, {K}amchatka},
   author={Zwinger, T. and Greve, R. and Gagliardini, O. and Shiraiwa, T. and Lyly, M.},
@@ -519,6 +543,18 @@ PAGES = {715--726},
   volume={45},
   pages={29--37},
   year={2007},
+}
+
+% includes SKE and notes "s-b\ge h_min" variational inequality but evolves it explicitly (I think)
+@Article{ZwingerMoore2009,
+AUTHOR = {Zwinger, T. and Moore, J. C.},
+TITLE = {{Diagnostic and prognostic simulations with a full Stokes model accounting for superimposed ice of Midtre Lovénbreen, Svalbard}},
+JOURNAL = {The Cryosphere},
+VOLUME = {3},
+YEAR = {2009},
+NUMBER = {2},
+PAGES = {217--229},
+DOI = {10.5194/tc-3-217-2009}
 }
 
 % below here: random
