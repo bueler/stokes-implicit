@@ -45,10 +45,14 @@ urlcolor=black    % ...
 
 \newcommand{\rhoi}{\rho_{\text{i}}}
 
-\newcommand{\cref}{c_{\text{ref}}}
 \newcommand{\Href}{H_{\text{ref}}}
-\newcommand{\num}{\nu_{\text{m}}}
-\newcommand{\rhom}{\rho_{\text{m}}}
+
+\newcommand{\PiK}{\Pi_{\mathcal{K}}}
+\newcommand{\hin}{h_{\text{in}}}
+\newcommand{\hout}{h_{\text{out}}}
+
+\newcommand{\dhin}{\delta h_{\text{in}}}
+\newcommand{\dhout}{\delta h_{\text{out}}}
 
 
 \begin{document}
@@ -198,19 +202,11 @@ Appendix A summarizes a simplified model of our coupled problem, namely the shal
 
 We intend to solve the coupled problem \eqref{regeffvisc}--\eqref{basebc}, \eqref{strongadmissibility}--\eqref{strongcomplementarity} to yield a triple of functions $\bu,p,h$ where the surface elevation $h$ is defined on $(t,x,y) \in [0,\infty)\times R$.  By \eqref{Omegat}, the solution $h$ defines the domains $\Omega^t\subset \RR^d$ on which the velocity and pressure $\bu,p$ are defined.  However, inequalities \eqref{strongadmissibility} and \eqref{stronginequality} make it clear that we are not solving a true system of coupled PDEs.  In a preliminary manner in this section, then more completely in later sections, we describe function spaces suitable for this inequality-constrained evolving-geometry problem.  In preparation for examining the numerical stability of our implicit time-stepping method (section \ref{sec:implicitstep}), we also attempt to understand how small perturbations of surface elevation would evolve.
 
-\newcommand{\PiK}{\Pi_{\mathcal{K}}}
-
 Let $\mathcal{X}$ be a Banach space of real-valued functions on $R \subset \RR^{d-1}$ containing the bed elevation function $b$.  Let
     $$\mathcal{K} = \{h \in \mathcal{X}\,:\,h \ge b\}$$
 be the closed and convex subset of admissible surface elevation functions.  Associated to this set we have a pointwise truncation map $\PiK : \mathcal{X} \to \mathcal{K}$ given by $\PiK f = \max\{b,f\}$.
 
 Because the gradient of $h$ appears in stating our problem---see \eqref{topbc}, \eqref{stronginequality}, \eqref{strongcomplementarity}---we suppose $\mathcal{X}$ is in fact a Sobolev space \cite{Evans2010}, perhaps $W^{1,p}(R)$ for some $p\ge 1$.  While it it is not apparent from the literature which is the correct or natural space $\mathcal{X}$, in the smooth-bed SIA simplified model one would regard it as the space of $n/(2n+2) = 3/8$ powers of functions from $W^{1,n+1}(R)=W^{1,4}(R)$ \cite{JouvetBueler2012}.  In fact, our only requirement in this section for $\mathcal{X}$ is that such functions are continuous, a property satisfied by $W^{1,p}(R)$ if $p>d-1$ \cite[theorem 5.6.5]{Evans2010}.
-
-\newcommand{\hin}{h_{\text{in}}}
-\newcommand{\hout}{h_{\text{out}}}
-
-\newcommand{\dhin}{\delta h_{\text{in}}}
-\newcommand{\dhout}{\delta h_{\text{out}}}
 
 Fix $h_0 \in \mathcal{K}$ and consider the coupled solution over an increment of time $[t,t+\Delta t]$ starting from this surface elevation.  This solution yields a final surface elevation $h_1 \in \mathcal{K}$ at $t+\Delta t$ (along with $\bu,p$ which are unimportant here).  If one perturbs the initial geometry to $h_0+\dhin$ then a coupled solution generates a different surface elevation $h_1 + \dhout$.  However, because parts of $R$ are not occupied by ice, even small-magnitude surface elevation perturbations are nontrivially constrained by the requirement that the surface be above the bed.  Therefore for $h_0$ and $h_1$ we define spaces of admissible geometry perturbations
     $$\mathcal{K}_i = \left\{\delta h \in \mathcal{X} \,:\, \delta h \ge b - h_i\right\}.$$
@@ -395,40 +391,32 @@ D_{\bx}\bu = D_{\bxi} \tilde\bu
 \end{equation}
 where the squares indicate symmetric entries.
 
-Observe that the change of coordinates $\bxi \mapsto \bx$ is not locally invertible where $\frac{\partial c}{\partial \zeta}=-1$.  If $\Delta t$ is not too long and the glacier is nearly in equilibrium with its climate then we expect $|\partial c/\partial \zeta| \ll 1$, in which case local invertibility is not a concern.
+Observe that the change of coordinates $\bxi \mapsto \bx$ is not locally invertible where $\frac{\partial c}{\partial \zeta}=-1$.  If $\Delta t$ is not too large and the glacier is nearly in equilibrium with its climate then we expect $|\partial c/\partial \zeta| \ll 1$, in which case local invertibility is not a concern.  Regarding boundary condition \eqref{claplacetop}, the observant reader will have noticed that in icy areas ($h>b$), if the glacier is in equilibrium with the climate then $h-h^{n-1}=0$ and $a+\bu\cdot\bn=0$, thus this boundary condition says $c=0$.  However, in ice free areas ($h=b$), because by construction the domain $\Lambda$ always has thickness at least $\Href$, we have $c=b-\lambda \le -\Href$.  For glaciers near equilibrium, and also for short time steps $\Delta t$, we thus expect $c$ to be around zero along the surface of the current ice but significantly negative in ice-free areas.
 
-FIXME REGARDING POINT (A) ABOVE:  Regarding boundary condition \eqref{claplacetop}, the observant reader will have noticed that in icy areas ($h>b$), if the glacier is in equilibrium with the climate then $h-h^{n-1}=0$ and $a+\bu\cdot\bn=0$, thus the boundary condition is $c=0$.  However, in ice free areas ($h=b$), because by construction the domain $\Lambda$ always has thickness at least $\Href$, we have $b-\lambda \le -\Href$.  For glaciers near equilibrium, and also for short time steps $\Delta t$, we thus expect $c$ to be about zero in the ice but significantly negative in ice-free areas.  FIXME: THUS WE MAY AVOID CONDITIONAL IN DEFINING $j$ BY $+\epsilon$ IN \eqref{claplacetop}?
-
-FIXME: Conversely, and noting $c$ has dimensions of distance, the dimensionless value of $-1$ is significant because the map would eliminate all the ice at a location $(\xi,\eta)$ if $\frac{\partial c}{\partial \zeta}=-1$ identically in that column.  While we will (and must) allow for such a possibility, we also need to compute well-posed time steps over the reference domain $\Lambda$, thus we make one more regularization.  Let $\delta > 0$ be a small number and define the (unhatted) functions
+Noting $c$ has dimensions of distance, when $\partial c/\partial \zeta$ has the dimensionless value of $-1$ then the map would eliminate all the ice in that column.  While we will allow for such a possibility, we also need to compute well-posed time steps over the reference domain $\Lambda$.  This is achieved via regularization.  Let $\delta > 0$ be a small number and define the (unhatted) functions
 \begin{equation}
 j(\bxi) = \max\left\{1+\frac{\partial c}{\partial \zeta}, \delta\right\} \qquad \text{and} \qquad \ell(\bxi) = j(\bxi)^{-1}. \label{definejell}
 \end{equation}
 
 Formulas \eqref{changediv} and \eqref{changeDu} will be used in stating the coupled weak form in the next section, with $\ell$ from \eqref{definejell} replacing $\hat\ell$.  In fact, functions $j$ and $\ell$ will appear as coefficients in the weak form integrals over $\Lambda$, and regularization \eqref{definejell} makes these integrals finite even in areas where ice is rapidly being removed, i.e.~even when $\partial c/\partial \zeta$ is negative and $O(1)$ or larger.  Such rapid removal will generate a mass conservation error, of a type not that different from errors forced by the free boundary nature of the problem \cite{Bueler2020}.
 
-FIXME: AFTER LOOKING AT THE COUPLED WEAK FORM IN THE NEXT SECTION, MIASMA IS \emph{NOT} NEEDED, I THINK: The shaded area of the Figure, the portion of the reference domain not occupied by ice \emph{in the solution}, is the volume of the atmosphere where the ice extends less than $\Href$ above the bed.  As an additional approximation, within this volume our model will include an incompressible regularizing fluid which we call ``miasma,''\footnote{Defined as an oppressive or unpleasant atmosphere which surrounds something, often settling into low areas.} with density much smaller than ice.  Specifically, \eqref{forcebalance} is replaced by
-\begin{equation}
-- \nabla \cdot \tau + \nabla p = \rhom \bg \label{miasma}
-\end{equation}
-in the shaded area, and equations \eqref{incompressible} and \eqref{viscflowlaw} are unchanged.  In our numerical experiments (section \ref{sec:results} below) we will use $\rhom = \rhoi/10$.  Such a light fluid should cause minimal impact on the dynamics of the ice while also occupying a part of the domain which the ice may come to occupy during the solution process for the coupled equations.
 
+\section{Weak forms} \label{sec:weakforms}
 
-\section{Weak form of the coupled equations} \label{sec:weakformcoupled}
+Our FE method in section \ref{sec:finiteelement} will solve the weak form of the coupled system consisting of the velocity-pressure equations in section \ref{sec:strongform} plus the vertical displacement problem just described (section \ref{sec:implicitstep}).  We first recall the well-known weak form of the former system, that is, of the (decoupled) Glen-Stokes problem \eqref{regeffvisc}--\eqref{basebc}, separately from surface kinematical concerns.  This provides notation and a starting point from which to state the coupled weak form.
 
-Our FE method in section \ref{sec:finiteelement} will solve the weak form of the coupled system consisting of the velocity-pressure equations in section \ref{sec:strongform} plus the vertical displacement problem just described.  We first recall the well-known weak form of the former, that is, the (decoupled) Glen-Stokes problem \eqref{stokes}--\eqref{basebc} \cite{JouvetRappaz2011}, separately from surface kinematical concerns.  This provides notation and a starting point from which to state the coupled weak form.
-
-Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent.  The Sobolev space of velocity fields on $\Omega^t$ with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For fixed $t>0$ one seeks a solution from the following spaces:
+Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent; if $n=3$ then $r=4/3$ and $r'=4$.  The Sobolev space of velocity fields on $\Omega^t$ with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For fixed $t>0$ one seeks a solution from the following spaces:
 \begin{align*}
 \bu &\in \hat\bV = \left\{\bv \in W^{1,r}(\Omega^t)^d\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
 p &\in \hat Q = L^{r'}(\Omega^t).
 \end{align*}
 (Hats indicate choices which are preliminary to the coupled case.)  Test functions $\bv \in \hat\bV_0$ and $q\in \hat Q$ will come from nearly the same spaces, but with $\bv=\bzero$ on the inflow boundary if present.  Note that velocities in $\hat\bV$ are generally only once differentiable, and that pressures in $\hat Q$ need not even be continuous.
 
-To derive the weak form we multiply \eqref{stokes} by $\bv\in \hat\bV_0$ and \eqref{incompagain} by $q\in \hat Q$, then add these and integrate-by-parts.  Using $ds$ for the boundary measure this yields
+To derive the weak form we multiply \eqref{stokes} by $\bv\in \hat\bV_0$ and the negative of \eqref{incompagain} by $q\in \hat Q$, then add these and integrate-by-parts in certain integrals.  Using $ds$ for the boundary measure this yields
 \begin{equation}
 \int_{\Omega^t} 2 \nu_\eps(|D\bu|) D\bu \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rhoi \mathbf{g} \cdot \bv \,d\bx -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds = 0. \label{nonfunctwo}
 \end{equation}
-Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ without derivatives.  Because $\bv\in \hat\bV_0$, portions of the boundary integral disappear and the stress-free surface condition \eqref{topbc} eliminates the remaining portions.  Thus we have the following functional which is nonlinear in $\bu$ and linear in $p,\bv,q$:
+Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ without derivatives.  Because $\bv\in \hat\bV_0$, portions of the boundary integral disappear and the stress-free surface condition \eqref{topbc} eliminates the remaining portions.  Thus we have the following functional which is nonlinear in $\bu$, linear in $p$, and linear in the test functions $\bv,q$:
 \begin{equation}
 \hat F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rhoi \mathbf{g} \cdot \bv \,d\bx. \label{definehatF}
 \end{equation}
@@ -437,13 +425,19 @@ The final integral in \eqref{definehatF} is the source term.  We say $\bu\in \ha
 \hat F(\bu,p;\bv,q) = 0 \qquad \text{ for all } \bv\in \hat\bV_0 \text{ and } q\in \hat Q.  \label{weakdecoupledstokes}
 \end{equation}
 
-A related formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  Note that if the inflow velocity is zero or absent (i.e.~$\bu_{\text{in}}=\bzero$ or $\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupledstokes} is $\bu=\bzero$ and $p=0$.
+A nearly-identical formulation of the same problem is proved in \cite[Theorem 3.8]{JouvetRappaz2011} to be well-posed under reasonable assumptions about the domain and the boundary data, including that the ice base $\underline{\partial} \Omega^t$ has positive measure.  Note that if the inflow velocity is zero or absent (i.e.~$\bu_{\text{in}}=\bzero$ or $\partial_{\text{in}} \Omega^t = \emptyset$), and if the source term is also zero because gravity is turned off ($\bg=\bzero$), then the unique solution of \eqref{weakdecoupledstokes} is $\bu=\bzero$ and $p=0$.  That is, the fluid is exclusively gravity driven.
 
-Next we consider the decoupled weak form of the Laplace problem \eqref{claplace}--\eqref{claplacesides} for the vertical displacement $c$ on the reference domain $\Lambda$.  Recall that these equations describe our method for a backward Euler time step of the surface kinematical equation, i.e.~\eqref{backwardeulerske}.  We will weakly impose the top boundary condition \eqref{claplacetop}, because it involves the velocity unknowns, and let $\cref=-\max\{\Href+b-h^{n-1},0\}$ because this data in \eqref{claplacetop} is known.  Let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}$ scalar functions on $\Lambda$ which are zero on the base $\underline{\partial} \Lambda$.  We multiply \eqref{claplace} by a test function $e \in W_0^{1,2}(\Lambda)$ and integrate by parts, then use conditions \eqref{claplacebase} and \eqref{claplacesides} to eliminate all but the top boundary integral.  Denoting the boundary measure by $d\sigma$, this defines a bilinear form
+Next we consider the decoupled weak form of the Laplace problem \eqref{claplace}--\eqref{claplacesides} for the vertical displacement $c$ on the reference domain $\Lambda$.  Recall that these equations describe a backward Euler time step of the surface kinematical equation, i.e.~\eqref{backwardeulerske}.  We will weakly impose the top boundary condition \eqref{claplacetop}, because it involves the velocity unknowns.  Let $W_0^{1,2}(\Lambda)$ be the space of $W^{1,2}$ scalar functions on $\Lambda$ which are zero on the base $\underline{\partial} \Lambda$.  We multiply \eqref{claplace} by a test function $e \in W_0^{1,2}(\Lambda)$ and integrate by parts, then use conditions \eqref{claplacebase} and \eqref{claplacesides} to eliminate all but the top boundary integral.  Denoting the boundary measure by $d\sigma$, this defines a bilinear form
 \begin{equation}
-B(c;e) = \int_\Lambda \grad c \cdot \grad e \,d\bxi + \int_{\overline{\partial} \Lambda} \Big(c - \cref + \Delta t(a + \bu\cdot \left<-\grad_{\xi,\eta} h,1\right>)\Big) e\,d\sigma. \label{defineB}
+B(c;e) = \int_\Lambda \grad c \cdot \grad e \,d\bxi + \int_{\overline{\partial} \Lambda} (c - \psi(c,\bu)) e\,d\sigma \label{defineB}
 \end{equation}
-Note that the boundary integral evaluates $c$, $e$, $a$, $\bu$, and $\grad_{\xi,\eta} h$ all in the trace sense, and recall expression FIXME for $a$ and \eqref{hgradient} for $\grad_{\xi,\eta} h$.
+where
+\begin{equation}
+\psi(c,\bu) = b\, \mathbbm{1}_{\{h=b\}} + \left(h^{n-1} + \Delta t\left(\bar a + \bu \cdot \bn\right)\right)\, \mathbbm{1}_{\{h>b\}} - \lambda \label{definepsi}
+\end{equation}
+from \eqref{claplacetop}.
+% FIXME consider regularizing {h=b} --> {h-b\le \delta} and {h>b} --> {h-b>\delta}
+Note that $h$ and $\bn$ depend on $c$ via \eqref{maptoptotop} and \eqref{hgradient}; recall equation \eqref{mappednormaldirection}.  On the other hand, $b$, $h^{n-1}$, $\bar a$, and $\lambda$ are fixed data in this context.
 
 Given data $b$, $h^{n-1}$, $a$, $\bu$, and $h$ we say $c \in W_0^{1,2}(\Lambda)$ solves the decoupled weak form of the vertical displacement problem \eqref{claplace}--\eqref{claplacesides} if $B(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.  However, in the coupled weak form below $\bu$ and $h$ will be solution variables, not data.
 
@@ -457,34 +451,28 @@ Now we can write the coupled weak form.  Recall from section \ref{sec:stronggeom
 \begin{align*}
 \bV &= \left\{\bv \in W^{1,r}(\Lambda)^d\,:\,\bv\big|_{\underline{\partial} \Lambda}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Lambda} = \bu_{\text{in}}\right\}, \\
 Q   &= L^{r'}(\Lambda), \\
-R   &= \left\{e \in W_0^{1,2}(\Lambda)\,:\,e\big|_{\underline{\partial} \Lambda} = 0\right\}.
+W   &= \left\{e \in W_0^{1,2}(\Lambda)\,:\,e\big|_{\underline{\partial} \Lambda} = 0\right\}.
 \end{align*}
 Let $\bV_0$ be the obvious modified space with $\bv\big|_{\partial_{\text{in}} \Lambda} = \bzero$ if an inflow boundary is present.
 
-For $(\bu,p,c) \in \bV\times Q\times R$ and test functions $(\bv,q,e) \in \bV_0\times Q\times R$ let
+For $(\bu,p,c) \in \bV\times Q\times W$ and test functions $(\bv,q,e) \in \bV_0\times Q\times W$ let
 \begin{align}
 F(\bu,p,c;\bv,q,e) &= \int_{\Lambda} \Big[2 \nu_\eps(|D_\bx\bu|)\, D_\bx\bu\,:\,D_\bx\bv - p (\nabla_\bx \cdot \bv) - \left(\nabla_\bx \cdot \bu\right) q - \rho\, \mathbf{g} \cdot \bv\Big] j \,d\bxi \notag \\
 &\qquad + \int_\Lambda \grad c \cdot \grad e \,d\bxi \notag \\
-&\qquad + \int_{\overline{\partial} \Lambda} \Big(c - \cref + \Delta t(a + \bu\cdot \left<-\grad_{\xi,\eta} h,1\right>)\Big) e\,d\sigma. \label{defineF}
+&\qquad + \int_{\overline{\partial} \Lambda} (c - \psi(c,\bu)) e\,d\sigma. \label{defineF}
 \end{align}
-In this formula, $\rho$ is defined by
-    $$\rho = \begin{cases} \rho_i, & \zeta < h(\xi,\eta), \\
-                           \rhom, & h(\xi,\eta) < \zeta < \Href, \end{cases}$$
-which requires recalling that $h$ is defined by equation FIXME, that is, $h(\xi,\eta)=h^{n-1}(\xi,\eta) + c(\xi,\eta,h^{n-1}(\xi,\eta))$.  Furthermore recall that $\grad_{\xi,\eta} h$ appearing in \eqref{defineF} is defined by equation \eqref{hgradient}, that is, $\grad_{\xi,\eta} h = \left(1+\frac{\partial c}{\partial\zeta}\right) \grad_{\xi,\eta} h^{n-1} + \left<\frac{\partial c}{\partial\xi},\frac{\partial c}{\partial\eta}\right>$.  The divergences $\grad_\bx \cdot\bu$, $\grad_\bx \cdot\bv$ and strain rate tensors $D_\bx\bu$, $D_\bx\bv$ in \eqref{defineF} are given by expressions \eqref{changediv} and \eqref{changeDu} with $\ell$ replacing $\hat\ell$.  The function $\ell$, and the density $j$ in the first integral in \eqref{defineF}, are defined by formulas \eqref{definejell}.
+% FIXME should \psi(c,\bu) be regularized?
+In this form the divergences $\grad_\bx \cdot\bu$, $\grad_\bx \cdot\bv$ and strain rate tensors $D_\bx\bu$, $D_\bx\bv$ in \eqref{defineF} are given by expressions \eqref{changediv} and \eqref{changeDu} with $\ell$ replacing $\hat\ell$.  The function $\ell$, and the density $j$ in the first integral in \eqref{defineF}, are defined by formulas \eqref{definejell}.
 
-The definition of our coupled functional $F$ thus involves multiple couplings and regularizations.  The reader deserves a summary here as we must not lose, or sweep under the rug, these aspects of the implicit geometry update.  Observe that the functions $b(\xi,\eta)$ and $h^{n-1}(\xi,\eta)$, which define the domain $\Lambda$, as they appear in the above formulas, are known data in this coupled problem.
-
-Regarding the couplings, note that the ``miasma'' parameters $\num,\rhom$ are only applied above the surface $\zeta=h(\xi,\eta)$ in locations $(\xi,\eta) \in R$ where that surface is below $\Href$; see Figure \ref{fig:claplaceproblem}.  The effect is to couple the energy integral and source terms for the Glen-Stokes form, the first integral in \eqref{defineF}, to the vertical displacement function $c$, as it appears in equations FIXME and \eqref{hgradient} for the solution elevation $h$.  On the other hand, the final boundary integral in \eqref{defineF} explicitly couples the velocity $\bu$ to the vertical displacement problem for $c$.
-
-Finally, we explicitly list the regularizations:
+This definition of our coupled functional $F$ involves two regularizations.  The reader deserves a summary here as we must not lose, or sweep under the rug, these aspects of the implicit geometry update:
 \begin{itemize}
 \item ``$+\eps D_0^2$'' in formula \eqref{regeffvisc} for the nonlinear viscosity, using $\eps>0$ and $D_0>0$,
-\item miasma definition \eqref{miasma} using parameters $\num>0,\rhom>0$, and
 \item the cutoff in $j$ and $\ell$ in formula \eqref{definejell}, using parameter $\delta>0$, during rapid ice removal.
 \end{itemize}
-The first of these is well known, but the second and third are new to this work.  Critically, the third removes a potential singularity from the first integral in \eqref{defineF}, one which corresponds to a local orientation reversal in the map \eqref{changecoords}.
+% FIXME possibly in \psi(c,\bu)
+The first of these is well known, but the second is new to this work.  Critically, it removes a potential singularity from the first integral in \eqref{defineF}, one which corresponds to a local orientation reversal in the map \eqref{changecoords}.
 
-By definition, the solution of the coupled weak form is a list of three functions, the velocity $\bu \in \bV$, the pressure $p\in Q$, and the vertical displacement $c\in R$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all test functions $\bv$, $q$, $e$.  All of these functions are defined on the domain $\Lambda$ which is fixed for the duration of the time step; it is this domain which will be meshed in the FE method.  Assuming that $\Lambda$ is a well-behaved domain we expect this boundary-value problem to be well-posed, but this mathematical issue is definitely \emph{not} resolved in this paper, except indirectly through the numerical evidence below.
+By definition, the solution of the coupled weak form is a list of three functions, the velocity $\bu \in \bV$, the pressure $p\in Q$, and the vertical displacement $c\in W$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all test functions $\bv$, $q$, $e$.  All of these functions are defined on the domain $\Lambda$ which is fixed for the duration of the time step; it is this domain which will be meshed in the FE method.  Assuming that $\Lambda$ is a well-behaved domain we expect this boundary-value problem to be well-posed, but this mathematical issue is definitely \emph{not} resolved in this paper, though supporting numerical evidence appears in sections \ref{sec:results} and \ref{sec:validation}.
 
 %FIXME:  perhaps we should be solving a variational inequality subject to \frac{\partial c}{\partial \zeta} \ge -1 *and* regularizing the weak form stretching factors to keep \ell bounded (which is done)
 
