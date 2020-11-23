@@ -1,0 +1,52 @@
+\begin{tikzpicture}[scale=2.5,font=\small]
+\newcommand{\ILABEL}{}
+\newcommand{\MIDLABEL}{}
+\tikzstyle{grayarrow} = [thick,gray,->,shorten <=7,shorten >=12]
+
+\node[anchor=west] at (0.0,1.8) {grows: $h > \lambda$};
+\pgfmathsetmacro{\IX}{0.0}
+\pgfmathsetmacro{\IY}{1.0}
+\renewcommand{\MIDLABEL}{$\lambda$}
+\renewcommand{\ILABEL}{$(\xi,\eta)$}
+\input{tikz/interval.tex}
+\pgfmathsetmacro{\IX}{1.1}
+\pgfmathsetmacro{\IY}{1.5}
+\renewcommand{\MIDLABEL}{$h$}
+\renewcommand{\ILABEL}{$(x,y)$}
+\input{tikz/interval.tex}
+\draw[decoration={brace,mirror,raise=5pt},decorate] (1.1,1.0) -- node[right=7pt] {$c>0$} (1.1,1.5);
+\draw[style=grayarrow] (0.0,0.0) -- (1.1,0.0);
+\draw[style=grayarrow] (0.0,1.0) -- (1.1,1.5);
+
+\node[anchor=west] at (2.0,1.8) {shrinks: $b < h < \lambda$};
+\pgfmathsetmacro{\IX}{2.0}
+\pgfmathsetmacro{\IY}{1.0}
+\renewcommand{\MIDLABEL}{$\lambda$}
+\renewcommand{\ILABEL}{$(\xi,\eta)$}
+\input{tikz/interval.tex}
+\pgfmathsetmacro{\IX}{3.1}
+\pgfmathsetmacro{\IY}{0.5}
+\renewcommand{\MIDLABEL}{$h$}
+\renewcommand{\ILABEL}{$(x,y)$}
+\input{tikz/interval.tex}
+\draw[decoration={brace,raise=5pt},decorate] (3.1,1.0) -- node[right=7pt] {$c<0$} (3.1,0.5);
+\draw[style=grayarrow] (2.0,0.0) -- (3.1,0.0);
+\draw[style=grayarrow] (2.0,1.0) -- (3.1,0.5);
+
+\node[anchor=west] at (4.0,1.8) {ice-free: $h=b$};
+\pgfmathsetmacro{\IX}{4.0}
+\pgfmathsetmacro{\IY}{1.0}
+\renewcommand{\MIDLABEL}{$\lambda$}
+\renewcommand{\ILABEL}{$(\xi,\eta)$}
+\input{tikz/interval.tex}
+\pgfmathsetmacro{\IX}{5.1}
+\pgfmathsetmacro{\IY}{0.0}
+\renewcommand{\MIDLABEL}{}
+\renewcommand{\ILABEL}{$(x,y)$}
+\input{tikz/interval.tex}
+\draw[decoration={brace,raise=5pt},decorate] (5.1,1.0) -- node[right=7pt] {$c=b-\lambda$} (5.1,0.0);
+\draw[style=grayarrow] (4.0,0.0) -- (5.1,0.0);
+\draw[style=grayarrow] (4.0,1.0) -- (5.1,0.0);
+
+\end{tikzpicture}
+

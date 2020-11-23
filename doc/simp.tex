@@ -5,6 +5,7 @@
 \usepackage{times,bm,bbm,empheq,fancyvrb,graphicx}
 \usepackage[dvipsnames]{xcolor}
 \usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing}
 
 % hyperref should be the last package we load
 \usepackage[pdftex,
@@ -314,7 +315,11 @@ h(\xi,\eta)>b(\xi,\eta) \quad \implies \quad h - h^{n-1} = \Delta t\left(a + \bu
 \end{equation}
 The quantities on the right are evaluated at the solution ice surface $\zeta=h(\xi,\eta)$ and the new time $t_n$.  For instance, from section \ref{sec:stronggeometry} we have $\bu=\bu(\xi,\eta,h(\xi,\eta))$ where $\bu(\bxi)$ is the velocity solution on $\Lambda$.  We emphasize, however, that \eqref{backwardeulerske} applies only where ice is present in the solution geometry; recall we are actually seeking to solve NCP \eqref{strongadmissibility}--\eqref{strongcomplementarity}.
 
-FIXME INSERT COLUMN-WISE FIGURE HERE THAT SHOWS \eqref{mapcrushes} ON LEFT AND \eqref{backwardeulerske} ON RIGHT
+\begin{figure}[ht]
+\input{tikz/mapI.tex}
+\caption{The map $\bx:\Lambda \to \Omega^n$ in \eqref{changecoords} takes a column with surface elevation $\lambda$ to one with $h$.  The column can grow (left), shrink (middle), or yield no ice (right) according to the top boundary value $c=c(\xi,\eta,\lambda(\xi,\eta))$ from \eqref{claplacetop}.}
+\label{fig:mapI}
+\end{figure}
 
 We now have multiple requirements on the scalar function $c(\bxi)$, specifically equations \eqref{mapbasetobase}, \eqref{maptoptotop}, \eqref{mapmonotonic}, \eqref{mapcrushes}, and \eqref{backwardeulerske}.  These requirements can perhaps all be satisfied as long as the computed velocity and surface mass balance in \eqref{backwardeulerske} are compatible with the admissibility requirement $h>b$ in such columns.  However, the resulting function $c$ will at least have low regularity because, as one passes from an ice-free location \eqref{mapcrushes} to one with ice \eqref{backwardeulerske}, i.e.~across an ice margin, we should expect $c$ to change abruptly.\footnote{We can offer no regularity theorem.}
 
