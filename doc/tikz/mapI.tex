@@ -3,7 +3,7 @@
 \newcommand{\MIDLABEL}{}
 \tikzstyle{grayarrow} = [thick,gray,->,shorten <=7,shorten >=12]
 
-\node[anchor=west] at (0.0,1.7) {\underline{$h > \lambda$}:};
+\node[anchor=west] at (0.0,1.7) {\underline{$h \ge \lambda$}:};
 \pgfmathsetmacro{\IX}{0.0}
 \pgfmathsetmacro{\IY}{1.0}
 \renewcommand{\MIDLABEL}{$\lambda$}
@@ -12,7 +12,7 @@
 \pgfmathsetmacro{\IY}{1.5}
 \renewcommand{\MIDLABEL}{$h$}
 \input{tikz/interval.tex}
-\draw[decoration={brace,mirror,raise=7pt},decorate] (1.0,1.0) -- node[right=7pt] {$c>0$} (1.0,1.5);
+\draw[decoration={brace,mirror,raise=7pt},decorate] (1.0,1.0) -- node[right=7pt] {$c\ge 0$} (1.0,1.5);
 \draw[style=grayarrow] (0.0,0.0) -- (1.0,0.0);
 \draw[style=grayarrow] (0.0,1.0) -- (1.0,1.5);
 
