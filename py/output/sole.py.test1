@@ -1,4 +1,5 @@
-extruded mesh:      4 x 4 x 4 mesh of Q1 elements on 100000.00 x 100000.00 x 1000.00 domain
+stage 3:            extruded semicoarsening in z, high aspect, GMG in z and AMG in base
+extruded mesh:      4 x 4 x 4 mesh of Q1 hex elements on 100000.00 x 100000.00 x 1000.00 domain
 vector space dim:   N=125
   Linear s_ solve converged due to CONVERGED_RTOL iterations 4
   semi-coarsening:  GMG levels = 3, coarse-level AMG levels = 2
