@@ -76,8 +76,7 @@ is solved by AMG (-mg_coarse_pc_type gamg).  In stages 2,3 the semi-coarsening
 uses a default factor of 2 but -aggressive changes to 4.  Stages 1 and 2 are
 on unit cubes (though stage 2 is managed as an extruded mesh).  Stage 3 is a
 high-aspect ratio box with small height, again managed as an extruded mesh.
-(Note that a sole is a kind of flat fish.)  The first three stages in pool.py
-are analogs of the stages here, but for Stokes problems.''',
+(Note that a sole is a kind of flat fish.)''',
            add_help=False)
 parser.add_argument('-aggressive', action='store_true', default=False,
                     help='for extruded hierarchy, refine aggressively in the vertical (factor 4 instead of 2)')
