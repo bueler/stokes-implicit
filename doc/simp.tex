@@ -34,6 +34,7 @@ urlcolor=black    % ...
 \newcommand{\bn}{\mathbf{n}}
 \newcommand{\bu}{\mathbf{u}}
 \newcommand{\bv}{\mathbf{v}}
+\newcommand{\bw}{\mathbf{w}}
 \newcommand{\bx}{\mathbf{x}}
 
 \newcommand{\bV}{\mathbf{V}}
@@ -200,7 +201,38 @@ Appendix A summarizes a simplified model of our coupled problem, namely the shal
 
 \section{Time steps and geometry perturbations} \label{sec:perturb}
 
-We intend to solve the coupled problem \eqref{regeffvisc}--\eqref{basebc}, \eqref{strongadmissibility}--\eqref{strongcomplementarity} to yield a triple of functions $\bu,p,h$ where the surface elevation $h$ is defined on $(t,x,y) \in [0,\infty)\times R$.  By \eqref{Omegat}, the solution $h$ defines the domains $\Omega^t\subset \RR^d$ on which the velocity and pressure $\bu,p$ are defined.  However, inequalities \eqref{strongadmissibility} and \eqref{stronginequality} make it clear that we are not solving a true system of coupled PDEs.  In a preliminary manner in this section, then more completely in later sections, we describe function spaces suitable for this inequality-constrained evolving-geometry problem.  In preparation for examining the numerical stability of our implicit time-stepping method (section \ref{sec:implicitstep}), we also attempt to understand how small perturbations of surface elevation would evolve.
+We intend to solve the coupled problem \eqref{regeffvisc}--\eqref{basebc}, \eqref{strongadmissibility}--\eqref{strongcomplementarity} to yield a triple of functions $\bu,p,h$ where, in particular, the surface elevation $h$ is defined on $(t,x,y) \in [0,\infty)\times R$.  According to definition \eqref{Omegat}, $h$ determines the domains $\Omega^t\subset \RR^d$ on which the velocity and pressure $\bu,p$ are meaningful, so the problem has some kind of free-boundary character.  Furthermore, inequalities \eqref{strongadmissibility} and \eqref{stronginequality} make it clear that we are not solving a classical system of coupled PDEs.
+
+In this section we describe this inequality-constrained evolving-geometry problem in a time semi-discretized, but continuous space, framework.  So that we may examine the numerical stability of the implicit time-stepping method in the next section, we consider how small perturbations of surface elevation would evolve.  We will address the stability of forward and backward Euler time steps, i.e.~the simplest explicit and implicit schemes, respectively, in our semi-discretized context.
+
+Because this continuous-space framework is not the common way to analyze scheme stability,\footnote{Scheme stability for numerical PDEs is usually addressed in a spatially semi-discrete framework, namely the \emph{method of lines} \cite{LeVeque2007}, or in a fully-discrete framework \cite{MortonMayers2005}.} we sketch the framework for an abstract linear evolution PDE
+\begin{equation}
+\frac{\partial q}{\partial t} = L q, \label{linearevolve}
+\end{equation}
+with $q=q(t,x)$, $x$ in some spatial domain, and $L$ a generally-unbounded, time-independent operator on some function space $\mathcal{X}$.  In some generality, namely when $L$ generates a strongly-continuous semigroup \cite{Evans2010}, we can regard the solution of \eqref{linearevolve} as $q = e^{tL} q_0$ where $q_0 \in \mathcal{X}$.  That is, solving the PDE generates a bounded solution operator $\phi_t$ on $\mathcal{X}$ for each $t\ge 0$
+\begin{equation}
+\frac{\partial q}{\partial t} = L q \qquad \implies \qquad \phi_t = e^{t\,L}. \label{linearexact}
+\end{equation}
+Over some duration $\Delta t$ the exact solution process can be written
+    $$q(t+\Delta t) = \phi_{\Delta t}\, q(t) = e^{\Delta t\,L} q(t).$$
+(Dependence on $x$ is suppressed here.)  For comparison, a single explicit forward-Euler time-step generates an approximation of the exact solution operator, namely
+\begin{equation}
+\frac{q^{n}-q^{n-1}}{\Delta t} = L q^{n-1} \qquad \implies \qquad \phi^E_{\Delta t} = I + \Delta t\,L, \label{linearexplicit}
+\end{equation}
+as does an implicit backward-Euler step
+\begin{equation}
+\frac{q^{n}-q^{n-1}}{\Delta t} = L q^{n} \qquad \implies \qquad \phi^I_{\Delta t} = (I - \Delta t\,L)^{-1}. \label{linearimplicit}
+\end{equation}
+Observe that $\phi_{\Delta t}$, $\phi^E_{\Delta t}$, and $\phi^I_{\Delta t}$ are linear operators on the same space $\mathcal{X}$ and that both methods approximate the exact step to first order: $\phi^{\{E,I\}}_{\Delta t} - \phi_{\Delta t} = O(\Delta t^1)$.
+
+However, in the case where the spatial domain is bounded and the operator $L$ is a typical differential operator, the approximate solution operators have very different quality.  Consider these two cases where $L$ is a well-known differential operator:
+\begin{itemize}
+\item \emph{$L=\grad^2$ is the Laplacian on a bounded domain with self-adjoint boundary conditions}:  Since $L$ has only eigenvalue spectrum \cite{Evans2010}, with the eigenvalues going to $-\infty$, the exact solution operator $\phi_{\Delta t} = e^{\Delta t\,L}$ is a compact (bounded) operator, as is the backward Euler operator $\phi^I_{\Delta t} = (I - \Delta t\,L)^{-1}$.  However the forward Euler operator $\phi^E_{\Delta t} = I + \Delta t\,L$ is actually unbounded.  Under a spatial discretization with resolution $h$, in which $\phi^{E,h}_{\Delta t} = I + \Delta t\,L^h$ acts on a finite-dimensional space $\mathcal{X}^h\subset \mathcal{X}$, one may impose a time step restriction $\Delta t < O(h^2)$ so that, when it acts only on the mesh-supported spatial modes $\phi^{E,h}_{\Delta t}$, is bounded (and indeed a contraction).  Thereby the forward Euler scheme in the fully-discrete context is a conditionally-stable scheme.
+\item \emph{$L=\bw \cdot \grad$ is an advection operator, with fixed nonzero velocity $\bw$, on a bounded, periodic domain}:  Again $L$ has only eigenvalue spectrum, now with the eigenvalues going to infinity in both imaginary directions, so the exact solution operator $\phi_{\Delta t} = e^{\Delta t\,L}$ is a unitary (bounded) operator.  The backward Euler operator $\phi^I_{\Delta t} = (I - \Delta t\,L)^{-1}$ is actually compact because its eigenvalues depart from the unit circle and converge to zero.  However, the forward Euler operator $\phi^E_{\Delta t} = I + \Delta t\,L$ is again unbounded.  Under a spatial discretization with resolution $h$ one may impose the CFL time-step restriction $\Delta t < O(h^1)$ \cite{LeVeque2007} and then the forward Euler scheme functions as a conditionally-stable fully-discrete scheme.
+\end{itemize}
+This completes our summary of the time-semi-discretized theory of linear evolution equations, so we return to evolving-geometry glaciers.
+
+FIXME: the inequality context changes the framework, but does not completely ruin it; we still want to send bounded sets to compact, thus nearly finite-dimensional, sets
 
 Let $\mathcal{X}$ be a Banach space of real-valued functions on $R \subset \RR^{d-1}$ containing the bed elevation function $b$.  Let
     $$\mathcal{K} = \{h \in \mathcal{X}\,:\,h \ge b\}$$
@@ -242,7 +274,7 @@ Compare the action of an implicit time-step scheme, here backward Euler for simp
 \Phi^I_{\bar a,\Delta t} : \mathcal{K}_0 \to \mathcal{K}^I_1. \label{perturboperatorimplicit}
 \end{equation}
 
-FIXME note that the three $\Phi$ do not even have the same output spaces [FIXME: MAYBE FORCE THEM TO FOR THE ANALYSIS?], but still we expect both $\Phi^E_{\bar a,\Delta t} = \Phi_{\bar a,\Delta t} + O(\Delta t^1)$ and similarly for $\Phi^I$; but the ops are really different; for the linear heat equation $u_t=Lu$ on a bounded domain we have $\Phi_{\Delta t} = e^{\Delta t\,L}$, $\Phi^E_{\Delta t} = I + \Delta t\,L$, $\Phi^I_{\Delta t} = (I - \Delta t\,L)^{-1}$; here $\Phi^E$ is unbounded while $\Phi$, $\Phi^I$ are bounded and actually compact (send bounded sets to compact, thus nearly finite-dimensional, sets); we expect for the ice problem that $\Phi^E_{\bar a,\Delta t}$ generates large magnitude perturbations for some norm one inputs while $\Phi^I_{\bar a,\Delta t}$ (and the exact) are compact in the same sense as in the linear case
+FIXME note that the three $\Phi$ do not even have the same output spaces, but still we expect both $\Phi^E_{\bar a,\Delta t} = \Phi_{\bar a,\Delta t} + O(\Delta t^1)$ and similarly for $\Phi^I$; but the ops are really different;  we expect for the ice problem that $\Phi^E_{\bar a,\Delta t}$ generates large magnitude perturbations for some norm one inputs while $\Phi^I_{\bar a,\Delta t}$ (and the exact) are compact in the same sense as in the linear case
 
 FIXME positive $\delta h$ always allowed; small positive $\delta h$ with small support cause change in velocity field equivalent to the addition of a Stokeslet (if single hump $/\backslash$) or doublet (if $/\backslash/$ with zero added volume) \cite{ChwangWu1975}; the former is longer range and the latter short
 
