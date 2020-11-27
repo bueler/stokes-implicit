@@ -76,10 +76,16 @@ if args.poolhelp:
     parser.print_help()
     sys.exit(0)
 
+# report stage
 if args.stage > 4:
     raise NotImplementedError('only stages 1--4 so far')
 if args.stage == 1 and args.aggressive:
     raise NotImplementedError('aggressive vertical coarsening only in stages > 1')
+stagedict = {1: 'lid-driven unit-cube cavity, 3D GMG',
+             2: 'lid-driven unit-cube cavity, GMG in z and AMG in base',
+             3: 'topography on top of unit-cube, GMG in z and AMG in base',
+             4: 'topography on top of high-aspect, GMG in z and AMG in base'}
+PETSc.Sys.Print('stage %d:            %s' % (args.stage,stagedict[args.stage]))
 
 # geometry: L x L x H
 if args.stage in {4,5}:
