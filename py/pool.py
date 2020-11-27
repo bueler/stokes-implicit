@@ -229,16 +229,9 @@ else:
 #params['fieldsplit_0_mg_levels_ksp_type'] = 'richardson'
 #params['fieldsplit_0_mg_levels_pc_type'] = 'ilu'
 
-if args.stage == 1:
-    #pass
-    # either parallel LU via MUMPS or serial LU on each process
-    params['fieldsplit_0_mg_coarse_pc_type'] = 'lu'
-    params['fieldsplit_0_mg_coarse_pc_factor_mat_solver_type'] = 'mumps'
-    #params['fieldsplit_0_mg_coarse_pc_type'] = 'redundant'
-    #params['fieldsplit_0_mg_coarse_sub_pc_type'] = 'lu'
-    #params['fieldsplit_0_mg_coarse_pc_type'] = 'ilu'
-else:
-    params['fieldsplit_0_mg_coarse_pc_type'] = 'gamg'
+# parallel LU via MUMPS on coarse grid  (versus GAMG)
+params['fieldsplit_0_mg_coarse_pc_type'] = 'lu'
+params['fieldsplit_0_mg_coarse_pc_factor_mat_solver_type'] = 'mumps'
 
 params['fieldsplit_1_ksp_type'] = 'preonly'
 
@@ -286,18 +279,15 @@ solver = NonlinearVariationalSolver(problem,
 # solve
 solver.solve()
 
-## report on GMG and AMG levels; the latter are only known *after* solve (i.e. PCSetup)
+## report on GMG levels
 pc = solver.snes.ksp.pc
 assert(pc.getType() == 'fieldsplit')
 pc0 = pc.getFieldSplitSubKSP()[0].pc
 assert(pc0.getType() == 'mg')
-coarsepc0 = pc0.getMGCoarseSolve().pc
 if args.stage == 1:
-    assert(coarsepc0.getMGLevels() == 0)
     PETSc.Sys.Print('  3D coarsening:    GMG levels = %d' % pc0.getMGLevels())
 else:
-    PETSc.Sys.Print('  semi-coarsening:  GMG levels = %d, coarse-level AMG levels = %d' \
-                    % (pc0.getMGLevels(),coarsepc0.getMGLevels()))
+    PETSc.Sys.Print('  semi-coarsening:  GMG levels = %d' % pc0.getMGLevels())
 
 # report solution norms
 uL2 = sqrt(assemble(inner(u, u) * dx))

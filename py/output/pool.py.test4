@@ -3,5 +3,5 @@ extruded mesh:      4 x 4 x 2 prisms(x2)
 domain:             100000.00 x 100000.00 base domain with 500.00 < z < 1500.00 at surface
 vector space dims:  n_u=1215, n_p=96  -->  N=1311
   Linear s_ solve converged due to CONVERGED_RTOL iterations 86
-  semi-coarsening:  GMG levels = 1, coarse-level AMG levels = 0
+  semi-coarsening:  GMG levels = 1
   solution norms:   |u|_2 = 5.479e+01,  |p|_2 = 1.682e+13
