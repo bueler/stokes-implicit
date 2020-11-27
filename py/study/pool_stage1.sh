@@ -16,7 +16,7 @@ for LEV in 0 1 2 3 4; do
     TNAME=stage1_lev$LEV.txt
     rm -f $TNAME
     $CMD &> $TNAME
-    head -n 6 $TNAME
+    head -n 7 $TNAME            # first 7 lines are before -log_view
     grep "PCSetUp " $TNAME
     grep "KSPSolve " $TNAME
     grep "Time (sec):" $TNAME

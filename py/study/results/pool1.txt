@@ -1,55 +1,60 @@
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine 0 -log_view
-extruded mesh:      4 x 4 x 4 hexahedra
+stage 1:            lid-driven unit-cube cavity, 3D GMG
+extruded mesh:      4 x 4 x 4 prisms(x2)
 domain:             1.00 x 1.00 x 1.00
-vector space dims:  n_u=2187, n_p=125  -->  N=2312
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 25
+vector space dims:  n_u=2187, n_p=160  -->  N=2347
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 26
   3D coarsening:    GMG levels = 1
-  solution norms:   |u|_2 = 2.016e-01,  |p|_2 = 4.055e+00
-PCSetUp                3 1.0 7.5898e-02 1.0 2.54e+06 7.1 1.4e+03 9.9e+02 1.2e+02  4 17 16 11 26   4 17 16 11 26   162
-KSPSolve               1 1.0 9.9483e-02 1.0 1.53e+07 6.8 4.6e+03 7.7e+02 2.2e+02  5100 54 28 49   5100 54 28 50   750
-Time (sec):           2.006e+00     1.000   2.006e+00
+  solution norms:   |u|_2 = 1.974e-01,  |p|_2 = 3.510e+00
+PCSetUp                3 1.0 5.1626e-02 1.0 1.94e+06 3.6 9.6e+02 7.3e+02 1.2e+02  3 16 16  9 25   3 16 16  9 26   172
+KSPSolve               1 1.0 6.1432e-02 1.0 1.23e+07 3.5 3.0e+03 7.6e+02 2.2e+02  3100 50 30 49   3100 50 30 50   922
+Time (sec):           1.995e+00     1.000   1.994e+00
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine 1 -log_view
-extruded mesh:      8 x 8 x 8 hexahedra
+stage 1:            lid-driven unit-cube cavity, 3D GMG
+extruded mesh:      8 x 8 x 8 prisms(x2)
 domain:             1.00 x 1.00 x 1.00
-vector space dims:  n_u=14739, n_p=729  -->  N=15468
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 27
+vector space dims:  n_u=14739, n_p=1152  -->  N=15891
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 17
   3D coarsening:    GMG levels = 2
-  solution norms:   |u|_2 = 1.941e-01,  |p|_2 = 3.832e+00
-PCSetUp                3 1.0 2.1742e+00 1.0 1.72e+07 2.4 2.2e+03 4.2e+03 1.7e+02 41  1 13 14 27  41  1 13 14 27    47
-KSPSolve               1 1.0 3.3007e+00 1.0 6.88e+0914.4 1.1e+04 2.6e+03 2.9e+02 62100 66 45 46  62100 66 45 46  4900
-Time (sec):           5.297e+00     1.000   5.297e+00
+  solution norms:   |u|_2 = 1.926e-01,  |p|_2 = 3.593e+00
+PCSetUp                3 1.0 7.0866e-01 1.0 1.25e+07 1.9 1.7e+03 2.8e+03 1.7e+02 24  1 15 13 28  24  1 15 13 28   105
+KSPSolve               1 1.0 9.7920e-01 1.0 4.27e+0913.5 6.5e+03 2.2e+03 2.6e+02 33100 57 40 43  33100 57 40 44 12829
+Time (sec):           2.954e+00     1.000   2.954e+00
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine 2 -log_view
-extruded mesh:      16 x 16 x 16 hexahedra
+stage 1:            lid-driven unit-cube cavity, 3D GMG
+extruded mesh:      16 x 16 x 16 prisms(x2)
 domain:             1.00 x 1.00 x 1.00
-vector space dims:  n_u=107811, n_p=4913  -->  N=112724
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 29
+vector space dims:  n_u=107811, n_p=8704  -->  N=116515
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 18
   3D coarsening:    GMG levels = 3
-  solution norms:   |u|_2 = 1.926e-01,  |p|_2 = 3.769e+00
-PCSetUp                3 1.0 2.9778e+00 1.0 1.38e+08 1.5 3.1e+03 1.2e+04 2.4e+02 32  3 12 15 29  32  3 12 15 29   316
-KSPSolve               1 1.0 6.3570e+00 1.0 8.94e+09 4.9 1.8e+04 7.0e+03 3.6e+02 69100 70 47 44  69100 70 47 44  4458
-Time (sec):           9.178e+00     1.000   9.178e+00
+  solution norms:   |u|_2 = 1.921e-01,  |p|_2 = 3.677e+00
+PCSetUp                3 1.0 1.3468e+00 1.0 9.98e+07 1.4 2.9e+03 7.8e+03 2.4e+02 25  4 16 15 30  25  4 16 15 30   499
+KSPSolve               1 1.0 2.8051e+00 1.0 5.21e+09 5.7 1.1e+04 5.9e+03 3.4e+02 51100 62 44 43  51100 62 44 43  6599
+Time (sec):           5.459e+00     1.000   5.459e+00
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine 3 -log_view
-extruded mesh:      32 x 32 x 32 hexahedra
+stage 1:            lid-driven unit-cube cavity, 3D GMG
+extruded mesh:      32 x 32 x 32 prisms(x2)
 domain:             1.00 x 1.00 x 1.00
-vector space dims:  n_u=823875, n_p=35937  -->  N=859812
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 29
+vector space dims:  n_u=823875, n_p=67584  -->  N=891459
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 19
   3D coarsening:    GMG levels = 4
-  solution norms:   |u|_2 = 1.923e-01,  |p|_2 = 3.751e+00
-PCSetUp                3 1.0 8.0971e+00 1.0 1.05e+09 1.2 4.2e+03 3.7e+04 3.0e+02 21  7 12 15 30  21  7 12 15 30   959
-KSPSolve               1 1.0 2.7930e+01 1.0 2.09e+10 1.8 2.4e+04 2.0e+04 4.3e+02 73100 71 47 43  73100 71 47 43  4218
-Time (sec):           3.799e+01     1.000   3.799e+01
+  solution norms:   |u|_2 = 1.921e-01,  |p|_2 = 3.719e+00
+PCSetUp                3 1.0 5.7312e+00 1.0 7.54e+08 1.2 4.0e+03 2.4e+04 3.1e+02 22  9 16 15 31  22  9 16 15 32   961
+KSPSolve               1 1.0 1.7536e+01 1.0 1.12e+10 1.8 1.6e+04 1.7e+04 4.2e+02 68100 65 45 42  68100 65 45 42  3641
+Time (sec):           2.575e+01     1.000   2.574e+01
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../pool.py -stage 1 -mx 4 -my 4 -mz 4 -refine 4 -log_view
-extruded mesh:      64 x 64 x 64 hexahedra
+stage 1:            lid-driven unit-cube cavity, 3D GMG
+extruded mesh:      64 x 64 x 64 prisms(x2)
 domain:             1.00 x 1.00 x 1.00
-vector space dims:  n_u=6440067, n_p=274625  -->  N=6714692
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 28
+vector space dims:  n_u=6440067, n_p=532480  -->  N=6972547
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 21
   3D coarsening:    GMG levels = 5
-  solution norms:   |u|_2 = 1.922e-01,  |p|_2 = 3.747e+00
-PCSetUp                3 1.0 4.7190e+01 1.0 8.19e+09 1.1 5.2e+03 1.2e+05 3.7e+02 18  8 13 16 31  18  8 13 16 32  1332
-KSPSolve               1 1.0 1.9492e+02 1.0 1.11e+11 1.2 2.9e+04 6.3e+04 5.0e+02 73100 72 46 42  73100 72 46 42  4169
-Time (sec):           2.661e+02     1.000   2.661e+02
+  solution norms:   |u|_2 = 1.921e-01,  |p|_2 = 3.736e+00
+PCSetUp                3 1.0 4.1230e+01 1.0 5.81e+09 1.1 5.2e+03 7.9e+04 3.9e+02 20 10 15 16 32  20 10 15 16 33  1077
+KSPSolve               1 1.0 1.4949e+02 1.0 6.18e+10 1.1 2.3e+04 5.3e+04 5.0e+02 72100 68 47 42  72100 68 47 42  3070
+Time (sec):           2.068e+02     1.000   2.068e+02
