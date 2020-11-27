@@ -260,7 +260,7 @@ params['fieldsplit_1_pc_jacobi_type'] = 'diagonal'
 #'pc_fieldsplit_schur_scale': -1.0,  # only active for diag
 
 # note that the printed parameters *do not* include -s_xxx_yyy overrides
-if args.printparams:
+if args.printparams and mesh.comm.rank == 0:
     pprint(params)
 
 # set up solver and report MG structure
