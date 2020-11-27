@@ -175,10 +175,11 @@ elif args.stage == 5:
     raise NotImplementedError  # FIXME change for stage 5
 
 ## some methods may use a mass matrix for preconditioning the Schur block
+## follow: https://www.firedrakeproject.org/_modules/firedrake/preconditioners/massinv.html#MassInvPC
 #class Mass(AuxiliaryOperatorPC):
 #
 #    def form(self, pc, test, trial):
-#        a = inner(test, trial)*dx  # FIXME use viscosity?
+#        a = inner((1.0/nu) * test, trial)*dx
 #        bcs = None
 #        return (a, bcs)
 
