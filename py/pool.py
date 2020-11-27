@@ -30,8 +30,10 @@ stress-free surface and hilly topography on a high aspect ratio (100-to-1)
 domain with ice sheet dimensions.  All stages have nonslip conditions on their
 base and sides, i.e. these are swimming pools of fluid/ice.
 
-The FEM uses Q2xQ1 mixed elements on hexahedra.  The solvers are all based
-on Schur fieldsplit with GMG for the u-u block.  In stages > 1 the GMG
+In all stages the FEM uses a base mesh of triangles, extrudes the mesh to
+prisms, and applies Q2xDP0 mixed elements.  The solvers are all based
+on Schur fieldsplit with GMG for the u-u block.  Stage 1 has a standard 3D
+GMG solver for the u-u block.  In stages 2-5 the GMG
 is only via vertical semi-coarsening, and the coarse mesh is solved by AMG
 (-mg_coarse_pc_type gamg).  At each stage the best solver, among the options
 tested, is identified.
@@ -70,7 +72,7 @@ parser.add_argument('-refine', type=int, default=0, metavar='N',
 parser.add_argument('-stage', type=int, default=1, metavar='S',
                     help='problem stage 1,...,6 (default=1)')
 parser.add_argument('-topomag', type=float, default=0.5, metavar='N',
-                    help='for stages 3,4,5: the relative magnitude of surface topography (default=0.5)')
+                    help='for stages 3,4,5: relative magnitude of surface topography (default=0.5)')
 args, unknown = parser.parse_known_args()
 if args.poolhelp:
     parser.print_help()
@@ -95,9 +97,9 @@ else:
     L = 1.0
     H = 1.0
 
-# mesh:  fine mesh is mx x my x mz;  use base mesh hierarchy only in stage 1
+# mesh
 if args.stage == 1:
-    basecoarse = RectangleMesh(args.mx,args.my,L,L,quadrilateral=True)
+    basecoarse = RectangleMesh(args.mx,args.my,L,L)  # triangles
     mx = args.mx * 2**args.refine
     my = args.my * 2**args.refine
     basehierarchy = MeshHierarchy(basecoarse,args.refine)
@@ -107,15 +109,15 @@ if args.stage == 1:
 else:
     mx = args.mx
     my = args.my
-    base = RectangleMesh(mx,my,L,L,quadrilateral=True)
+    base = RectangleMesh(mx,my,L,L)    # triangles
     rz = 4 if args.aggressive else 2   # vertical refinement ratio
     mz = args.mz * rz**args.refine
     hierarchy = SemiCoarsenedExtrudedHierarchy(base,H,base_layer=args.mz,
                                                refinement_ratio=rz,nref=args.refine)
 mesh = hierarchy[-1]
-PETSc.Sys.Print('extruded mesh:      %d x %d x %d hexahedra' % (mx,my,mz))
+PETSc.Sys.Print('extruded mesh:      %d x %d x %d prisms(x2)' % (mx,my,mz))
 
-# deform z coordinate of mesh
+# if top has topography then deform z coordinate of mesh
 if args.stage in {3,4,5}:
     for kmesh in hierarchy:
         Vcoord = kmesh.coordinates.function_space()
@@ -134,8 +136,8 @@ else:
     # get surface elevation back from fine mesh
     Q1 = FunctionSpace(mesh,'Q',1)
     hbc = DirichletBC(Q1,1.0,'top')  # we use hbc.nodes below
-    Q1base = FunctionSpace(mesh._base_mesh,'Q',1)
-    hfcn = Function(Q1base)
+    P1base = FunctionSpace(mesh._base_mesh,'P',1)
+    hfcn = Function(P1base)
     # z itself is an 'Indexed' object, so use a Function with a .dat attribute
     zfcn = Function(Q1).interpolate(z)
     # add halos for parallelizability of the interpolation
@@ -147,8 +149,12 @@ else:
                     % (L,L,zmin,zmax))
 
 # function spaces
-V = VectorFunctionSpace(mesh, 'Q', 2)
-W = FunctionSpace(mesh, 'Q', 1)
+V = VectorFunctionSpace(mesh, 'Q', 2)   # Q2 on prisms
+xpE = FiniteElement('DP',triangle,0)    # discontinuous P0 in horizontal ...
+zpE = FiniteElement('P',interval,1)     #     tensored with continuous P1 in vertical
+pE = TensorProductElement(xpE,zpE)
+W = FunctionSpace(mesh, pE)
+
 Z = V * W
 n_u,n_p,N = V.dim(),W.dim(),Z.dim()
 PETSc.Sys.Print('vector space dims:  n_u=%d, n_p=%d  -->  N=%d' % (n_u,n_p,N))

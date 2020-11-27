@@ -1,6 +1,7 @@
-extruded mesh:      4 x 4 x 4 hexahedra
+stage 2:            lid-driven unit-cube cavity, GMG in z and AMG in base
+extruded mesh:      4 x 4 x 4 prisms(x2)
 domain:             1.00 x 1.00 x 1.00
-vector space dims:  n_u=2187, n_p=125  -->  N=2312
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 20
+vector space dims:  n_u=2187, n_p=160  -->  N=2347
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 16
   semi-coarsening:  GMG levels = 2, coarse-level AMG levels = 2
-  solution norms:   |u|_2 = 2.016e-01,  |p|_2 = 4.946e+00
+  solution norms:   |u|_2 = 1.974e-01,  |p|_2 = 4.510e+00
