@@ -2,6 +2,8 @@
 set -e
 set +x
 
+# run as:  ./pool_stage2.sh &> results/pool2.txt
+
 # run optimality study with 8 processes for stage 2
 # meshes: 4x4x4, 8x8x8, 16x16x16, 32x32x32, 64x64x64
 
