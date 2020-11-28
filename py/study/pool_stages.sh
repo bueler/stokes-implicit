@@ -2,9 +2,10 @@
 set -e
 set +x
 
-# run for stages 2 and 3:
-#   $ ./pool_stage23.sh 2 &> results/pool2.txt
-#   $ ./pool_stage23.sh 3 &> results/pool3.txt
+# run for stages 2-4:
+#   $ ./pool_stages.sh 2 &> results/pool2.txt
+#   $ ./pool_stages.sh 3 &> results/pool3.txt
+#   $ ./pool_stages.sh 4 &> results/pool4.txt
 
 # run optimality study with 8 processes for stage 2
 # meshes all have 1 base layer and each has 4 times as many elements as the last:
