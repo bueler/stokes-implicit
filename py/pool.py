@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   * rethink scaling in stage 4,5 problems
-#   * optimality scripts for stage 4 (below)
-#   * implement stage 5
-
-# for stage 4, measure these runs on 8x8x1, 16x16x2, 32x32x4, 64x64x8, 128x128x16 meshes:
-#   $ tmpg -n 8 ./pool.py -stage 4 -mx 8 -my 8 -refine 0
-#   $ tmpg -n 8 ./pool.py -stage 4 -mx 16 -my 16 -mz 2 -refine 0
-#   $ tmpg -n 8 ./pool.py -stage 4 -mx 32 -my 32 -refine 1 -aggressive
-#   $ tmpg -n 8 ./pool.py -stage 4 -mx 64 -my 64 -mz 2 -refine 1 -aggressive
-#   $ tmpg -n 8 ./pool.py -stage 4 -mx 128 -my 128 -refine 2 -aggressive
+#   * implement and test stage 5
+#   * want matfree application of GMG semicoarsening (but
+#         switch to aij for coarse problem)
 
 import sys, argparse
 from pprint import pprint
@@ -30,26 +23,23 @@ stress-free surface and hilly topography on a high aspect ratio (100-to-1)
 domain with ice sheet dimensions.  All stages have nonslip conditions on their
 base and sides, i.e. these are swimming pools of fluid/ice.
 
-In all stages the FEM uses a base mesh of triangles, extrudes the mesh to
-prisms, and applies Q2xDP0 mixed elements.  The solvers are all based
-on Schur fieldsplit with GMG for the u-u block.  Stage 1 has a standard 3D
-GMG solver for the u-u block.  In stages 2-5 the GMG
-is only via vertical semi-coarsening, and the coarse mesh is solved by AMG
-(-mg_coarse_pc_type gamg).  At each stage the best solver, among the options
-tested, is identified.
+The chosen FEM uses a base mesh of triangles, extrudes the mesh to prisms,
+and applies Q2xDP0 mixed elements (see below).  The solvers are all based
+on Schur fieldsplit with GMG for the u-u block using an ILU smoother.
+The coarse mesh, regardless of size or coarsening mode, is solved by
+parallel LU (MUMPS).  Stage 1 uses a standard 3D GMG solver but in later
+stages we only apply vertical semi-coarsening for GMG.
 
 Stages:
     1. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, 3D GMG
-    2. linear Stokes, flat top, lid-driven top, unit cube, *
-    3. linear Stokes, topography, stress-free surface, unit cube, *
-    4. linear Stokes, topography, stress-free surface, high-aspect geometry, *
-    5. Glen-law Stokes, topography, stress-free surface, high-aspect geometry, *
-For stages 2-5:
-    * = GMG vertical semicoarsening with AMG on the 2D base mesh.
+    2. linear Stokes, flat top, lid-driven top, unit cube, vertical-only GMG
+    3. linear Stokes, topography, stress-free surface, unit cube, vertical-only GMG
+    4. linear Stokes, topography, stress-free surface, high-aspect geometry, vertical-only GMG
+    5. Glen-law Stokes, topography, stress-free surface, high-aspect geometry, vertical-only GMG
 
 Set the coarsest grid with -mx, -my, -mz; defaults are (mx,my,mz)=(1,1,1) and
-the default -refine is 0.  For stage 1 -refine acts equally in all dimensions
-(and GMG acts equally).  In stages 2-5 the semi-coarsening uses the default
+the default -refine is 0.  For stage 1 -refine acts equally in all dimensions.
+In stages 2-5 option -refine is the semi-coarsening.  This uses the default
 refinement ratio of 2 but with -aggressive the factor is 4.
 ''',
            add_help=False)
@@ -68,9 +58,9 @@ parser.add_argument('-poolhelp', action='store_true', default=False,
 parser.add_argument('-printparams', action='store_true', default=False,
                     help='print dictionary of solver parameters')
 parser.add_argument('-refine', type=int, default=0, metavar='N',
-                    help='refine all dimensions in stage 1, otherwise number of vertical (z) mesh refinements when extruding (default=0)')
+                    help='refine all dimensions (stage 1) or in vertical only (other stages) (default=0)')
 parser.add_argument('-stage', type=int, default=1, metavar='S',
-                    help='problem stage 1,...,6 (default=1)')
+                    help='problem stage 1,...,5 (default=1)')
 parser.add_argument('-topomag', type=float, default=0.5, metavar='N',
                     help='for stages 3,4,5: relative magnitude of surface topography (default=0.5)')
 args, unknown = parser.parse_known_args()
@@ -79,7 +69,7 @@ if args.poolhelp:
     sys.exit(0)
 
 # report stage
-if args.stage > 4:
+if args.stage == 5:  # FIXME
     raise NotImplementedError('only stages 1--4 so far')
 if args.stage == 1 and args.aggressive:
     raise NotImplementedError('aggressive vertical coarsening only in stages > 1')
@@ -87,6 +77,7 @@ stagedict = {1: 'lid-driven unit-cube cavity, 3D GMG',
              2: 'lid-driven unit-cube cavity, GMG in z only',
              3: 'topography on top of unit-cube, GMG in z only',
              4: 'topography on top of high-aspect, GMG in z only'}
+             #5: 'nonlinear rheology, topography on top of high-aspect, GMG in z only'}
 PETSc.Sys.Print('stage %d:            %s' % (args.stage,stagedict[args.stage]))
 
 # geometry: L x L x H
@@ -148,13 +139,12 @@ else:
     PETSc.Sys.Print('domain:             %.2f x %.2f base domain with %.2f < z < %.2f at surface' \
                     % (L,L,zmin,zmax))
 
-# function spaces
+# finite elements and the mixed function spaces
 V = VectorFunctionSpace(mesh, 'Q', 2)   # Q2 on prisms
 xpE = FiniteElement('DP',triangle,0)    # discontinuous P0 in horizontal ...
 zpE = FiniteElement('P',interval,1)     #     tensored with continuous P1 in vertical
 pE = TensorProductElement(xpE,zpE)
 W = FunctionSpace(mesh, pE)
-
 Z = V * W
 n_u,n_p,N = V.dim(),W.dim(),Z.dim()
 PETSc.Sys.Print('vector space dims:  n_u=%d, n_p=%d  -->  N=%d' % (n_u,n_p,N))
@@ -174,7 +164,7 @@ elif args.stage == 4:
     nu = 1.0e13  # corresponds to secpera = 31556926.0, A3 = 1.0e-16/secpera,
                  #                B3 = A3**(-1/3), Du = 6.2806e-09, nu = 0.5 * B3 * Du^(-2/3)
 elif args.stage == 5:
-    raise NotImplementedError  # FIXME change for stage 5
+    raise NotImplementedError  # FIXME
 
 # weak form
 up = Function(Z)
@@ -184,7 +174,7 @@ v, q = TestFunctions(Z)
 if args.stage in {1,2,3,4}:
     F = (2.0 * nu * inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx
 elif args.stage == 5:
-    raise NotImplementedError  # FIXME change for stage 5
+    raise NotImplementedError  # FIXME
 
 ## some methods may use a mass matrix for preconditioning the Schur block
 ## follow: https://www.firedrakeproject.org/_modules/firedrake/preconditioners/massinv.html#MassInvPC
