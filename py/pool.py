@@ -224,10 +224,11 @@ if args.stage == 5:
 else:
     params['snes_type'] = 'ksponly'
 
-# these smoother settings may be more capable in high aspect ratio;
-# they are essentially the same speed in stage 1
-#params['fieldsplit_0_mg_levels_ksp_type'] = 'richardson'
-#params['fieldsplit_0_mg_levels_pc_type'] = 'ilu'
+# smoother which is more capable than Chebyshev + SSOR
+# note default: -s_fieldsplit_0_mg_levels_ksp_max_it 2
+params['fieldsplit_0_mg_levels_ksp_type'] = 'richardson'
+params['fieldsplit_0_mg_levels_pc_type'] = 'bjacobi'
+params['fieldsplit_0_mg_levels_sub_pc_type'] = 'ilu'
 
 # parallel LU via MUMPS on coarse grid  (versus GAMG)
 params['fieldsplit_0_mg_coarse_pc_type'] = 'lu'

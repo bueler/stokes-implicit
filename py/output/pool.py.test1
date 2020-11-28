@@ -2,6 +2,6 @@ stage 1:            lid-driven unit-cube cavity, 3D GMG
 extruded mesh:      4 x 4 x 4 prisms(x2)
 domain:             1.00 x 1.00 x 1.00
 vector space dims:  n_u=2187, n_p=160  -->  N=2347
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 14
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 13
   3D coarsening:    GMG levels = 3
   solution norms:   |u|_2 = 1.974e-01,  |p|_2 = 3.510e+00

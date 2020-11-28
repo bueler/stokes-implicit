@@ -2,6 +2,6 @@ stage 3:            topography on top of unit-cube, GMG in z only
 extruded mesh:      4 x 4 x 4 prisms(x2)
 domain:             1.00 x 1.00 base domain with 0.50 < z < 1.50 at surface
 vector space dims:  n_u=2187, n_p=160  -->  N=2347
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 20
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 18
   semi-coarsening:  GMG levels = 2
   solution norms:   |u|_2 = 8.323e-02,  |p|_2 = 4.916e+00
