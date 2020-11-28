@@ -84,9 +84,9 @@ if args.stage > 4:
 if args.stage == 1 and args.aggressive:
     raise NotImplementedError('aggressive vertical coarsening only in stages > 1')
 stagedict = {1: 'lid-driven unit-cube cavity, 3D GMG',
-             2: 'lid-driven unit-cube cavity, GMG in z and AMG in base',
-             3: 'topography on top of unit-cube, GMG in z and AMG in base',
-             4: 'topography on top of high-aspect, GMG in z and AMG in base'}
+             2: 'lid-driven unit-cube cavity, GMG in z only',
+             3: 'topography on top of unit-cube, GMG in z only',
+             4: 'topography on top of high-aspect, GMG in z only'}
 PETSc.Sys.Print('stage %d:            %s' % (args.stage,stagedict[args.stage]))
 
 # geometry: L x L x H
