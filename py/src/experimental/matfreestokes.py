@@ -1,18 +1,10 @@
 # see https://www.firedrakeproject.org/demos/stokes.py.html
 # (see also https://www.firedrakeproject.org/matrix-free.html)
 
-# CHANGES: stdout mods, timing
+# CHANGES: stdout & comments mods/declutter, timing
 # TODO: see if I can get any performance improvement in 3D; none obvious here
 
-# Stokes Equations
-# ================
-#
-# A simple example of a saddle-point system, we will use the Stokes
-# equations to demonstrate some of the ways we can do field-splitting
-# with matrix-free operators.  We set up the problem as a lid-driven
-# cavity.
-#
-# As ever, we import firedrake and define a mesh.::
+# Stokes Equations: lid-driven cavity.
 
 import time
 
@@ -30,7 +22,7 @@ Z = V * W
 u, p = TrialFunctions(Z)
 v, q = TestFunctions(Z)
 
-a = (inner(grad(u), grad(v)) - p * div(v) + div(u) * q)*dx
+a = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q)*dx  # CHANGE: make symmetric; ABOUT THE SAME
 
 L = inner(Constant((0, 0)), v) * dx
 
@@ -51,29 +43,25 @@ nullspace = MixedVectorSpaceBasis(
     Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 
 # First up, we will solve the problem directly.  For this to work, the
-# sparse direct solver MUMPS must be installed.  Hence this solve is
-# wrapped in a ``try/except`` block so that an error is not raised in
-# the case that it is not, to do this we must import ``PETSc``::
-
-from firedrake.petsc import PETSc
-
+# sparse direct solver MUMPS must be installed.
 # To factor the matrix from this mixed system, we must specify
 # a ``mat_type`` of ``aij`` to the solve call.::
 
-print('direct solve (MUMPS LU) with assembled matrix ...')
-try:
-    t = time.time()
-    solve(a == L, up, bcs=bcs, nullspace=nullspace,
-          solver_parameters={"ksp_type": "gmres",
-                             "mat_type": "aij",
-                             "pc_type": "lu",
-                             "pc_factor_mat_solver_type": "mumps"})
-except PETSc.Error as e:
-    if e.ierr == 92:
-        warning("MUMPS not installed, skipping direct solve")
-    else:
-        raise e
-print(time.time() - t)
+#print('direct solve (MUMPS LU) with assembled matrix ...')
+#from firedrake.petsc import PETSc
+#try:
+#    t = time.time()
+#    solve(a == L, up, bcs=bcs, nullspace=nullspace,
+#          solver_parameters={"ksp_type": "gmres",
+#                             "mat_type": "aij",
+#                             "pc_type": "lu",
+#                             "pc_factor_mat_solver_type": "mumps"})
+#except PETSc.Error as e:
+#    if e.ierr == 92:
+#        warning("MUMPS not installed, skipping direct solve")
+#    else:
+#        raise e
+#print(time.time() - t)
 
 # Now we'll use a Schur complement preconditioner using unassembled
 # matrices.  We can do all of this purely by changing the solver
@@ -97,7 +85,7 @@ parameters = {
     #"ksp_view": None,
     "pc_type": "fieldsplit",
     "pc_fieldsplit_type": "schur",
-    "pc_fieldsplit_schur_fact_type": "diag",
+    "pc_fieldsplit_schur_fact_type": "lower",  # CHANGE: diag -> lower 20% FASTER
 
 # Next we configure the solvers for the blocks.  For the velocity block,
 # we use an :class:`.AssembledPC` and approximate the inverse of the
@@ -106,7 +94,7 @@ parameters = {
     "fieldsplit_0_ksp_type": "preonly",
     "fieldsplit_0_pc_type": "python",
     "fieldsplit_0_pc_python_type": "firedrake.AssembledPC",
-    "fieldsplit_0_assembled_pc_type": "hypre",
+    "fieldsplit_0_assembled_pc_type": "hypre",  # NOTE: hypre TWICE AS FAST AS gamg
 
 # For the Schur complement block, we approximate the inverse of the
 # schur complement with a pressure mass inverse.  For constant viscosity
@@ -131,22 +119,18 @@ parameters = {
 # Having set up the parameters, we can now go ahead and solve the
 # problem.::
 
-print('matrix-free with Schur+hypre, assembled Mass matrix, and ILU application of MassInv ...')
+print('matrix-free with GMRES+Schur+hypre, assembled Mass matrix, and ILU application of MassInv ...')
 up.assign(0)
 t=time.time()
 solve(a == L, up, bcs=bcs, nullspace=nullspace, solver_parameters=parameters)
 print(time.time() - t)
 
-# Last, but not least, we'll write the solution to a file for later
-# visualisation.  We split the function into its velocity and pressure
-# parts and give them reasonable names, then write them to a paraview
-# file.::
-
-u, p = up.split()
-u.rename("Velocity")
-p.rename("Pressure")
-
-File("stokes.pvd").write(u, p)
+## To write the solution to a paraview file we split the function
+## and give the parts reasonable names.::
+#u, p = up.split()
+#u.rename("Velocity")
+#p.rename("Pressure")
+#File("stokes.pvd").write(u, p)
 
 # By default, the mass matrix is assembled in the :class:`~.MassInvPC`
 # preconditioner, however, this can be controlled using a ``mat_type``
@@ -163,7 +147,7 @@ parameters["fieldsplit_1_Mp_mat_type"] = "matfree"
 parameters["fieldsplit_1_Mp_ksp_type"] = "cg"
 parameters["fieldsplit_1_Mp_pc_type"] = "none"
 
-print('matrix-free with Schur+hypre, matrix-free Mass, and CG application of MassInv ...')
+print('matrix-free with GMRES+Schur+hypre, matrix-free Mass, and CG application of MassInv ...')
 up.assign(0)
 t=time.time()
 solve(a == L, up, bcs=bcs, nullspace=nullspace, solver_parameters=parameters)

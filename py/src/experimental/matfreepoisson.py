@@ -1,15 +1,7 @@
 # see https://www.firedrakeproject.org/demos/poisson.py.html
 # (see also https://www.firedrakeproject.org/matrix-free.html)
 
-# CHANGES: stdout mods
-
-# Poisson equation
-# ================
-#
-# It is what it is, a conforming discretization on a regular mesh using
-# piecewise quadratic elements.
-#
-# As usual we start by importing firedrake and setting up the problem.::
+# CHANGES: stdout & comments mods/declutter
 
 from firedrake import *
 
@@ -33,13 +25,10 @@ bcs = [DirichletBC(V, Constant(2.0), (1,))]
 
 uu = Function(V)
 
-# With the setup out of the way, we now demonstrate various ways of
-# configuring the solver.  First, a direct solve with an assembled
-# operator.::
-
-print('direct solve (LU) with assembled matrix ...')
-solve(a == L, uu, bcs=bcs, solver_parameters={"ksp_type": "preonly",
-                                              "pc_type": "lu"})
+## First, a direct solve with an assembled operator.::
+#print('direct solve (LU) with assembled matrix ...')
+#solve(a == L, uu, bcs=bcs, solver_parameters={"ksp_type": "preonly",
+#                                              "pc_type": "lu"})
 
 # Next, we use unpreconditioned conjugate gradients using matrix-free
 # actions.  This is not very efficient due to the :math:`h^{-2}`
@@ -63,20 +52,7 @@ uu.assign(0)
 solve(a == L, uu, bcs=bcs, solver_parameters={"mat_type": "matfree",
                                               "ksp_type": "cg",
                                               "ksp_converged_reason": None,
-
-# To use the assembled matrix for the preconditioner we select a
-# ``"python"`` type::
-
                                               "pc_type": "python",
-
-# and set its type, by providing the name of the class constructor to
-# PETSc.::
-
                                               "pc_python_type": "firedrake.AssembledPC",
-
-# Finally, we set the preconditioner type for the assembled operator::
-
                                               "assembled_pc_type": "ilu"})
 
-# This demo is available as a runnable python file `here
-# <poisson.py>`__.
