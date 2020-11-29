@@ -7,7 +7,7 @@
 # performance measurement loop; LEV=7 uses just over 32 GB; all levels have
 # 38 to 40 KSP iterations; CLEAR optimality
 #for LEV in 1 2 3 4 5 6 7; do
-#    tmpg -n 4 ./mfmgstokes.py -refine $LEV
+#    tmpg -n 4 ./mfmgstokes.py -refine $LEV -memory_view
 #done
 
 import sys, argparse
