@@ -195,10 +195,10 @@ if args.stage in {1,2}:
     ## set nullspace to constant pressure fields
     nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 
-params = {'mat_type': 'aij',       # matfree does not work with Schur fieldsplit selfp (which assembles Bt A B),
-                                   # but see https://www.firedrakeproject.org/demos/stokes.py.html
-          'ksp_type':  'gmres',    # OLD INFO: fgmres adds 10% to iterations and 3% to time
-                                   #     and gcr acts the same as fgmres
+appctx = {"mu": nu}
+
+params = {'mat_type': 'matfree',
+          'ksp_type':  'gmres',
           'ksp_converged_reason': None,
           'pc_type': 'fieldsplit',
           'pc_fieldsplit_type': 'schur',
@@ -217,8 +217,10 @@ else:
 # smoother which is more capable than Chebyshev + SSOR
 # note default: -s_fieldsplit_0_mg_levels_ksp_max_it 2
 params['fieldsplit_0_mg_levels_ksp_type'] = 'richardson'
-params['fieldsplit_0_mg_levels_pc_type'] = 'bjacobi'
-params['fieldsplit_0_mg_levels_sub_pc_type'] = 'ilu'
+params['fieldsplit_0_mg_levels_ksp_richardson_scale'] = 0.8,
+params['fieldsplit_0_mg_levels_pc_type'] = 'jacobi'
+#params['fieldsplit_0_mg_levels_pc_type'] = 'bjacobi'
+#params['fieldsplit_0_mg_levels_sub_pc_type'] = 'ilu'
 
 # parallel LU via MUMPS on coarse grid  (versus GAMG=next versus HYPRE=slowest on stage 4 64^3)
 params['fieldsplit_0_mg_coarse_pc_type'] = 'lu'
@@ -242,16 +244,20 @@ params['fieldsplit_1_ksp_type'] = 'preonly'
 #params['pc_fieldsplit_schur_precondition'] = 'self'
 #params['fieldsplit_1_pc_type'] = 'lsc'
 
-params['pc_fieldsplit_schur_precondition'] = 'selfp'
-params['fieldsplit_1_pc_type'] = 'jacobi'
-params['fieldsplit_1_pc_jacobi_type'] = 'diagonal'
+#params['pc_fieldsplit_schur_precondition'] = 'selfp'
+#params['fieldsplit_1_pc_type'] = 'jacobi'
+#params['fieldsplit_1_pc_jacobi_type'] = 'diagonal'
 
 # WARNING: do not use following option which is faster than default 'diag' BUT CHANGES VELOCITY SOLUTION !?!?
 #params['fieldsplit_1_mat_schur_complement_ainv_type'] = 'lump'
 
-#params['pc_fieldsplit_schur_precondition'] = 'a11'
-#params['fieldsplit_1_pc_type'] = 'python'
-#params['fieldsplit_1_pc_python_type'] = '__main__.Mass'
+params['pc_fieldsplit_schur_precondition'] = 'a11'
+params['fieldsplit_1_pc_type'] = 'python'
+params['fieldsplit_1_pc_python_type'] = 'firedrake.MassInvPC'
+params['fieldsplit_1_Mp_ksp_type'] = 'preonly'
+params['fieldsplit_1_Mp_pc_type'] = 'asm'
+params['fieldsplit_1_Mp_sub_pc_type'] = 'ilu'
+
 ##params['fieldsplit_1_aux_pc_type'] = 'jacobi'
 #params['fieldsplit_1_aux_pc_type'] = 'bjacobi'
 #params['fieldsplit_1_aux_sub_pc_type'] = 'icc'
@@ -266,6 +272,7 @@ if args.printparams and mesh.comm.rank == 0:
 problem = NonlinearVariationalProblem(F, up, bcs=bcs)
 solver = NonlinearVariationalSolver(problem,
                                     nullspace=nullspace,
+                                    appctx=appctx,
                                     solver_parameters=params,
                                     options_prefix='s')
 
