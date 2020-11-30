@@ -217,16 +217,25 @@ else:
 # smoother which is more capable than Chebyshev + SSOR
 # note default: -s_fieldsplit_0_mg_levels_ksp_max_it 2
 params['fieldsplit_0_mg_levels_ksp_type'] = 'richardson'
-params['fieldsplit_0_mg_levels_ksp_richardson_scale'] = 0.8,
-params['fieldsplit_0_mg_levels_pc_type'] = 'jacobi'
-#params['fieldsplit_0_mg_levels_pc_type'] = 'bjacobi'
-#params['fieldsplit_0_mg_levels_sub_pc_type'] = 'ilu'
+
+#params['fieldsplit_0_mg_levels_ksp_richardson_scale'] = 0.8
+#params['fieldsplit_0_mg_levels_pc_type'] = 'jacobi'
+
+params['fieldsplit_0_mg_levels_pc_type'] = 'python'
+params['fieldsplit_0_mg_levels_pc_python_type'] = 'firedrake.AssembledPC'
+params['fieldsplit_0_mg_levels_assembled_pc_type'] = 'bjacobi'
+params['fieldsplit_0_mg_levels_assembled_sub_pc_type'] = 'ilu'
 
 # parallel LU via MUMPS on coarse grid  (versus GAMG=next versus HYPRE=slowest on stage 4 64^3)
-params['fieldsplit_0_mg_coarse_pc_type'] = 'lu'
-params['fieldsplit_0_mg_coarse_pc_factor_mat_solver_type'] = 'mumps'
+#params['fieldsplit_0_mg_coarse_pc_type'] = 'lu'
+#params['fieldsplit_0_mg_coarse_pc_factor_mat_solver_type'] = 'mumps'
 #params['fieldsplit_0_mg_coarse_pc_type'] = 'gamg'
 #params['fieldsplit_0_mg_coarse_pc_type'] = 'hypre'
+
+params['fieldsplit_0_mg_coarse_pc_type'] = 'python'
+params['fieldsplit_0_mg_coarse_pc_python_type'] = 'firedrake.AssembledPC'
+params['fieldsplit_0_mg_coarse_assembled_pc_type'] = 'lu'
+#params['fieldsplit_0_mg_coarse_assembled_pc_factor_mat_solver_type'] = 'mumps'
 
 params['fieldsplit_1_ksp_type'] = 'preonly'
 
