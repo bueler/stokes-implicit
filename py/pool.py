@@ -176,15 +176,6 @@ if args.stage in {1,2,3,4}:
 elif args.stage == 5:
     raise NotImplementedError  # FIXME
 
-## some methods may use a mass matrix for preconditioning the Schur block
-## follow: https://www.firedrakeproject.org/_modules/firedrake/preconditioners/massinv.html#MassInvPC
-#class Mass(AuxiliaryOperatorPC):
-#
-#    def form(self, pc, test, trial):
-#        a = inner((1.0/nu) * test, trial)*dx
-#        bcs = None
-#        return (a, bcs)
-
 # boundary conditions:  normally stress-free surface
 bcs = [DirichletBC(Z.sub(0), Constant((0, 0, 0)), (1, 2, 3, 4)),
        DirichletBC(Z.sub(0), Constant((0, 0, 0)), 'bottom')]
@@ -195,10 +186,11 @@ if args.stage in {1,2}:
     ## set nullspace to constant pressure fields
     nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 
-appctx = {"mu": nu}
+appctx = {"mu": nu}  # python PC type firedrake.MassInvPC asks for this parameter
 
 params = {'mat_type': 'matfree',
-          'ksp_type':  'gmres',
+          'ksp_type':  'gmres',    # OLD INFO: fgmres adds 10% to iterations and 3% to time
+                                   #     and gcr acts the same as fgmres
           'ksp_converged_reason': None,
           'pc_type': 'fieldsplit',
           'pc_fieldsplit_type': 'schur',
@@ -217,61 +209,40 @@ else:
 # smoother which is more capable than Chebyshev + SSOR
 # note default: -s_fieldsplit_0_mg_levels_ksp_max_it 2
 params['fieldsplit_0_mg_levels_ksp_type'] = 'richardson'
-
-#params['fieldsplit_0_mg_levels_ksp_richardson_scale'] = 0.8
-#params['fieldsplit_0_mg_levels_pc_type'] = 'jacobi'
-
 params['fieldsplit_0_mg_levels_pc_type'] = 'python'
 params['fieldsplit_0_mg_levels_pc_python_type'] = 'firedrake.AssembledPC'
 params['fieldsplit_0_mg_levels_assembled_pc_type'] = 'bjacobi'
 params['fieldsplit_0_mg_levels_assembled_sub_pc_type'] = 'ilu'
 
-# parallel LU via MUMPS on coarse grid  (versus GAMG=next versus HYPRE=slowest on stage 4 64^3)
-#params['fieldsplit_0_mg_coarse_pc_type'] = 'lu'
-#params['fieldsplit_0_mg_coarse_pc_factor_mat_solver_type'] = 'mumps'
-#params['fieldsplit_0_mg_coarse_pc_type'] = 'gamg'
-#params['fieldsplit_0_mg_coarse_pc_type'] = 'hypre'
+#params['fieldsplit_0_mg_levels_ksp_richardson_scale'] = 0.8
+#params['fieldsplit_0_mg_levels_pc_type'] = 'jacobi'
 
+# parallel LU via MUMPS on coarse grid  (versus GAMG=next versus HYPRE=slowest on stage 4 64^3)
 params['fieldsplit_0_mg_coarse_pc_type'] = 'python'
 params['fieldsplit_0_mg_coarse_pc_python_type'] = 'firedrake.AssembledPC'
 params['fieldsplit_0_mg_coarse_assembled_pc_type'] = 'lu'
-#params['fieldsplit_0_mg_coarse_assembled_pc_factor_mat_solver_type'] = 'mumps'
+params['fieldsplit_0_mg_coarse_assembled_pc_factor_mat_solver_type'] = 'mumps'
+
+#params['fieldsplit_0_mg_coarse_pc_type'] = 'gamg'
+#params['fieldsplit_0_mg_coarse_pc_type'] = 'hypre'
 
 params['fieldsplit_1_ksp_type'] = 'preonly'
 
-#params['fieldsplit_1_ksp_type'] = 'richardson'
-#params['fieldsplit_1_ksp_max_it'] = 3
-#params['fieldsplit_1_ksp_converged_maxits'] = None
-#params['fieldsplit_1_ksp_richardson_scale'] = 1.0
-#params['fieldsplit_1_ksp_type'] = 'gmres'
-#params['fieldsplit_1_ksp_rtol'] = 0.1
-#params['fieldsplit_1_pc_type'] = 'bjacobi'
-#params['fieldsplit_1_sub_pc_type'] = 'ilu'
-
 ## from advice on PETSc man page for PCFieldSplitSetSchurPre
-## but seems to actually give more iters and be slower than selp/jacobi strategy below
+## but seems to actually give more iters and be slower than selfp/jacobi strategy below
 #params['pc_fieldsplit_schur_precondition'] = 'self'
 #params['fieldsplit_1_pc_type'] = 'lsc'
 
-#params['pc_fieldsplit_schur_precondition'] = 'selfp'
-#params['fieldsplit_1_pc_type'] = 'jacobi'
-#params['fieldsplit_1_pc_jacobi_type'] = 'diagonal'
+#params['pc_fieldsplit_schur_precondition'] = 'selfp' # matfree does not work with selfp which assembles Bt A B
 
 # WARNING: do not use following option which is faster than default 'diag' BUT CHANGES VELOCITY SOLUTION !?!?
 #params['fieldsplit_1_mat_schur_complement_ainv_type'] = 'lump'
 
-params['pc_fieldsplit_schur_precondition'] = 'a11'
 params['fieldsplit_1_pc_type'] = 'python'
 params['fieldsplit_1_pc_python_type'] = 'firedrake.MassInvPC'
 params['fieldsplit_1_Mp_ksp_type'] = 'preonly'
 params['fieldsplit_1_Mp_pc_type'] = 'asm'
 params['fieldsplit_1_Mp_sub_pc_type'] = 'ilu'
-
-##params['fieldsplit_1_aux_pc_type'] = 'jacobi'
-#params['fieldsplit_1_aux_pc_type'] = 'bjacobi'
-#params['fieldsplit_1_aux_sub_pc_type'] = 'icc'
-
-#'pc_fieldsplit_schur_scale': -1.0,  # only active for diag
 
 # note that the printed parameters *do not* include -s_xxx_yyy overrides
 if args.printparams and mesh.comm.rank == 0:
