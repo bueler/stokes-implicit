@@ -5,6 +5,8 @@
 #   * want matfree application of GMG semicoarsening (but
 #         switch to aij for coarse problem)
 
+# results:  see study/pool_stage1.sh, study/pool_stages.sh, and study/results/poolX.txt
+
 import sys, argparse
 from pprint import pprint
 

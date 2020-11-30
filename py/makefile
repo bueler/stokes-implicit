@@ -9,6 +9,9 @@ runsole_2:
 runsole_3:
 	-@./../testit.sh sole.py "-stage 3 -mx 4 -my 4 -refine 1 -aggressive -prism" 2 3
 
+runmfmgstokes_1:
+	-@./../testit.sh mfmgstokes.py "-m0 4 -refine 1" 1 1
+
 runpool_1:
 	-@./../testit.sh pool.py "-stage 1 -refine 2" 1 1
 
@@ -38,13 +41,15 @@ runstokesi_5:
 
 test_sole: runsole_1 runsole_2 runsole_3
 
+test_mfmgstokes: runmfmgstokes_1
+
 test_pool: runpool_1 runpool_2 runpool_3 runpool_4
 
 test_stokesi: runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5
 
-test: test_sole test_pool test_stokesi
+test: test_sole test_mfmgstokes test_pool test_stokesi
 
-.PHONY: clean runsole_1 runsole_2 runsole_3 runpool_1 runpool_2 runpool_3 runpool_4 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5 test_pool test_stokesi test
+.PHONY: clean runsole_1 runsole_2 runsole_3 runmfmgstokes_1 runpool_1 runpool_2 runpool_3 runpool_4 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5 test_pool test_stokesi test
 
 clean:
 	@rm -f *.pdf *.geo *.msh *.pvd *.vtu *.pvtu *.m
