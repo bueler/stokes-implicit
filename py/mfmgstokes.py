@@ -4,11 +4,7 @@
 # see https://www.firedrakeproject.org/demos/stokes.py.html
 # (see also https://www.firedrakeproject.org/matrix-free.html)
 
-# performance measurement loop; LEV=7 uses just over 32 GB; all levels have
-# 38 to 40 KSP iterations; CLEAR optimality
-#for LEV in 1 2 3 4 5 6 7; do
-#    tmpg -n 4 ./mfmgstokes.py -refine $LEV -memory_view
-#done
+# results:  see study/mfmgstokes.sh and study/results/mfmgstokes.txt
 
 import sys, argparse
 from firedrake import *
@@ -37,13 +33,15 @@ if args.mfmghelp:
     parser.print_help()
     sys.exit(0)
 
-N = args.m0
-cmesh = UnitSquareMesh(N, N)
+cmesh = UnitSquareMesh(args.m0, args.m0)
 if args.aggressive:
     hierarchy = MeshHierarchy(cmesh, args.refine, refinements_per_level=2)
+    nM = args.m0 * 4**args.refine
 else:
     hierarchy = MeshHierarchy(cmesh, args.refine)
+    nM = args.m0 * 2**args.refine
 M = hierarchy[-1]     # the fine mesh
+PETSc.Sys.Print('fine mesh:          %d x %d triangles(x2)' % (nM,nM))
 
 V = VectorFunctionSpace(M, 'P', 2)
 W = FunctionSpace(M, 'P', 1)
