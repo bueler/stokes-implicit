@@ -8,6 +8,7 @@
 
 import sys, argparse
 from firedrake import *
+PETSc.Sys.popErrorHandler()
 
 parser = argparse.ArgumentParser(description='''
 A matrix-free multigrid Stokes solver which is as simple as possible.
