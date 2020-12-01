@@ -174,7 +174,8 @@ u, p = split(up)
 v, q = TestFunctions(Z)
 # note symmetric gradient & divergence terms in F
 if args.stage in {1,2,3,4}:
-    F = (2.0 * nu * inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx
+    D = lambda v: sym(grad(v))
+    F = (2.0 * nu * inner(D(u), D(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx
 elif args.stage == 5:
     raise NotImplementedError  # FIXME
 
@@ -201,6 +202,9 @@ params = {'mat_type': 'aij',       # matfree does not work with Schur fieldsplit
                                    # but see https://www.firedrakeproject.org/demos/stokes.py.html
           'ksp_type':  'gmres',    # OLD INFO: fgmres adds 10% to iterations and 3% to time
                                    #     and gcr acts the same as fgmres
+                                   # also consider bcgs
+          #'ksp_pc_side': 'right',
+          #'ksp_norm_type': 'unpreconditioned',
           'ksp_converged_reason': None,
           'pc_type': 'fieldsplit',
           'pc_fieldsplit_type': 'schur',
