@@ -43,6 +43,7 @@ if args.vanka:
 else:
     distribution_parameters = None
 
+# mesh hierarchy for multigrid
 cmesh = UnitSquareMesh(args.m0, args.m0,
                        distribution_parameters=distribution_parameters)
 if args.aggressive:
@@ -56,6 +57,7 @@ else:
 M = hierarchy[-1]     # the fine mesh
 PETSc.Sys.Print('fine mesh (level %d):  %d x %d triangles(x2)' % (args.refine,nM,nM))
 
+# mixed elements: P2 x P1 Taylor-Hood
 V = VectorFunctionSpace(M, 'P', 2)
 W = FunctionSpace(M, 'P', 1)
 # alternative:  W = FunctionSpace(M, 'DP', 0)
@@ -63,16 +65,20 @@ Z = V * W
 n_u,n_p,N = V.dim(),W.dim(),Z.dim()
 PETSc.Sys.Print('vector space dims:    n_u=%d, n_p=%d  -->  N=%d' % (n_u,n_p,N))
 
+# weak form
 up = Function(Z)
 u,p = split(up)
 v,q = TestFunctions(Z)
-
 if args.noD:
     F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q)*dx
 else:
     D = lambda v: sym(grad(v))
     F = (inner(D(u), D(v)) - p * div(v) - div(u) * q)*dx
-bcs = [DirichletBC(Z.sub(0), Constant((1, 0)), (4,)),
+
+# horizonal lid velocity in [0,1]
+x,_ = SpatialCoordinate(M)
+u_lid = Function(V).interpolate(as_vector([4.0 * x * (1.0 - x),0.0]))
+bcs = [DirichletBC(Z.sub(0), u_lid, (4,)),
        DirichletBC(Z.sub(0), Constant((0, 0)), (1, 2))]
 
 if args.vanka:
@@ -138,6 +144,12 @@ else:
 
 up.assign(0)
 solve(F == 0, up, bcs=bcs, solver_parameters=parameters, options_prefix='s')
+
+# report solution norms
+u,p = up.split()
+uL2 = sqrt(assemble(inner(u, u) * dx))
+pL2 = sqrt(assemble(inner(p, p) * dx))
+PETSc.Sys.Print('solution norms:   |u|_2 = %.5e,  |p|_2 = %.5e' % (uL2,pL2))
 
 if args.o:
     u,p = up.split()

@@ -290,13 +290,13 @@ else:
     PETSc.Sys.Print('  semi-coarsening:  GMG levels = %d' % pc0.getMGLevels())
 
 # report solution norms
+u,p = up.split()
 uL2 = sqrt(assemble(inner(u, u) * dx))
 pL2 = sqrt(assemble(inner(p, p) * dx))
 PETSc.Sys.Print('  solution norms:   |u|_2 = %.3e,  |p|_2 = %.3e' % (uL2,pL2))
 
 # optionally save result
 if args.o:
-    u, p = up.split()
     u.rename('velocity')
     p.rename('pressure')
     if mesh.comm.size > 1:
