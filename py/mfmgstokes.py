@@ -25,6 +25,8 @@ parser.add_argument('-m0', type=int, default=16, metavar='N',
                     help='coarse grid is m0 x m0 mesh (default=16)')
 parser.add_argument('-mfmghelp', action='store_true', default=False,
                     help='print help for this program and quit')
+parser.add_argument('-noD', action='store_true', default=False,
+                    help='use "inner(grad(u),grad(v))" instead of default "inner(D(u),D(v))"')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save results to .pvd file')
 parser.add_argument('-refine', type=int, default=1, metavar='N',
@@ -55,7 +57,11 @@ up = Function(Z)
 u,p = split(up)
 v,q = TestFunctions(Z)
 
-F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q)*dx
+if args.noD:
+    F = (inner(grad(u), grad(v)) - p * div(v) - div(u) * q)*dx
+else:
+    D = lambda v: sym(grad(v))
+    F = (inner(D(u), D(v)) - p * div(v) - div(u) * q)*dx
 bcs = [DirichletBC(Z.sub(0), Constant((1, 0)), (4,)),
        DirichletBC(Z.sub(0), Constant((0, 0)), (1, 2))]
 
@@ -73,8 +79,7 @@ parameters = {
     "pc_fieldsplit_schur_fact_type": "lower",
     "fieldsplit_0_ksp_type": "preonly",
     "fieldsplit_0_pc_type": "mg",
-    "fieldsplit_0_mg_levels_ksp_type": "richardson",
-    "fieldsplit_0_mg_levels_ksp_richardson_scale": 0.8,
+    "fieldsplit_0_mg_levels_ksp_type": "chebyshev", # works with or without -noD; richardson_0.8 wants "grad(u)"
     "fieldsplit_0_mg_levels_pc_type": "jacobi",
     "fieldsplit_0_mg_coarse_ksp_type": "preonly",
     "fieldsplit_0_mg_coarse_pc_type": "python",
