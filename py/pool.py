@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # TODO:
+#   * regenerate and understand study/results/pool4.txt
 #   * implement and test stage 5
 #   * want matfree application of GMG semicoarsening (but
 #         switch to aij for coarse problem)
