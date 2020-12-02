@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
 # TODO:
+#   * regenerate and understand study/results/pool4.txt
 #   * implement and test stage 5
 #   * want matfree application of GMG semicoarsening (but
 #         switch to aij for coarse problem)
+
+# results:  see study/pool_stage1.sh, study/pool_stages.sh, and study/results/poolX.txt
 
 import sys, argparse
 from pprint import pprint
@@ -15,20 +18,23 @@ import src.constants as consts
 
 parser = argparse.ArgumentParser(description='''
 Five stages of Stokes solvers in fixed 3D domains, so that performance
-degradation can be assessed as we build toward a real ice sheet.  (Compare
-stokesi.py for a real case, and sole.py for the easier Poisson problem.)  The
-starting point (stage 1) is linear Stokes with lid-driven Dirichlet boundary
-conditions on a unit cube.  Stage 5 is regularized Glen-Stokes physics with a
-stress-free surface and hilly topography on a high aspect ratio (100-to-1)
-domain with ice sheet dimensions.  All stages have nonslip conditions on their
-base and sides, i.e. these are swimming pools of fluid/ice.
+degradation can be assessed as we build toward a real ice sheet.  All
+stages have nonslip conditions on their base and sides, i.e. these are
+swimming pools of fluid/ice and not real glaciers.  Compare stokesi.py
+for a more realistic case, sole.py for easier Poisson problem, and
+mfmgstokes.py for a 2D Stokes problem.
+
+Stage 1 is linear Stokes with lid-driven Dirichlet boundary conditions
+on a unit cube.  Stage 5 is regularized Glen-Stokes physics with a
+stress-free surface and hilly topography on a high aspect ratio
+(100-to-1) domain with ice sheet dimensions.
 
 The chosen FEM uses a base mesh of triangles, extrudes the mesh to prisms,
 and applies Q2xDP0 mixed elements (see below).  The solvers are all based
 on Schur fieldsplit with GMG for the u-u block using an ILU smoother.
 The coarse mesh, regardless of size or coarsening mode, is solved by
-parallel LU (MUMPS).  Stage 1 uses a standard 3D GMG solver but in later
-stages we only apply vertical semi-coarsening for GMG.
+parallel LU (MUMPS).  Stage 1 uses a standard 3D GMG solver.  Stages 2-5
+apply vertical semi-coarsening for GMG.
 
 Stages:
     1. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, 3D GMG
@@ -88,7 +94,7 @@ else:
     L = 1.0
     H = 1.0
 
-# mesh
+# mesh hierarchies: two different strategies
 if args.stage == 1:
     basecoarse = RectangleMesh(args.mx,args.my,L,L)  # triangles
     mx = args.mx * 2**args.refine
@@ -140,7 +146,7 @@ else:
                     % (L,L,zmin,zmax))
 
 # finite elements and the mixed function spaces
-V = VectorFunctionSpace(mesh, 'Q', 2)   # Q2 on prisms
+V = VectorFunctionSpace(mesh, 'Q', 2)   # Q2 on prisms, i.e. P2(triangle) x P2(interval)
 xpE = FiniteElement('DP',triangle,0)    # discontinuous P0 in horizontal ...
 zpE = FiniteElement('P',interval,1)     #     tensored with continuous P1 in vertical
 pE = TensorProductElement(xpE,zpE)
@@ -172,7 +178,8 @@ u, p = split(up)
 v, q = TestFunctions(Z)
 # note symmetric gradient & divergence terms in F
 if args.stage in {1,2,3,4}:
-    F = (2.0 * nu * inner(grad(u), grad(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx
+    D = lambda v: sym(grad(v))
+    F = (2.0 * nu * inner(D(u), D(v)) - p * div(v) - div(u) * q - inner(f_body, v))*dx
 elif args.stage == 5:
     raise NotImplementedError  # FIXME
 
@@ -185,20 +192,25 @@ elif args.stage == 5:
 #        bcs = None
 #        return (a, bcs)
 
-# boundary conditions:  normally stress-free surface
+# boundary conditions:  zero velocity on sides and bottom
+#                       stages 1,2:    driven lid
+#                       stages 3,4,5:  stress free
 bcs = [DirichletBC(Z.sub(0), Constant((0, 0, 0)), (1, 2, 3, 4)),
        DirichletBC(Z.sub(0), Constant((0, 0, 0)), 'bottom')]
-nullspace = None
 if args.stage in {1,2}:
     u_lid = Function(V).interpolate(as_vector([4.0 * x * (1.0 - x),0.0,0.0]))
     bcs.append(DirichletBC(Z.sub(0), u_lid, 'top'))
     ## set nullspace to constant pressure fields
     nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
+else:
+    nullspace = None
 
 appctx = {"mu": nu}
 
 params = {'mat_type': 'matfree',
           'ksp_type':  'gmres',
+          #'ksp_pc_side': 'right',
+          #'ksp_norm_type': 'unpreconditioned',
           'ksp_converged_reason': None,
           'pc_type': 'fieldsplit',
           'pc_fieldsplit_type': 'schur',
@@ -299,13 +311,13 @@ else:
     PETSc.Sys.Print('  semi-coarsening:  GMG levels = %d' % pc0.getMGLevels())
 
 # report solution norms
+u,p = up.split()
 uL2 = sqrt(assemble(inner(u, u) * dx))
 pL2 = sqrt(assemble(inner(p, p) * dx))
 PETSc.Sys.Print('  solution norms:   |u|_2 = %.3e,  |p|_2 = %.3e' % (uL2,pL2))
 
 # optionally save result
 if args.o:
-    u, p = up.split()
     u.rename('velocity')
     p.rename('pressure')
     if mesh.comm.size > 1:
