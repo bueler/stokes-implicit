@@ -8,7 +8,7 @@ set +x
 # run optimality study with 8 processes on meshes 24x24, ..., 3072x3072 (<-- N=8.5e7)
 # result: all levels have 38 to 41 KSP iterations, CLEAR optimality, CLEAR optimal memory, good memory usage?
 
-NP=4
+NP=8
 
 # inputs: $1 = level number
 function runcase() {
@@ -22,8 +22,7 @@ function runcase() {
     grep "Time (sec):" $TNAME
 }
 
-#for LEV in 1 2 3 4 5 6 7 8; do
-for LEV in 1 2 3 4 5 6 7; do
+for LEV in 1 2 3 4 5 6 7 8; do
     runcase $LEV
 done
 

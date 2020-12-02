@@ -2,71 +2,79 @@
 mpiexec --bind-to hwthread --map-by core -n 8 ../mfmgstokes.py -m0 12 -refine 1 -memory_view -log_view
 fine mesh (level 1):  24 x 24 triangles(x2)
 vector space dims:    n_u=4802, n_p=625  -->  N=5427
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 36
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 41
+solution norms:   |u|_2 = 2.17796e-01,  |p|_2 = 1.71680e+00
 Summary of Memory Usage in PETSc
-Maximum (over computational time) process memory:        total 1.7264e+09 max 2.1652e+08 min 2.1527e+08
-Current process memory:                                  total 1.6989e+09 max 2.1312e+08 min 2.1186e+08
-Time (sec):           2.719e+00     1.000   2.719e+00
+Maximum (over computational time) process memory:        total 1.7338e+09 max 2.1736e+08 min 2.1597e+08
+Current process memory:                                  total 1.7064e+09 max 2.1395e+08 min 2.1257e+08
+Time (sec):           2.699e+00     1.000   2.699e+00
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../mfmgstokes.py -m0 12 -refine 2 -memory_view -log_view
 fine mesh (level 2):  48 x 48 triangles(x2)
 vector space dims:    n_u=18818, n_p=2401  -->  N=21219
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 39
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 41
+solution norms:   |u|_2 = 2.17798e-01,  |p|_2 = 1.69420e+00
 Summary of Memory Usage in PETSc
-Maximum (over computational time) process memory:        total 1.7564e+09 max 2.1987e+08 min 2.1905e+08
-Current process memory:                                  total 1.7287e+09 max 2.1647e+08 min 2.1565e+08
-Time (sec):           2.908e+00     1.000   2.908e+00
+Maximum (over computational time) process memory:        total 1.7556e+09 max 2.2026e+08 min 2.1871e+08
+Current process memory:                                  total 1.7276e+09 max 2.1662e+08 min 2.1531e+08
+Time (sec):           2.927e+00     1.000   2.927e+00
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../mfmgstokes.py -m0 12 -refine 3 -memory_view -log_view
 fine mesh (level 3):  96 x 96 triangles(x2)
 vector space dims:    n_u=74498, n_p=9409  -->  N=83907
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 39
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 42
+solution norms:   |u|_2 = 2.17798e-01,  |p|_2 = 1.68780e+00
 Summary of Memory Usage in PETSc
-Maximum (over computational time) process memory:        total 1.8231e+09 max 2.2888e+08 min 2.2738e+08
-Current process memory:                                  total 1.7949e+09 max 2.2495e+08 min 2.2345e+08
-Time (sec):           3.329e+00     1.000   3.329e+00
+Maximum (over computational time) process memory:        total 1.8296e+09 max 2.3006e+08 min 2.2809e+08
+Current process memory:                                  total 1.8013e+09 max 2.2639e+08 min 2.2417e+08
+Time (sec):           3.423e+00     1.000   3.423e+00
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../mfmgstokes.py -m0 12 -refine 4 -memory_view -log_view
 fine mesh (level 4):  192 x 192 triangles(x2)
 vector space dims:    n_u=296450, n_p=37249  -->  N=333699
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 39
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 41
+solution norms:   |u|_2 = 2.17798e-01,  |p|_2 = 1.68602e+00
 Summary of Memory Usage in PETSc
-Maximum (over computational time) process memory:        total 2.0803e+09 max 2.6069e+08 min 2.5946e+08
-Current process memory:                                  total 2.0523e+09 max 2.5728e+08 min 2.5552e+08
-Time (sec):           4.515e+00     1.000   4.515e+00
+Maximum (over computational time) process memory:        total 2.0894e+09 max 2.6250e+08 min 2.6024e+08
+Current process memory:                                  total 2.0613e+09 max 2.5883e+08 min 2.5683e+08
+Time (sec):           4.734e+00     1.000   4.734e+00
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../mfmgstokes.py -m0 12 -refine 5 -memory_view -log_view
 fine mesh (level 5):  384 x 384 triangles(x2)
 vector space dims:    n_u=1182722, n_p=148225  -->  N=1330947
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 38
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 42
+solution norms:   |u|_2 = 2.17798e-01,  |p|_2 = 1.68553e+00
 Summary of Memory Usage in PETSc
-Maximum (over computational time) process memory:        total 3.0679e+09 max 3.8514e+08 min 3.8250e+08
-Current process memory:                                  total 2.6711e+09 max 3.3488e+08 min 3.3318e+08
-Time (sec):           8.767e+00     1.000   8.767e+00
+Maximum (over computational time) process memory:        total 3.0764e+09 max 3.8681e+08 min 3.8323e+08
+Current process memory:                                  total 2.6722e+09 max 3.3612e+08 min 3.2929e+08
+Time (sec):           9.717e+00     1.000   9.717e+00
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../mfmgstokes.py -m0 12 -refine 6 -memory_view -log_view
 fine mesh (level 6):  768 x 768 triangles(x2)
 vector space dims:    n_u=4724738, n_p=591361  -->  N=5316099
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 38
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 42
+solution norms:   |u|_2 = 2.17798e-01,  |p|_2 = 1.68540e+00
 Summary of Memory Usage in PETSc
-Maximum (over computational time) process memory:        total 7.0171e+09 max 8.8052e+08 min 8.7448e+08
-Current process memory:                                  total 5.1954e+09 max 6.8192e+08 min 6.2239e+08
-Time (sec):           2.511e+01     1.000   2.511e+01
+Maximum (over computational time) process memory:        total 7.0206e+09 max 8.8197e+08 min 8.7537e+08
+Current process memory:                                  total 5.2467e+09 max 6.8352e+08 min 6.2400e+08
+Time (sec):           2.868e+01     1.000   2.868e+01
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../mfmgstokes.py -m0 12 -refine 7 -memory_view -log_view
 fine mesh (level 7):  1536 x 1536 triangles(x2)
 vector space dims:    n_u=18886658, n_p=2362369  -->  N=21249027
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 38
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 42
+solution norms:   |u|_2 = 2.17798e-01,  |p|_2 = 1.68537e+00
 Summary of Memory Usage in PETSc
-Maximum (over computational time) process memory:        total 2.2657e+10 max 2.8392e+09 min 2.8241e+09
-Current process memory:                                  total 1.5876e+10 max 2.0526e+09 min 1.8394e+09
-Time (sec):           9.408e+01     1.000   9.408e+01
+Maximum (over computational time) process memory:        total 2.2663e+10 max 2.8416e+09 min 2.8242e+09
+Current process memory:                                  total 1.5498e+10 max 2.0505e+09 min 1.8369e+09
+Time (sec):           1.053e+02     1.000   1.053e+02
 
 mpiexec --bind-to hwthread --map-by core -n 8 ../mfmgstokes.py -m0 12 -refine 8 -memory_view -log_view
 fine mesh (level 8):  3072 x 3072 triangles(x2)
 vector space dims:    n_u=75522050, n_p=9443329  -->  N=84965379
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 38
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 44
+solution norms:   |u|_2 = 2.17798e-01,  |p|_2 = 1.68536e+00
 Summary of Memory Usage in PETSc
-Maximum (over computational time) process memory:        total 8.3520e+10 max 1.0447e+10 min 1.0427e+10
-Current process memory:                                  total 3.7051e+10 max 4.6418e+09 min 4.6139e+09
-Time (sec):           3.725e+02     1.000   3.725e+02
+Maximum (over computational time) process memory:        total 8.3527e+10 max 1.0451e+10 min 1.0422e+10
+Current process memory:                                  total 3.7059e+10 max 4.6429e+09 min 4.6142e+09
+Time (sec):           4.236e+02     1.000   4.236e+02
