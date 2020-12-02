@@ -6,7 +6,7 @@ set +x
 #   $ ./mfmgstokes.sh &> results/mfmgstokes.txt
 
 # run optimality study with 8 processes on meshes 24x24, ..., 3072x3072 (<-- N=8.5e7)
-# result: all levels have 38 to 41 KSP iterations, CLEAR optimality, CLEAR optimal memory, good memory usage?
+# result: all levels have 41 to 44 KSP iterations, CLEAR optimality, CLEAR optimal memory
 
 NP=8
 

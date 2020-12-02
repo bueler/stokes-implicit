@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
-# compare matfreestokes.py
-# see https://www.firedrakeproject.org/demos/stokes.py.html
-# (see also https://www.firedrakeproject.org/matrix-free.html)
-
+# compare:  pool.py and src/experimental/matfreestokes.py
+# see also: https://www.firedrakeproject.org/demos/stokes.py.html
+#           https://www.firedrakeproject.org/matrix-free.html
 # results:  see study/mfmgstokes.sh and study/results/mfmgstokes.txt
 
 import sys, argparse
@@ -11,14 +10,20 @@ from firedrake import *
 PETSc.Sys.popErrorHandler()
 
 parser = argparse.ArgumentParser(description='''
-A matrix-free multigrid Stokes solver which is as simple as possible.
-Problem is a 2D lid-driven cavity with stress-free base (thus no null
-space).  Method is GMRES with Schur fieldsplit (lower) preconditioning.
-All but the coarse level in the velocity block are matrix free.
-The Schur block is preconditioned with ILU application of an assembled
-mass matrix.
-''',
-           add_help=False)
+Matrix-free multigrid Stokes solvers which are as simple as possible.
+Problem is a 2D lid-driven cavity with stress-free base, thus no null
+space, and continuous boundary velocity at corners.  Uses P2xP1
+Taylor-Hood elements.  Methods are GMRES with either:
+   [default]  Schur fieldsplit (lower) preconditioning with GMG
+              for the velocity block using a Chebyshev+Jacobi smoother
+              and ASM+ILU application of an assembled mass matrix
+              for preconditioning the Schur complement
+   -vanka     a monolithic GMG approach using additive PatchPC to apply
+              a Vanka smoother (using small dense matrices) at each
+              triangle vertex
+Only the smoothers in the velocity block are matrix free.  The coarse
+velocity block uses an assembled LU preconditioner.
+''',add_help=False)
 parser.add_argument('-aggressive', action='store_true', default=False,
                     help='refine by 4 in vertical semicoarsening (instead of 2)')
 parser.add_argument('-m0', type=int, default=16, metavar='N',
@@ -32,7 +37,7 @@ parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
 parser.add_argument('-refine', type=int, default=1, metavar='N',
                     help='refine to generate multigrid hierarchy (default=1)')
 parser.add_argument('-vanka', action='store_true', default=False,
-                    help='use a monolithic matfree GMG method based on a PCPatch additive vanka smoother')
+                    help='monolithic GMG method using PCPatch additive vanka smoother')
 args, unknown = parser.parse_known_args()
 if args.mfmghelp:
     parser.print_help()
