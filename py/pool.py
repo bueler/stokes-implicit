@@ -18,20 +18,23 @@ import src.constants as consts
 
 parser = argparse.ArgumentParser(description='''
 Five stages of Stokes solvers in fixed 3D domains, so that performance
-degradation can be assessed as we build toward a real ice sheet.  (Compare
-stokesi.py for a real case, and sole.py for the easier Poisson problem.)  The
-starting point (stage 1) is linear Stokes with lid-driven Dirichlet boundary
-conditions on a unit cube.  Stage 5 is regularized Glen-Stokes physics with a
-stress-free surface and hilly topography on a high aspect ratio (100-to-1)
-domain with ice sheet dimensions.  All stages have nonslip conditions on their
-base and sides, i.e. these are swimming pools of fluid/ice.
+degradation can be assessed as we build toward a real ice sheet.  All
+stages have nonslip conditions on their base and sides, i.e. these are
+swimming pools of fluid/ice and not real glaciers.  Compare stokesi.py
+for a more realistic case, sole.py for easier Poisson problem, and
+mfmgstokes.py for a 2D Stokes problem.
+
+Stage 1 is linear Stokes with lid-driven Dirichlet boundary conditions
+on a unit cube.  Stage 5 is regularized Glen-Stokes physics with a
+stress-free surface and hilly topography on a high aspect ratio
+(100-to-1) domain with ice sheet dimensions.
 
 The chosen FEM uses a base mesh of triangles, extrudes the mesh to prisms,
 and applies Q2xDP0 mixed elements (see below).  The solvers are all based
 on Schur fieldsplit with GMG for the u-u block using an ILU smoother.
 The coarse mesh, regardless of size or coarsening mode, is solved by
-parallel LU (MUMPS).  Stage 1 uses a standard 3D GMG solver but in later
-stages we only apply vertical semi-coarsening for GMG.
+parallel LU (MUMPS).  Stage 1 uses a standard 3D GMG solver.  Stages 2-5
+apply vertical semi-coarsening for GMG.
 
 Stages:
     1. linear Stokes, flat top (w/o gravity), lid-driven top, unit cube, 3D GMG
@@ -91,7 +94,7 @@ else:
     L = 1.0
     H = 1.0
 
-# mesh
+# mesh hierarchies: two different strategies
 if args.stage == 1:
     basecoarse = RectangleMesh(args.mx,args.my,L,L)  # triangles
     mx = args.mx * 2**args.refine
@@ -143,7 +146,7 @@ else:
                     % (L,L,zmin,zmax))
 
 # finite elements and the mixed function spaces
-V = VectorFunctionSpace(mesh, 'Q', 2)   # Q2 on prisms
+V = VectorFunctionSpace(mesh, 'Q', 2)   # Q2 on prisms, i.e. P2(triangle) x P2(interval)
 xpE = FiniteElement('DP',triangle,0)    # discontinuous P0 in horizontal ...
 zpE = FiniteElement('P',interval,1)     #     tensored with continuous P1 in vertical
 pE = TensorProductElement(xpE,zpE)
@@ -189,15 +192,18 @@ elif args.stage == 5:
 #        bcs = None
 #        return (a, bcs)
 
-# boundary conditions:  normally stress-free surface
+# boundary conditions:  zero velocity on sides and bottom
+#                       stages 1,2:    driven lid
+#                       stages 3,4,5:  stress free
 bcs = [DirichletBC(Z.sub(0), Constant((0, 0, 0)), (1, 2, 3, 4)),
        DirichletBC(Z.sub(0), Constant((0, 0, 0)), 'bottom')]
-nullspace = None
 if args.stage in {1,2}:
     u_lid = Function(V).interpolate(as_vector([4.0 * x * (1.0 - x),0.0,0.0]))
     bcs.append(DirichletBC(Z.sub(0), u_lid, 'top'))
     ## set nullspace to constant pressure fields
     nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
+else:
+    nullspace = None
 
 params = {'mat_type': 'aij',       # matfree does not work with Schur fieldsplit selfp (which assembles Bt A B),
                                    # but see https://www.firedrakeproject.org/demos/stokes.py.html
