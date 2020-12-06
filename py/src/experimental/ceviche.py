@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+# the primal problem converges with the direct (MUMPS) solver:
+#     $ for LEV in 2 4 8 16 32 64 128 256; do ./ceviche.py -N $LEV; done
+
+# the dual problem so far only converges with SVD (N=16 takes a minute):
+#     $ for LEV in 2 4 8 16; do ./ceviche.py -dual -s_pc_type svd -N $LEV; done
+
 import sys, argparse
 from firedrake import *
 PETSc.Sys.popErrorHandler()
@@ -9,14 +15,14 @@ Solve two mixed formulations of the Poisson.  (Roughly based on Examples 3.2
 and 3.3 in Mardal & Winther 2011, also Examples 1.3.4, 1.3.5 on pages 22--25
 of Boffi et al 2013.  Ceviche is a bowl of mixed seafood.)  The domain is
 Omega = [0,1]^2.  The strong form is
-  u - grad p = 0
-       div u = g
-where u is a vector, p is scalar, and g(x,y) is a given function.  We have
-boundary condition
-       u . n = 0
-Note that u is a vector field and that the scalar Poisson equation is
-div(grad p) = g  with Neumann boundary condition  dp/dn = 0.  The default
-primal weak form is
+          u - grad p = 0
+               div u = g
+with boundary condition
+               u . n = 0
+where u is a vector, p is scalar, and g(x,y) is a given function.  Note that
+the scalar Poisson equation is  div(grad p) = g  with Neumann boundary
+condition  dp/dn = 0, which is well-posed over p with mean zero.  The
+default primal weak form is
   <u,v> - <grad p,v> = 0  for all v in (L^2)^2
         - <u,grad q> = 0  for all q in H^1 s.t. int_Omega q = 0
 The dual (-dual) weak form is
@@ -26,8 +32,9 @@ An exact solution based on
   p(x,y) = cos(pi x) cos(2 pi y)
 is used, with differentiation giving u and then g.  Note g satisfies
 int_Omega g = 0, as implied by the Neumann condition.
-''',add_help=False)
-parser.add_argument('-cebichehelp', action='store_true', default=False,
+''',
+    add_help=False,formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('-cevichehelp', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-dual', action='store_true', default=False,
                     help='use dual weak form over H(div) x L^2')
@@ -36,7 +43,7 @@ parser.add_argument('-N', type=int, default=4, metavar='N',
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save results to .pvd file')
 args, unknown = parser.parse_known_args()
-if args.cebichehelp:
+if args.cevichehelp:
     parser.print_help()
     sys.exit(0)
 
@@ -68,20 +75,23 @@ params = {"snes_type": "ksponly",
           "pc_factor_mat_solver_type": "mumps",
           "ksp_converged_reason": None}
 
+nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
 if args.dual:
     F = (inner(u,v) + p * div(v) + div(u) * q - g*q) * dx
     bcs = [DirichletBC(Z.sub(0), Constant((0.0,0.0)), (1,2,3,4)),]
-    solve(F == 0, up, bcs=bcs, solver_parameters=params, options_prefix='s')
+    solve(F == 0, up, bcs=bcs, nullspace=nullspace,
+          solver_parameters=params, options_prefix='s')
 else:
     F = (inner(u,v) - inner(grad(p),v) - inner(u,grad(q)) - g*q) * dx
-    solve(F == 0, up, bcs=None, solver_parameters=params, options_prefix='s')
+    solve(F == 0, up, bcs=None, nullspace=nullspace,
+          solver_parameters=params, options_prefix='s')
 
 u,p = up.split()
 udiff = Function(V).interpolate(u - uexact)
 uerr_L2 = sqrt(assemble(inner(udiff, udiff) * dx))
 pdiff = Function(Q).interpolate(p - pexact)
 perr_L2 = sqrt(assemble(pdiff * pdiff * dx))
-PETSc.Sys.Print('on %d x %d mesh:  |u-uexact|_2 = %.3e, |p-pexact|_2 = %.3e' \
+PETSc.Sys.Print('on %3d x %3d mesh:  |u-uexact|_2 = %.3e, |p-pexact|_2 = %.3e' \
                 % (args.N,args.N,uerr_L2,perr_L2))
 
 if args.o:
