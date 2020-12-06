@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-# the primal problem converges with the direct (MUMPS) solver:
-#     $ for LEV in 2 4 8 16 32 64 128 256; do ./ceviche.py -N $LEV; done
-
-# the dual problem so far only converges with SVD (N=16 takes a minute):
-#     $ for LEV in 2 4 8 16; do ./ceviche.py -dual -s_pc_type svd -N $LEV; done
+# the primal and dual problems converges with the default MINRES solver:
+#   $ for LEV in 2 4 8 16 32 64 128; do ./ceviche.py -N $LEV; done
+#   $ for LEV in 2 4 8 16 32 64 128; do ./ceviche.py -dual -N $LEV; done
+# the iterations are smaller for the primal problem but the errors are
+# smaller for the dual
 
 import sys, argparse
 from firedrake import *
@@ -17,21 +17,19 @@ of Boffi et al 2013.  Ceviche is a bowl of mixed seafood.)  The domain is
 Omega = [0,1]^2.  The strong form is
           u - grad p = 0
                div u = g
-with boundary condition
-               u . n = 0
-where u is a vector, p is scalar, and g(x,y) is a given function.  Note that
-the scalar Poisson equation is  div(grad p) = g  with Neumann boundary
-condition  dp/dn = 0, which is well-posed over p with mean zero.  The
+with Neumann boundary condition  u . n = 0.  Here u is a vector, p is scalar,
+and g(x,y) is a given function.  This problem implies the Poisson equation
+div(grad p) = g  with  dp/dn = 0,  which is well-posed over p with mean zero.
+An exact solution based on  p(x,y) = cos(pi x) cos(2 pi y)  is used,
+differentiation giving u and then g (which has mean zero as needed.)  The
 default primal weak form is
   <u,v> - <grad p,v> = 0  for all v in (L^2)^2
         - <u,grad q> = 0  for all q in H^1 s.t. int_Omega q = 0
 The dual (-dual) weak form is
    <u,v> + <p,div v> = 0  for all v in H^1_0(div)
            <div u,q> = 0  for all q in L^2 s.t. int_Omega q = 0
-An exact solution based on
-  p(x,y) = cos(pi x) cos(2 pi y)
-is used, with differentiation giving u and then g.  Note g satisfies
-int_Omega g = 0, as implied by the Neumann condition.
+The primal elements are DP0 x P1 and the dual elements are BDM1 x DP0.
+The default solver is unpreconditioned MINRES.
 ''',
     add_help=False,formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-cevichehelp', action='store_true', default=False,
@@ -70,9 +68,8 @@ u,p = split(up)
 v,q = TestFunctions(Z)
 
 params = {"snes_type": "ksponly",
-          "ksp_type": "preonly",
-          "pc_type": "lu",
-          "pc_factor_mat_solver_type": "mumps",
+          "ksp_type": "minres",
+          "pc_type": "none",
           "ksp_converged_reason": None}
 
 nullspace = MixedVectorSpaceBasis(Z, [Z.sub(0), VectorSpaceBasis(constant=True)])
