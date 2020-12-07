@@ -1,0 +1,2 @@
+  Linear s_ solve converged due to CONVERGED_ITS iterations 1
+on   3 x   3 mesh:  |u-uexact|_2 = 1.367e+00, |p-pexact|_2 = 1.810e-01

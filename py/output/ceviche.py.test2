@@ -1,0 +1,2 @@
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 34
+on   4 x   4 mesh:  |u-uexact|_2 = 7.017e-01, |p-pexact|_2 = 3.195e-02
