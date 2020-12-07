@@ -36,10 +36,14 @@ parser.add_argument('-cevichehelp', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-dual', action='store_true', default=False,
                     help='use dual weak form over H(div) x L^2')
+parser.add_argument('-k', type=int, default=1, metavar='N',
+                    help='element order, either DPk-1 x Pk or BDMk x DPk-1 (default=1)')
 parser.add_argument('-N', type=int, default=4, metavar='N',
                     help='build NxN regular mesh of triangles (default=8)')
 parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save results to .pvd file')
+parser.add_argument('-rt', action='store_true', default=False,
+                    help='with -dual, use Raviart-Thomas elements instead of BDM')
 args, unknown = parser.parse_known_args()
 if args.cevichehelp:
     parser.print_help()
@@ -49,12 +53,15 @@ mesh = UnitSquareMesh(args.N, args.N) # mesh of triangles
 x,y = SpatialCoordinate(mesh)
 
 if args.dual:
-    E = FiniteElement('BDM',triangle,1,variant='integral')  # suppress warning
+    # note the integral variant is used to suppress "DeprecationWarning:
+    #   Variant of X element will change from point evaluation to integral
+    #   evaluation."
+    E = FiniteElement('RT' if args.rt else 'BDM',triangle,args.k,variant='integral')
     V = FunctionSpace(mesh, E)
-    Q = FunctionSpace(mesh, 'DP', 0)
+    Q = FunctionSpace(mesh, 'DP', args.k-1)
 else:
-    V = VectorFunctionSpace(mesh, 'DP', 0)
-    Q = FunctionSpace(mesh, 'P', 1)
+    V = VectorFunctionSpace(mesh, 'DP', args.k-1)
+    Q = FunctionSpace(mesh, 'P', args.k)
 Z = V * Q
 
 # FIXME also try "project"?
@@ -93,7 +100,7 @@ PETSc.Sys.Print('on %3d x %3d mesh:  |u-uexact|_2 = %.3e, |p-pexact|_2 = %.3e' \
 
 if args.o:
     u,p = up.split()
-    u.rename('grad p')
+    u.rename('u = grad p')
     p.rename('p')
     File(args.o).write(u,p)
 
