@@ -19,8 +19,7 @@ def basemesh(L, mx, my=-1):
 def extrudedmesh(base_mesh, mz, refine=-1, temporary_height=1.0):
     '''Generate extruded mesh on reference domain, optionally with refinement
     hierarchy (if refine>0).  Returned mesh has placeholder height.'''
-    dim = base_mesh.cell_dimension() + 1
-    if dim not in {2,3}:
+    if base_mesh.cell_dimension() not in {1,2}:
         raise ValueError('only 2D and 3D extruded meshes are generated')
     if refine > 0:
         hierarchy = fd.SemiCoarsenedExtrudedHierarchy(base_mesh, temporary_height,
@@ -31,10 +30,11 @@ def extrudedmesh(base_mesh, mz, refine=-1, temporary_height=1.0):
         mesh = fd.ExtrudedMesh(base_mesh, layers=mz, layer_height=temporary_height/mz)
         return mesh
 
-def deformlimitmesh(mesh, Hinitial, Href):
-    '''Modify an extruded mesh: Change vertical coordinate to max(Hinitial,Href).'''
-    # FIXME allow for nonzero bed elevation
-    Hlimited = fd.max_value(Href, Hinitial)
+def deformlimitmesh(mesh, b, Hinitial, Href):
+    '''Modify an extruded mesh: Change vertical coordinate to
+         lambda = b + max(Href,Hinitial - b).
+       Assumes input mesh has  0 <= z <= 1.'''
+    Hlimited = b + fd.max_value(Href, Hinitial - b)
     Vcoord = mesh.coordinates.function_space()
     if mesh._base_mesh.cell_dimension() == 1:
         x,z = fd.SpatialCoordinate(mesh)

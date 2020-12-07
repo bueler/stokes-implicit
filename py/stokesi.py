@@ -123,7 +123,7 @@ def deformbyinitial(mesh):
     else:
         x,_ = SpatialCoordinate(mesh)
         Hinitial = halfar_2d(x,R0=args.R0,H0=args.H0)
-    deformlimitmesh(mesh,Hinitial,Href=args.Href)
+    deformlimitmesh(mesh,Constant(0.0),Hinitial,Href=args.Href)
     return Hinitial
 
 # FIXME need time-stepping loop, which will alter mesh at every step
