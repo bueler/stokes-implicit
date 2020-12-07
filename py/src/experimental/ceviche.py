@@ -64,11 +64,11 @@ else:
     Q = FunctionSpace(mesh, 'P', args.k)
 Z = V * Q
 
-# FIXME also try "project"?
-pexact = Function(Q).interpolate(cos(pi*x)*cos(2.0*pi*y))
-uexact = Function(V).interpolate(as_vector([-pi*sin(pi*x)*cos(2.0*pi*y),
-                                            -2.0*pi*cos(pi*x)*sin(2.0*pi*y)]))
-g = Function(Q).interpolate(-5.0*pi*pi*pexact)
+pexact = Function(Q).project(cos(pi*x)*cos(2.0*pi*y))
+uexact = Function(V).project(as_vector([-pi*sin(pi*x)*cos(2.0*pi*y),
+                                        -2.0*pi*cos(pi*x)*sin(2.0*pi*y)]))
+# alternative for primal:  uexact = grad(pexact)
+g = Function(Q).project(-5.0*pi*pi*pexact)
 
 up = Function(Z)
 u,p = split(up)
