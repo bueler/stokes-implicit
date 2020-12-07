@@ -18,7 +18,10 @@ def vectorspaces(mesh,vertical_higher_order=0):
     zudeg,zpdeg = _degreexz[vertical_higher_order]
 
     # velocity u (vector)
-    xuE = fd.FiniteElement('Q',fd.quadrilateral,2) if ThreeD else fd.FiniteElement('P',fd.interval,2)
+    if ThreeD:
+        xuE = fd.FiniteElement('Q',fd.quadrilateral,2)
+    else:
+        xuE = fd.FiniteElement('P',fd.interval,2)
     zuE = fd.FiniteElement('P',fd.interval,zudeg)
     uE = fd.TensorProductElement(xuE,zuE)
     Vu = fd.VectorFunctionSpace(mesh, uE)
@@ -27,14 +30,20 @@ def vectorspaces(mesh,vertical_higher_order=0):
     #   note Isaac et al (2015) recommend discontinuous pressure space
     #   to get mass conservation but using dQ0 seems unstable and dQ1
     #   notably more expensive
-    xpE = fd.FiniteElement('Q',fd.quadrilateral,1) if ThreeD else fd.FiniteElement('P',fd.interval,1)
+    if ThreeD:
+        xpE = fd.FiniteElement('Q',fd.quadrilateral,1)
+    else:
+        xpE = fd.FiniteElement('P',fd.interval,1)
     zpE = fd.FiniteElement('P',fd.interval,zpdeg)
     pE = fd.TensorProductElement(xpE,zpE)
     Vp = fd.FunctionSpace(mesh, pE)
 
     # vertical displacement c (scalar)
-    xcE = fd.FiniteElement('Q',fd.quadrilateral,1) if ThreeD else fd.FiniteElement('P',fd.interval,1)
-    zcE = fd.FiniteElement('P',fd.interval,1)  # consider raising to 2: field "looks better?"
+    if ThreeD:
+        xcE = fd.FiniteElement('Q',fd.quadrilateral,1)
+    else:
+        xcE = fd.FiniteElement('P',fd.interval,1)
+    zcE = fd.FiniteElement('P',fd.interval,1)
     cE = fd.TensorProductElement(xcE,zcE)
     Vc = fd.FunctionSpace(mesh, cE)
 
