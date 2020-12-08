@@ -6,9 +6,7 @@ initial condition:   2D Halfar, H0=3000.00 m, R0=50.000 km, t0=0.04893 a
 element dimensions:  dx=4000.00 m, dz_min=50.00 m, ratio=80.0
 vector space dims:   n_u=1098, n_p=155, n_c=155  -->  N=1408
 **** SOLVING ****
-    ... one time step dt=0.10000 a ...
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 2
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 2
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 2
-  Linear s_ solve converged due to CONVERGED_RTOL iterations 2
-Nonlinear s_ solve converged due to CONVERGED_FNORM_RELATIVE iterations 4
+    ... one time step dt=0.01000 a ...
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 3
+  Linear s_ solve converged due to CONVERGED_RTOL iterations 4
+Nonlinear s_ solve converged due to CONVERGED_FNORM_RELATIVE iterations 2

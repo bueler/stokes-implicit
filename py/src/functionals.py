@@ -8,8 +8,7 @@ __all__ = ['IceModel', 'IceModel2D']
 class IceModel(object):
     '''Physics of the coupled ice flow and surface kinematical problems.'''
 
-    def __init__(self, mesh=None, almost=None, Href=None, eps=None, Dtyp=None, hcurrent=None):
-        self.almost = almost
+    def __init__(self, mesh=None, Href=None, eps=None, Dtyp=None, hcurrent=None):
         self.mesh = mesh
         self.Href = Href
         self.eps = eps
@@ -21,17 +20,6 @@ class IceModel(object):
 
     def _fbody(self):  # 3D
         return fd.as_vector([fd.Constant(0.0), fd.Constant(0.0), - rho * fd.Constant(g)])
-
-    def _Falmost(self,u,p,c,v,q,e):
-        '''This draft version uses the unmapped reference domain.'''
-        Du = 0.5 * (fd.grad(u)+fd.grad(u).T)
-        Dv = 0.5 * (fd.grad(v)+fd.grad(v).T)
-        Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
-        tau = Bn * Du2**(-1.0/n) * Du
-        source = fd.inner(self._fbody(),v)
-        return fd.inner(tau, Dv) * fd.dx \
-               + ( - p * fd.div(v) - fd.div(u) * q - source ) * fd.dx \
-               + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
 
     def _divmiddle(self,u,c):  # 3D
         return c.dx(0) * u[0].dx(2) + c.dx(1) * u[1].dx(2)
@@ -65,8 +53,10 @@ class IceModel(object):
         return 0.5 * (fd.grad(u)+fd.grad(u).T) - self._ell(c) * self._Mcu(u,c) \
                + (self._ell(c) - 1.0) * self._Lu(u,c)
 
-    def _Ftrue(self,u,p,c,v,q,e):
-        '''The fully-coupled version including the  x -> xi  mapping and miasma.'''
+    def F(self,u,p,c,v,q,e):
+        '''Return the nonlinear weak form F(u,p,c;v,q,e) for the coupled
+        Glen-Stokes and displacement problems, based on the  x -> xi  mapping.
+        Note the top boundary condition weak form is separate; see Fsmb().'''
         divu = self._divmapped(u,c)
         divv = self._divmapped(v,c)
         Du = self._Dmapped(u,c)
@@ -78,15 +68,6 @@ class IceModel(object):
         return (fd.inner(tau, Dv) - p * divv - divu * q - source ) \
                    * self.jweight(c) * fd.dx(degree=self.qdegree) \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
-
-    def F(self,u,p,c,v,q,e):
-        '''Return the nonlinear weak form F(u,p,c;v,q,e) for the coupled
-        Glen-Stokes and displacement problems.  Note the weak form for the
-        top boundary condition is separate; see Fsmb().'''
-        if self.almost:
-            return self._Falmost(u,p,c,v,q,e)
-        else:
-            return self._Ftrue(u,p,c,v,q,e)
 
     def _tangentu(self,u,z):  # 3D
         return u[0] * z.dx(0) + u[1] * z.dx(1)

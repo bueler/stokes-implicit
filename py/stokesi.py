@@ -54,8 +54,6 @@ block.  By default the diagonal blocks are solved (preconditioned) by LU
 using MUMPS.''',
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  add_help=False)
-parser.add_argument('-almost', action='store_true', default=False,
-                    help='use the draft weak forms which do not fully couple')
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
 parser.add_argument('-dta', type=float, default=0.01, metavar='X',
@@ -185,12 +183,10 @@ v,q,e = TestFunctions(Z)
 
 # coupled weak form
 if ThreeD:
-    im = IceModel(almost=args.almost, mesh=mesh,
-                  Href=args.Href, eps=args.eps, Dtyp=Dtyp,
+    im = IceModel(mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp,
                   hcurrent=hinitialextruded)
 else:
-    im = IceModel2D(almost=args.almost, mesh=mesh,
-                    Href=args.Href, eps=args.eps, Dtyp=Dtyp,
+    im = IceModel2D(mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp,
                     hcurrent=hinitialextruded)
 F = im.F(u,p,c,v,q,e)
 
