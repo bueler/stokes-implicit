@@ -17,6 +17,7 @@ class IceModel(object):
         self.hcurrent = hcurrent
         self.delta = 0.1
         self.qdegree = 3  # used in mapped weak form FIXME how to determine a wise value?
+        self.k = self.mesh._base_mesh.cell_dimension()
 
     def _fbody(self):  # 3D
         return fd.as_vector([fd.Constant(0.0), fd.Constant(0.0), - rho * fd.Constant(g)])
@@ -32,17 +33,8 @@ class IceModel(object):
                + ( - p * fd.div(v) - fd.div(u) * q - source ) * fd.dx \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
 
-    def _czeta(self,c):  # 3D
-        return c.dx(2)
-
     def _divmiddle(self,u,c):  # 3D
         return c.dx(0) * u[0].dx(2) + c.dx(1) * u[1].dx(2)
-
-    def _w(self,u):  # 3D
-        return u[2]
-
-    def _wzeta(self,u):  # 3D
-        return u[2].dx(2)
 
     def _Mcu(self,u,c):  # 3D
         term12 = 0.5 * (c.dx(1) * u[0].dx(2) + c.dx(0) * u[1].dx(2))
@@ -58,22 +50,20 @@ class IceModel(object):
                              [0.5 * u[0].dx(2), 0.5 * u[1].dx(2), u[2].dx(2)      ]])
 
     def jweight(self,c):
-        return fd.max_value(1.0 + self._czeta(c), self.delta)
+        czeta = c.dx(self.k)
+        return fd.max_value(1.0 + czeta, self.delta)
 
     def _ell(self,c):
         return 1.0 / self.jweight(c)
 
     def _divmapped(self,u,c):
+        wzeta = u[self.k].dx(self.k)
         return fd.div(u) - self._ell(c) * self._divmiddle(u,c) \
-               + (self._ell(c) - 1.0) * self._wzeta(u)
+               + (self._ell(c) - 1.0) * wzeta
 
     def _Dmapped(self,u,c):
         return 0.5 * (fd.grad(u)+fd.grad(u).T) - self._ell(c) * self._Mcu(u,c) \
                + (self._ell(c) - 1.0) * self._Lu(u,c)
-
-    def _zcoord(self):  # 3D
-        _,_,z = fd.SpatialCoordinate(self.mesh)
-        return z
 
     def _Ftrue(self,u,p,c,v,q,e):
         '''The fully-coupled version including the  x -> xi  mapping and miasma.'''
@@ -109,9 +99,9 @@ class IceModel(object):
         '''Return the weak form Fsmb(c;e) of the top boundary condition
         for the displacement problem so we may apply the surface kinematical
         equation weakly.  This weak form also depends on u.'''
-        z = self._zcoord()
-        smb = a - self._tangentu(u,z) + self._w(u)
-        return (c - self.smbref(smb,dt,z)) * e * fd.ds_t
+        x = fd.SpatialCoordinate(self.mesh)
+        smb = a - self._tangentu(u,x[self.k]) + u[self.k]
+        return (c - self.smbref(smb,dt,x[self.k])) * e * fd.ds_t
 
 
 class IceModel2D(IceModel):
@@ -120,17 +110,8 @@ class IceModel2D(IceModel):
     def _fbody(self):
         return fd.as_vector([fd.Constant(0.0), - rho * fd.Constant(g)])
 
-    def _czeta(self,c):
-        return c.dx(1)
-
     def _divmiddle(self,u,c):
         return c.dx(0) * u[0].dx(1)
-
-    def _w(self,u):
-        return u[1]
-
-    def _wzeta(self,u):
-        return u[1].dx(1)
 
     def _Mcu(self,u,c):
         term12 = 0.5 * c.dx(0) * u[1].dx(1)
@@ -140,10 +121,6 @@ class IceModel2D(IceModel):
     def _Lu(self,u,c):
         return fd.as_tensor([[0.0,              0.5 * u[0].dx(1)],
                              [0.5 * u[0].dx(1), u[1].dx(1)      ]])
-
-    def _zcoord(self):
-        _,z = fd.SpatialCoordinate(self.mesh)
-        return z
 
     def _tangentu(self,u,z):
         return u[0] * z.dx(0)
