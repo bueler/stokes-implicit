@@ -38,10 +38,10 @@ def vectorspaces(mesh,vertical_higher_order=0,quadrilateral=False):
     Vu = fd.VectorFunctionSpace(mesh,uE)
 
     # pressure p (scalar)
-    #   note Isaac et al (2015) recommend discontinuous pressure space
-    #   to get mass conservation but using dQ0 seems unstable and dQ1
-    #   notably more expensive
-    # FIXME try DP0 in horizonal; see pool.py
+    #   Note Isaac et al (2015) recommend discontinuous pressure space
+    #   to get mass conservation.  Switching base mesh elements to dP0
+    #   (or dQ0 for base quads) is inconsistent w.r.t. velocity result;
+    #   (unstable?) and definitely more expensive.
     if ThreeD:
         if quadrilateral:
             xpE = fd.FiniteElement('Q',fd.quadrilateral,1)
