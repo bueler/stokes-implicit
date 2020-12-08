@@ -1,4 +1,4 @@
-# generate base and extruded meshes, including vertical stretching
+# generate finite element spaces for velocity, pressure, and displacement
 
 import firedrake as fd
 
