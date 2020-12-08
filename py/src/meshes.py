@@ -30,18 +30,31 @@ def extrudedmesh(base_mesh, mz, refine=-1, temporary_height=1.0):
         mesh = fd.ExtrudedMesh(base_mesh, layers=mz, layer_height=temporary_height/mz)
         return mesh
 
-def deformlimitmesh(mesh, b, Hinitial, Href):
+def deformlimitmesh(mesh, b, hinitial, Href):
     '''Modify an extruded mesh: Change vertical coordinate to
          lambda = b + max(Href,Hinitial - b).
-       Assumes input mesh has  0 <= z <= 1.'''
-    Hlimited = b + fd.max_value(Href, Hinitial - b)
+       Assumes input mesh is extruded 3D mesh with  0 <= z <= 1.'''
+    # FIXME  new form could be
+    #   lam = deformlimitmesh(mesh,b,hinitial,Href,tau)
+    # which would do:
+    #   1) compute thickness and check admissible:  Hstart = hinitial - b >= 0
+    #   2) get mesh resolution:  hT = min(mesh.cell_sizes.dat.data)
+    #   3) set up k conditionally-stable time steps:
+    #        Deltat = hT^2 / 4
+    #        k = np.ceil(tau/Deltat)  # at least one; warn if >= 10
+    #        Deltat = tau/k
+    #   4) compute k steps of forward Euler heat equation  u_t = nabla^2 u
+    #      with  u(t=0) = Hstart  and time steps  Deltat  ... yields Hend
+    #   5) compute the new surface elevation so that it is at least Href:
+    #        lam = b + sqrt(Hend^2 + Href^2)
+    hlimited = b + fd.max_value(Href, hinitial - b)
     Vcoord = mesh.coordinates.function_space()
     if mesh._base_mesh.cell_dimension() == 1:
         x,z = fd.SpatialCoordinate(mesh)
-        f = fd.Function(Vcoord).interpolate(fd.as_vector([x,Hlimited*z]))
+        f = fd.Function(Vcoord).interpolate(fd.as_vector([x,hlimited*z]))
     elif mesh._base_mesh.cell_dimension() == 2:
         x,y,z = fd.SpatialCoordinate(mesh)
-        f = fd.Function(Vcoord).interpolate(fd.as_vector([x,y,Hlimited*z]))
+        f = fd.Function(Vcoord).interpolate(fd.as_vector([x,y,hlimited*z]))
     else:
         raise ValueError('only 2D and 3D extruded meshes can be deformed')
     mesh.coordinates.assign(f)
