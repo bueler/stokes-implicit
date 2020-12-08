@@ -4,11 +4,11 @@ import firedrake as fd
 
 __all__ = ['basemesh', 'extrudedmesh', 'referencemesh']
 
-def basemesh(L, mx, my=-1):
-    '''Set up base mesh of intervals on [-L,L] if my<0 or quadilaterals on
-    [-L,L]x[-L,L] otherwise.'''
+def basemesh(L, mx, my=-1, quadrilateral=False):
+    '''Set up base mesh of intervals on [-L,L] if my<0.  For 2D base mesh
+    (my>0) use triangles, or optionally quadilaterals, on [-L,L]x[-L,L].'''
     if my > 0:
-        base_mesh = fd.RectangleMesh(mx, my, 2.0*L, 2.0*L, quadrilateral=True)
+        base_mesh = fd.RectangleMesh(mx, my, 2.0*L, 2.0*L, quadrilateral=quadrilateral)
         base_mesh.coordinates.dat.data[:, 0] -= L
         base_mesh.coordinates.dat.data[:, 1] -= L
     else:

@@ -29,7 +29,8 @@ def jweight(mesh,icemodel,c):
 def surfaceelevation(mesh):
     Q1 = fd.FunctionSpace(mesh,'Q',1)
     if mesh._base_mesh.cell_dimension() == 2:
-        Q1base = fd.FunctionSpace(mesh._base_mesh,'Q',1)
+        Q1base = fd.FunctionSpace(mesh._base_mesh,'P',1)
+        #FIXME: if base mesh is quads: Q1base = fd.FunctionSpace(mesh._base_mesh,'Q',1)
     elif mesh._base_mesh.cell_dimension() == 1:
         Q1base = fd.FunctionSpace(mesh._base_mesh,'P',1)
     else:
@@ -46,7 +47,8 @@ def surfaceelevation(mesh):
 # extend a function f(x,y) to extruded mesh using the 'R' constant-in-the-vertical space
 def extend(mesh,f):
     if mesh._base_mesh.cell_dimension() == 2:
-        Q1R = fd.FunctionSpace(mesh,'Q',1,vfamily='R',vdegree=0)
+        Q1R = fd.FunctionSpace(mesh,'P',1,vfamily='R',vdegree=0)
+        #FIXME: if base mesh is quads: Q1R = fd.FunctionSpace(mesh,'Q',1,vfamily='R',vdegree=0)
     elif mesh._base_mesh.cell_dimension() == 1:
         Q1R = fd.FunctionSpace(mesh,'P',1,vfamily='R',vdegree=0)
     else:
@@ -70,9 +72,11 @@ def phydrostatic(mesh):
 def siahorizontalvelocity(mesh):
     hbase = surfaceelevation(mesh)
     if mesh._base_mesh.cell_dimension() == 2:
-        Vvectorbase = fd.VectorFunctionSpace(mesh._base_mesh,'DQ',0)
+        #FIXME: if base mesh is quads: Vvectorbase = fd.VectorFunctionSpace(mesh._base_mesh,'DQ',0)
+        Vvectorbase = fd.VectorFunctionSpace(mesh._base_mesh,'DP',0)
         gradhbase = fd.project(fd.grad(hbase),Vvectorbase)
-        VvectorR = fd.VectorFunctionSpace(mesh,'DQ',0, vfamily='R', vdegree=0, dim=2)
+        #FIXME: if base mesh is quads: VvectorR = fd.VectorFunctionSpace(mesh,'DQ',0, vfamily='R', vdegree=0, dim=2)
+        VvectorR = fd.VectorFunctionSpace(mesh,'DP',0, vfamily='R', vdegree=0, dim=2)
         Vvector = fd.VectorFunctionSpace(mesh,'DQ',0, dim=2)
     elif mesh._base_mesh.cell_dimension() == 1:
         Vvectorbase = fd.FunctionSpace(mesh._base_mesh,'DP',0)

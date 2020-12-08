@@ -12,8 +12,8 @@
 # serial 2D example: runs in about two minutes with 5/1 element ratio and N=8.2e4
 # timer ./stokesi.py -dta 0.01 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -refine 1 -saveextra -o foo2.pvd
 
-# parallel 3D example: runs in about 10 minutes with 80/1 element ratio and N=1.1e5
-# tmpg -n 8 ./stokesi.py -dta 0.01 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 30 -my 30 -saveextra -o foo3.pvd
+# parallel 3D example: runs in about 6 minutes with 80/1 element ratio and N=1.1e5
+# tmpg -n 4 ./stokesi.py -dta 0.01 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 30 -my 30 -saveextra -o foo3.pvd
 
 import sys,argparse
 from firedrake import *
@@ -31,27 +31,29 @@ of an equally-spaced interval or quadrilateral mesh in the map plane
 giving quadrilateral or hexahedral elements, respectively.  Optional
 refinement in the vertical to allow semicoarsening multigrid.  Currently the
 initial geometry is from Halfar (1981) or Halfar (1983).  A reference
-domain with a minimum thickness is generated from the initial geometry.
-We solve a nonlinear system for velocity u, pressure p, and (scalar)
-vertical displacement c.  The system of 3 PDEs corresponds to a single
-backward Euler time step of -dta years:
+domain with a minimum thickness (-Href) is generated from the initial geometry.
+We then solve a nonlinear system of 3 PDEs, namely the equations for a single
+backward Euler time step (-dta years) for velocity u, pressure p, and (scalar)
+vertical displacement c:
   stress balance:       F_1(u,p,c) = 0
   incompressibility:    F_2(u,c)   = 0
   Laplace/SKE:          F_3(u,c)   = 0
-The last equation is Laplace's equation for c in the domain interior but it
+The third equation is Laplace's equation for c in the domain interior.  It
 is coupled to the first two through the top boundary condition which enforces
 the SKE and through weighting/stretching factors in the Glen-Stokes weak form.
+The default elements in 2D are quads and in 3D are prisms.
+(FIXME: optional hex in 3D)
 The mixed space consists of (u,p) in Q2 x Q1 for the Stokes problem and c in
-Q1 for displacement and thus the Jacobian matrices have block form
-      * * | *
-  J = *   | *
-      -------
-      *   | *
-where the upper-left 2x2 (u,p) block is a weighted form of the usual mixed and
-element Stokes matrix.  The default solver is multiplicative fieldsplit between
-the (u,p) block and the c blocks.  The (u,p) block is solved by Schur lower
-fieldsplit with selfp preconditioning on its Schur block.  By default the
-diagonal blocks are solved (preconditioned) by LU using MUMPS.''',
+Q1 for displacement.  The 3x3 block Jacobian matrices have form
+      * * *
+  J = *   *
+      *   *
+where the upper-left 2x2 (u,p) block is a weighted version of the usual mixed
+element Stokes matrix.  The default solver is symmetric multiplicative
+fieldsplit between the (u,p) block and the c blocks.  The (u,p) block is
+solved by Schur lower fieldsplit with selfp preconditioning on its Schur
+block.  By default the diagonal blocks are solved (preconditioned) by LU
+using MUMPS.''',
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  add_help=False)
 parser.add_argument('-almost', action='store_true', default=False,
@@ -101,14 +103,15 @@ Dtyp = args.Dtyp / secpera
 dt = args.dta * secpera
 
 # set up base mesh; note refinement is NOT used here
-base_mesh = basemesh(L=args.L,mx=args.mx,my=args.my)
+base_mesh = basemesh(L=args.L,mx=args.mx,my=args.my)  #FIXME optional quadrilateral
 
 # report on base mesh
 PETSc.Sys.Print('**** SUMMARY OF SETUP ****')
 if ThreeD:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
                     % (-args.L/1000.0,args.L/1000.0,-args.L/1000.0,args.L/1000.0))
-    PETSc.Sys.Print('base mesh:           %d x %d elements (quads)' % (args.mx,args.my))
+    #FIXME optional quads
+    PETSc.Sys.Print('base mesh:           %d x %d elements (trianglesx2)' % (args.mx,args.my))
 else:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] km interval'
                     % (-args.L/1000.0,args.L/1000.0))
@@ -155,7 +158,8 @@ if ThreeD:
     dyelem = 2.0 * args.L / args.my
     PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0_3d(args.R0,args.H0)/secpera))
-    PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (hexahedra); limited at Href=%.2f m'
+    #FIXME "hexahedra" if quads
+    PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (prismsx2); limited at Href=%.2f m'
                     % (args.mx,args.my,mzfine,args.Href))
     PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f, ratioy=%.1f'
                     % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem,dyelem/dzrefelem))
@@ -168,7 +172,7 @@ else:
                     % (dxelem,dzrefelem,dxelem/dzrefelem))
 
 # set up mixed finite element space
-Vu, Vp, Vc = vectorspaces(mesh,vertical_higher_order=args.pvert)
+Vu, Vp, Vc = vectorspaces(mesh,vertical_higher_order=args.pvert)  #FIXME optional quadrilateral
 Z = Vu * Vp * Vc
 
 # report on vector spaces sizes
