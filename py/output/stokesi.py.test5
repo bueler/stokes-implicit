@@ -3,7 +3,8 @@ horizontal domain:   [-60.00,60.00] km interval
 base mesh:           30 elements (intervals)
 initial condition:   2D Halfar, H0=3000.00 m, R0=50.000 km, t0=0.04893 a
 2D extruded mesh:    30 x 4 elements (quads); limited at Href=200.00 m
-element dimensions:  dx=4000.00 m, dz_min=50.00 m, ratio=80.0
+element dimensions:  dx=4000.00 m, dz_min=50.00 m
+max aspect ratio:    ratio=80.0
 vector space dims:   n_u=1098, n_p=155, n_c=155  -->  N=1408
 **** SOLVING ****
     ... one time step dt=0.01000 a ...

@@ -7,7 +7,7 @@ __all__ = ['vectorspaces']
 # degrees of higher-order elements in the vertical
 _degreexz = [(2,1),(3,2),(4,3),(5,4)]
 
-def vectorspaces(mesh,vertical_higher_order=0,quadrilateral=False):
+def vectorspaces(mesh,vertical_higher_order=0):
     '''On an extruded mesh, build finite element spaces for velocity u,
     pressure p, and vertical displacement c.  Construct component spaces by
     explicitly applying TensorProductElement().  Elements are Q2 prisms
@@ -19,15 +19,14 @@ def vectorspaces(mesh,vertical_higher_order=0,quadrilateral=False):
     if mesh._base_mesh.cell_dimension() not in {1,2}:
         raise ValueError('only 2D and 3D extruded meshes are allowed')
     ThreeD = (mesh._base_mesh.cell_dimension() == 2)
-
-    # FIXME ask mesh._base_mesh for triangle or quadrilateral (not kwarg)
-    if quadrilateral and not ThreeD:
+    quad = (mesh._base_mesh.ufl_cell() == fd.quadrilateral)
+    if quad and not ThreeD:
         raise ValueError('base mesh from quadilaterals only possible in 3D')
     zudeg,zpdeg = _degreexz[vertical_higher_order]
 
     # velocity u (vector)
     if ThreeD:
-        if quadrilateral:
+        if quad:
             xuE = fd.FiniteElement('Q',fd.quadrilateral,2)
         else:
             xuE = fd.FiniteElement('P',fd.triangle,2)
@@ -43,7 +42,7 @@ def vectorspaces(mesh,vertical_higher_order=0,quadrilateral=False):
     #   (or dQ0 for base quads) is inconsistent w.r.t. velocity result;
     #   (unstable?) and definitely more expensive.
     if ThreeD:
-        if quadrilateral:
+        if quad:
             xpE = fd.FiniteElement('Q',fd.quadrilateral,1)
         else:
             xpE = fd.FiniteElement('P',fd.triangle,1)
@@ -55,7 +54,7 @@ def vectorspaces(mesh,vertical_higher_order=0,quadrilateral=False):
 
     # vertical displacement c (scalar)
     if ThreeD:
-        if quadrilateral:
+        if quad:
             xcE = fd.FiniteElement('Q',fd.quadrilateral,1)
         else:
             xcE = fd.FiniteElement('P',fd.triangle,1)

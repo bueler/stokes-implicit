@@ -31,10 +31,10 @@ runpool_4:
 	-@./../testit.sh pool.py "-stage 4 -mx 4 -my 4 -mz 2" 2 4
 
 runstokesi_1:
-	-@./../testit.sh stokesi.py "-dirichletsmb -dta 0.1 -s_ksp_converged_reason -mx 5 -refine 1 -s_snes_rtol 1.0e-1" 1 1
+	-@./../testit.sh stokesi.py "-dirichletsmb -dta 0.1 -s_ksp_converged_reason -mx 5 -refine 1 -s_snes_rtol 1.0e-1" 2 1
 
 runstokesi_2:
-	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-1" 2 2
+	-@./../testit.sh stokesi.py "-quad -mx 3 -my 3 -Href 100 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2" 1 2
 
 runstokesi_3:
 	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -mx 4 -my 4 -s_snes_rtol 1.0e-2 -s_ksp_rtol 1.0e-2" 1 3

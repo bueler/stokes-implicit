@@ -78,6 +78,8 @@ parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
                     help='save to output file name ending with .pvd')
 parser.add_argument('-pvert', type=int, default=0, metavar='N',
                     help='p-refinement level in vertical; use 0,1,2,3 only (default=0)')
+parser.add_argument('-quad', action='store_true', default=False,
+                    help='quadrilaterals instead of triangles in base mesh; requires my>0')
 parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
                     help='half-width in m of initial ice sheet (default=50e3)')
 parser.add_argument('-refine', type=int, default=-1, metavar='N',
@@ -99,15 +101,18 @@ Dtyp = args.Dtyp / secpera
 dt = args.dta * secpera
 
 # set up base mesh; note refinement is NOT used here
-base_mesh = basemesh(L=args.L,mx=args.mx,my=args.my)  #FIXME optional quadrilateral
+if args.quad and not ThreeD:
+    raise ValueError('base mesh quadrilaterals only make sense in 3D')
+base_mesh = basemesh(L=args.L,mx=args.mx,my=args.my,quadrilateral=args.quad)
 
 # report on base mesh
 PETSc.Sys.Print('**** SUMMARY OF SETUP ****')
+baseelements = 'quadrilaterals' if args.quad else 'trianglesx2'
 if ThreeD:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
                     % (-args.L/1000.0,args.L/1000.0,-args.L/1000.0,args.L/1000.0))
-    #FIXME optional quads
-    PETSc.Sys.Print('base mesh:           %d x %d elements (trianglesx2)' % (args.mx,args.my))
+    PETSc.Sys.Print('base mesh:           %d x %d elements (%s)'
+                    % (args.mx,args.my,baseelements))
 else:
     PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] km interval'
                     % (-args.L/1000.0,args.L/1000.0))
@@ -148,27 +153,32 @@ else:
     x,z = SpatialCoordinate(mesh)
 
 # report on generated geometry and extruded mesh
-dxelem = 2.0 * args.L / args.mx
+dxelem = 2.0 * args.L / args.mx  # FIXME for unstructured mesh use
+                                 # max/min of mesh.cell_sizes.dat.data
 dzrefelem = args.Href / mzfine
+elements = 'hexahedra' if args.quad else 'prismsx2'
 if ThreeD:
     dyelem = 2.0 * args.L / args.my
     PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0_3d(args.R0,args.H0)/secpera))
-    #FIXME "hexahedra" if quads
-    PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (prismsx2); limited at Href=%.2f m'
-                    % (args.mx,args.my,mzfine,args.Href))
-    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m, ratiox=%.1f, ratioy=%.1f'
-                    % (dxelem,dyelem,dzrefelem,dxelem/dzrefelem,dyelem/dzrefelem))
+    PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (%s); limited at Href=%.2f m'
+                    % (args.mx,args.my,mzfine,elements,args.Href))
+    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m'
+                    % (dxelem,dyelem,dzrefelem))
+    PETSc.Sys.Print('max aspect ratios:   ratiox=%.1f, ratioy=%.1f'
+                    % (dxelem/dzrefelem,dyelem/dzrefelem))
 else:
     PETSc.Sys.Print('initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0_2d(args.R0,args.H0)/secpera))
     PETSc.Sys.Print('2D extruded mesh:    %d x %d elements (quads); limited at Href=%.2f m'
                     % (args.mx,mzfine,args.Href))
-    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dz_min=%.2f m, ratio=%.1f'
-                    % (dxelem,dzrefelem,dxelem/dzrefelem))
+    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dz_min=%.2f m'
+                    % (dxelem,dzrefelem))
+    PETSc.Sys.Print('max aspect ratio:    ratio=%.1f'
+                    % (dxelem/dzrefelem))
 
 # set up mixed finite element space
-Vu, Vp, Vc = vectorspaces(mesh,vertical_higher_order=args.pvert)  #FIXME optional quadrilateral
+Vu, Vp, Vc = vectorspaces(mesh,vertical_higher_order=args.pvert)
 Z = Vu * Vp * Vc
 
 # report on vector spaces sizes

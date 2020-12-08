@@ -4,7 +4,8 @@ base mesh:           5 elements (intervals)
 refined vertical:    4 coarse layers refined to 8 fine layers
 initial condition:   2D Halfar, H0=3000.00 m, R0=50.000 km, t0=0.04893 a
 2D extruded mesh:    5 x 8 elements (quads); limited at Href=200.00 m
-element dimensions:  dx=24000.00 m, dz_min=25.00 m, ratio=960.0
+element dimensions:  dx=24000.00 m, dz_min=25.00 m
+max aspect ratio:    ratio=960.0
 vector space dims:   n_u=374, n_p=54, n_c=54  -->  N=482
 **** SOLVING ****
     ... one time step dt=0.10000 a ...

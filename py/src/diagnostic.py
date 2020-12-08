@@ -6,7 +6,8 @@ from .constants import g,rho,n,Bn,Gamma
 __all__ = ['stresses', 'surfaceelevation', 'extendsurfaceelevation',
            'pdifference', 'siahorizontalvelocity', 'writeresult']
 
-# regularized tensor-valued deviatoric stress tau and effective viscosity from the velocity solution
+# on mesh get regularized tensor-valued deviatoric stress tau
+# and effective viscosity from the velocity solution
 def stresses(mesh,icemodel,u):
     Q1 = fd.FunctionSpace(mesh,'Q',1)
     TQ1 = fd.TensorFunctionSpace(mesh,'Q',1)
@@ -18,19 +19,22 @@ def stresses(mesh,icemodel,u):
     tau.rename('tau')
     return tau, nu
 
-# compute jweight function
+# on mesh compute jweight function
 def jweight(mesh,icemodel,c):
     Q1 = fd.FunctionSpace(mesh,'Q',1)
     jweight = fd.Function(Q1).interpolate(icemodel.jweight(c))
     jweight.rename('jweight')
     return jweight
 
-# compute h(x,y), defined on the base mesh, from the top coordinate of the extruded mesh
+# on extruded mesh compute the surface elevation h(x,y), defined on the base
+# mesh, from the top coordinate of the mesh
 def surfaceelevation(mesh):
     Q1 = fd.FunctionSpace(mesh,'Q',1)
     if mesh._base_mesh.cell_dimension() == 2:
-        Q1base = fd.FunctionSpace(mesh._base_mesh,'P',1)
-        #FIXME: if base mesh is quads: Q1base = fd.FunctionSpace(mesh._base_mesh,'Q',1)
+        if mesh._base_mesh.ufl_cell() == quadrilateral:
+            Q1base = fd.FunctionSpace(mesh._base_mesh,'Q',1)
+        else:
+            Q1base = fd.FunctionSpace(mesh._base_mesh,'P',1)
     elif mesh._base_mesh.cell_dimension() == 1:
         Q1base = fd.FunctionSpace(mesh._base_mesh,'P',1)
     else:
@@ -44,11 +48,14 @@ def surfaceelevation(mesh):
     hbase.dat.data_with_halos[:] = z.dat.data_with_halos[bc.nodes]
     return hbase
 
-# extend a function f(x,y) to extruded mesh using the 'R' constant-in-the-vertical space
+# on extruded mesh extend a function f(x,y), already defined on the base mesh,
+# to the whole mesh using the 'R' constant-in-the-vertical space
 def extend(mesh,f):
     if mesh._base_mesh.cell_dimension() == 2:
-        Q1R = fd.FunctionSpace(mesh,'P',1,vfamily='R',vdegree=0)
-        #FIXME: if base mesh is quads: Q1R = fd.FunctionSpace(mesh,'Q',1,vfamily='R',vdegree=0)
+        if mesh._base_mesh.ufl_cell() == quadrilateral:
+            Q1R = fd.FunctionSpace(mesh,'Q',1,vfamily='R',vdegree=0)
+        else:
+            Q1R = fd.FunctionSpace(mesh,'P',1,vfamily='R',vdegree=0)
     elif mesh._base_mesh.cell_dimension() == 1:
         Q1R = fd.FunctionSpace(mesh,'P',1,vfamily='R',vdegree=0)
     else:
@@ -57,7 +64,7 @@ def extend(mesh,f):
     fextend.dat.data[:] = f.dat.data_ro[:]
     return fextend
 
-# hydrostatic pressure
+# on extruded mesh compute hydrostatic pressure
 def phydrostatic(mesh):
     Q1 = fd.FunctionSpace(mesh,'Q',1)
     hbase = surfaceelevation(mesh)
@@ -68,21 +75,24 @@ def phydrostatic(mesh):
     ph.rename('hydrostatic pressure')
     return ph
 
-# horizontal velocity <u,v> from the shallow ice approximation (SIA)
+# on extruded mesh compute the horizontal velocity <u,v> in the shallow
+# ice approximation (SIA)
 def siahorizontalvelocity(mesh):
     hbase = surfaceelevation(mesh)
     if mesh._base_mesh.cell_dimension() == 2:
-        #FIXME: if base mesh is quads: Vvectorbase = fd.VectorFunctionSpace(mesh._base_mesh,'DQ',0)
-        Vvectorbase = fd.VectorFunctionSpace(mesh._base_mesh,'DP',0)
+        if mesh._base_mesh.ufl_cell() == quadrilateral:
+            Vvectorbase = fd.VectorFunctionSpace(mesh._base_mesh,'DQ',0)
+            VvectorR = fd.VectorFunctionSpace(mesh,'DQ',0, vfamily='R', vdegree=0, dim=2)
+        else:
+            Vvectorbase = fd.VectorFunctionSpace(mesh._base_mesh,'DP',0)
+            VvectorR = fd.VectorFunctionSpace(mesh,'DP',0, vfamily='R', vdegree=0, dim=2)
         gradhbase = fd.project(fd.grad(hbase),Vvectorbase)
-        #FIXME: if base mesh is quads: VvectorR = fd.VectorFunctionSpace(mesh,'DQ',0, vfamily='R', vdegree=0, dim=2)
-        VvectorR = fd.VectorFunctionSpace(mesh,'DP',0, vfamily='R', vdegree=0, dim=2)
         Vvector = fd.VectorFunctionSpace(mesh,'DQ',0, dim=2)
     elif mesh._base_mesh.cell_dimension() == 1:
         Vvectorbase = fd.FunctionSpace(mesh._base_mesh,'DP',0)
         gradhbase = fd.project(hbase.dx(0),Vvectorbase)
         VvectorR = fd.FunctionSpace(mesh,'DP',0, vfamily='R', vdegree=0)
-        Vvector = fd.FunctionSpace(mesh,'DP',0)
+        Vvector = fd.FunctionSpace(mesh,'DQ',0)
     else:
         raise ValueError('base mesh of extruded input mesh must be 1D or 2D')
     gradh = fd.Function(VvectorR)
