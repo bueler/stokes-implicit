@@ -2,7 +2,7 @@
 
 import firedrake as fd
 
-__all__ = ['basemesh', 'extrudedmesh', 'deformlimitmesh']
+__all__ = ['basemesh', 'extrudedmesh', 'referencemesh']
 
 def basemesh(L, mx, my=-1):
     '''Set up base mesh of intervals on [-L,L] if my<0 or quadilaterals on
@@ -17,7 +17,7 @@ def basemesh(L, mx, my=-1):
     return base_mesh
 
 def extrudedmesh(base_mesh, mz, refine=-1, temporary_height=1.0):
-    '''Generate extruded mesh on reference domain, optionally with refinement
+    '''Generate extruded mesh on draft reference domain.  Optional refinement
     hierarchy (if refine>0).  Returned mesh has placeholder height.'''
     if base_mesh.cell_dimension() not in {1,2}:
         raise ValueError('only 2D and 3D extruded meshes are generated')
@@ -30,12 +30,12 @@ def extrudedmesh(base_mesh, mz, refine=-1, temporary_height=1.0):
         mesh = fd.ExtrudedMesh(base_mesh, layers=mz, layer_height=temporary_height/mz)
         return mesh
 
-def deformlimitmesh(mesh, b, hinitial, Href):
-    '''Modify an extruded mesh: Change vertical coordinate to
-         lambda = b + max(Href,Hinitial - b).
-       Assumes input mesh is extruded 3D mesh with  0 <= z <= 1.'''
+def referencemesh(mesh, b, hinitial, Href):
+    '''In-place modification of an extruded mesh to create the reference mesh.
+    Changes the top surface to  lambda = b + max(Href,Hinitial - b).  Assumes
+    the input mesh is extruded 3D mesh with  0 <= z <= 1.'''
     # FIXME  new form could be
-    #   lam = deformlimitmesh(mesh,b,hinitial,Href,tau)
+    #   lam = referencemesh(mesh,b,hinitial,Href,tau)
     # which would do:
     #   1) compute thickness and check admissible:  Hstart = hinitial - b >= 0
     #   2) get mesh resolution:  hT = min(mesh.cell_sizes.dat.data)

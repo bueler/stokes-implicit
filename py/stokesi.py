@@ -18,7 +18,7 @@
 import sys,argparse
 from firedrake import *
 from src.constants import secpera, rho
-from src.meshes import basemesh, extrudedmesh, deformlimitmesh
+from src.meshes import basemesh, extrudedmesh, referencemesh
 from src.spaces import vectorspaces
 from src.halfar import t0_2d, t0_3d, halfar_2d, halfar_3d
 from src.functionals import IceModel, IceModel2D
@@ -114,7 +114,7 @@ else:
                     % (-args.L/1000.0,args.L/1000.0))
     PETSc.Sys.Print('base mesh:           %d elements (intervals)' % args.mx)
 
-def deformbyinitial(mesh):
+def referencefromhalfar(mesh):
     '''Use initial shape to determine mesh for reference domain.
     Currently this just uses the Halfar solution.'''
     if ThreeD:
@@ -123,7 +123,7 @@ def deformbyinitial(mesh):
     else:
         x,_ = SpatialCoordinate(mesh)
         Hinitial = halfar_2d(x,R0=args.R0,H0=args.H0)
-    deformlimitmesh(mesh,Constant(0.0),Hinitial,Href=args.Href)
+    referencemesh(mesh,Constant(0.0),Hinitial,Href=args.Href)
     return Hinitial
 
 # FIXME need time-stepping loop, which will alter mesh at every step
@@ -133,13 +133,13 @@ def deformbyinitial(mesh):
 if args.refine > 0:
     mesh, hierarchy = extrudedmesh(base_mesh, args.mz, refine=args.refine)
     for kmesh in hierarchy:
-        hinitialextruded = deformbyinitial(kmesh)
+        hinitialextruded = referencefromhalfar(kmesh)
     mzfine = args.mz * 2**args.refine
     PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' \
                     % (args.mz,mzfine))
 else:
     mesh = extrudedmesh(base_mesh, args.mz)
-    hinitialextruded = deformbyinitial(mesh)
+    hinitialextruded = referencefromhalfar(mesh)
     mzfine = args.mz
 
 # extruded mesh coordinates
