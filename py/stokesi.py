@@ -25,24 +25,22 @@ from src.functionals import IceModel, IceModel2D
 from src.diagnostic import writeresult
 
 parser = argparse.ArgumentParser(description='''
-Solve coupled Glen-Stokes equations plus surface kinematical equation (SKE)
-for a glacier or ice sheet.  Generates flat-bed 2D or 3D mesh by extrusion
-of an equally-spaced interval or quadrilateral mesh in the map plane
-giving quadrilateral or hexahedral elements, respectively.  Optional
-refinement in the vertical to allow semicoarsening multigrid.  Currently the
-initial geometry is from Halfar (1981) or Halfar (1983).  A reference
-domain with a minimum thickness (-Href) is generated from the initial geometry.
-We then solve a nonlinear system of 3 PDEs, namely the equations for a single
-backward Euler time step (-dta years) for velocity u, pressure p, and (scalar)
-vertical displacement c:
+Solve coupled Glen-Stokes equations plus the surface kinematical equation (SKE)
+for a glacier or ice sheet.  First generate a flat-bed 2D or 3D mesh by
+extrusion of an equally-spaced interval or triangle mesh in the map plane
+giving quadrilateral or prismatic elements, respectively.  (Optional
+quadrilaterals in the base give hexahedral elements.)  Optional refinement
+in the vertical allows semicoarsening multigrid.  Currently the initial
+geometry is from Halfar (1981,1983).  A reference domain with a minimum
+thickness (-Href) is generated from the initial geometry.  We then solve a
+nonlinear system of 3 PDEs, namely the equations for a single backward Euler
+time step (-dta years) for velocity u, pressure p, and vertical displacement c:
   stress balance:       F_1(u,p,c) = 0
   incompressibility:    F_2(u,c)   = 0
   Laplace/SKE:          F_3(u,c)   = 0
 The third equation is Laplace's equation for c in the domain interior.  It
 is coupled to the first two through the top boundary condition which enforces
 the SKE and through weighting/stretching factors in the Glen-Stokes weak form.
-The default elements in 2D are quads and in 3D are prisms.
-(FIXME: optional hex in 3D)
 The mixed space consists of (u,p) in Q2 x Q1 for the Stokes problem and c in
 Q1 for displacement.  The 3x3 block Jacobian matrices have form
       * * *
