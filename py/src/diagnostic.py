@@ -65,7 +65,7 @@ def phydrostatic(mesh):
 def siahorizontalvelocity(mesh):
     hbase = surfaceelevation(mesh)
     if mesh._base_mesh.cell_dimension() == 2:
-        if mesh._base_mesh.ufl_cell() == quadrilateral:
+        if mesh._base_mesh.ufl_cell() == fd.quadrilateral:
             Vvectorbase = fd.VectorFunctionSpace(mesh._base_mesh,'DQ',0)
             VvectorR = fd.VectorFunctionSpace(mesh,'DQ',0, vfamily='R', vdegree=0, dim=2)
         else:
