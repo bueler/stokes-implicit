@@ -109,7 +109,7 @@ def siahorizontalvelocity(mesh):
     return uv
 
 # save ParaView-readable file
-def writeresult(filename,mesh,icemodel,upc,hinitialextruded,saveextra=False):
+def writeresult(filename,mesh,icemodel,upc,saveextra=False):
     assert filename.split('.')[-1] == 'pvd'
     variables = 'u,p,c'
     if mesh.comm.size > 1:

@@ -8,12 +8,11 @@ __all__ = ['IceModel', 'IceModel2D']
 class IceModel(object):
     '''Physics of the coupled ice flow and surface kinematical problems.'''
 
-    def __init__(self, mesh=None, Href=None, eps=None, Dtyp=None, hcurrent=None):
+    def __init__(self, mesh=None, Href=None, eps=None, Dtyp=None):
         self.mesh = mesh
         self.Href = Href
         self.eps = eps
         self.Dtyp = Dtyp
-        self.hcurrent = hcurrent
         self.delta = 0.1
         self.qdegree = 3  # used in mapped weak form FIXME how to determine a wise value?
         self.k = self.mesh._base_mesh.cell_dimension()
@@ -63,7 +62,6 @@ class IceModel(object):
         Dv = self._Dmapped(v,c)
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
         tau = Bn * Du2**(-1.0/n) * Du  # = 2 nu_e Du
-        h = self.hcurrent # FIXME + c(x,y,hcurrent(x,y))   [HOW?]
         source = fd.inner(self._fbody(),v)
         return (fd.inner(tau, Dv) - p * divv - divu * q - source ) \
                    * self.jweight(c) * fd.dx(degree=self.qdegree) \

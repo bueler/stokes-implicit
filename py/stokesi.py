@@ -128,7 +128,7 @@ def referencefromhalfar(mesh):
         x,_ = SpatialCoordinate(mesh)
         Hinitial = halfar_2d(x,R0=args.R0,H0=args.H0)
     referencemesh(mesh,Constant(0.0),Hinitial,Href=args.Href)
-    return Hinitial
+    return 0
 
 # FIXME need time-stepping loop, which will alter mesh at every step
 
@@ -137,13 +137,13 @@ def referencefromhalfar(mesh):
 if args.refine > 0:
     mesh, hierarchy = extrudedmesh(base_mesh, args.mz, refine=args.refine)
     for kmesh in hierarchy:
-        hinitialextruded = referencefromhalfar(kmesh)
+        referencefromhalfar(kmesh)
     mzfine = args.mz * 2**args.refine
     PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' \
                     % (args.mz,mzfine))
 else:
     mesh = extrudedmesh(base_mesh, args.mz)
-    hinitialextruded = referencefromhalfar(mesh)
+    referencefromhalfar(mesh)
     mzfine = args.mz
 
 # extruded mesh coordinates
@@ -193,11 +193,9 @@ v,q,e = TestFunctions(Z)
 
 # coupled weak form
 if ThreeD:
-    im = IceModel(mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp,
-                  hcurrent=hinitialextruded)
+    im = IceModel(mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
 else:
-    im = IceModel2D(mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp,
-                    hcurrent=hinitialextruded)
+    im = IceModel2D(mesh=mesh, Href=args.Href, eps=args.eps, Dtyp=Dtyp)
 F = im.F(u,p,c,v,q,e)
 
 # apply surface kinematical equation by adding to weak form
@@ -273,5 +271,5 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
 
 # save ParaView-readable file
 if args.o:
-    writeresult(args.o,mesh,im,upc,hinitialextruded,saveextra=args.saveextra)
+    writeresult(args.o,mesh,im,upc,saveextra=args.saveextra)
 
