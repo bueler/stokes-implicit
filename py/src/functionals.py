@@ -72,7 +72,9 @@ class IceModel(object):
 
     def smbref(self,smb,dt,z):
         '''The surface mass balance value on the top of the reference domain.'''
-        return fd.conditional(z > self.Href, dt * smb, dt * smb - self.Href)
+        # FIXME  should be smooth transition if reference domain is smoothed?
+        slop = 1.05
+        return fd.conditional(z > slop*self.Href, dt * smb, dt * smb - self.Href)
 
     def Fsmb(self,a,dt,u,c,e):
         '''Return the weak form Fsmb(c;e) of the top boundary condition
