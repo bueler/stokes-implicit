@@ -42,9 +42,6 @@ runstokesi_3:
 runstokesi_4:
 	-@./../testit.sh stokesi.py "-dta 1.0 -mx 5 -s_snes_converged_reason -saveextra -o test4.pvd" 2 4
 
-runstokesi_5:
-	-@./../testit.sh stokesi.py "-s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-2" 1 5
-
 test_ceviche: runceviche_1 runceviche_2
 
 test_mfmgstokes: runmfmgstokes_1
@@ -53,11 +50,11 @@ test_sole: runsole_1 runsole_2 runsole_3
 
 test_pool: runpool_1 runpool_2 runpool_3 runpool_4
 
-test_stokesi: runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5
+test_stokesi: runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4
 
 test: test_ceviche test_mfmgstokes test_sole test_pool test_stokesi
 
-.PHONY: clean runceviche_1 runceviche_2 runmfmgstokes_1 runsole_1 runsole_2 runsole_3 runpool_1 runpool_2 runpool_3 runpool_4 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 runstokesi_5 test_pool test_stokesi test
+.PHONY: clean runceviche_1 runceviche_2 runmfmgstokes_1 runsole_1 runsole_2 runsole_3 runpool_1 runpool_2 runpool_3 runpool_4 runstokesi_1 runstokesi_2 runstokesi_3 runstokesi_4 test_pool test_stokesi test
 
 clean:
 	@rm -f *.pdf *.geo *.msh *.pvd *.vtu *.pvtu *.m
