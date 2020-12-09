@@ -32,7 +32,7 @@ def jweight(mesh,icemodel,c):
 def surfaceelevation(mesh):
     Q1 = fd.FunctionSpace(mesh,'Q',1)
     if mesh._base_mesh.cell_dimension() == 2:
-        if mesh._base_mesh.ufl_cell() == quadrilateral:
+        if mesh._base_mesh.ufl_cell() == fd.quadrilateral:
             Q1base = fd.FunctionSpace(mesh._base_mesh,'Q',1)
         else:
             Q1base = fd.FunctionSpace(mesh._base_mesh,'P',1)
