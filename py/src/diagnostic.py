@@ -2,9 +2,10 @@
 
 import firedrake as fd
 from .constants import g,rho,n,Bn,Gamma
+from .meshes import extend
 
-__all__ = ['stresses', 'surfaceelevation', 'extendsurfaceelevation',
-           'pdifference', 'siahorizontalvelocity', 'writeresult']
+__all__ = ['stresses', 'jweight', 'surfaceelevation',
+           'phydrostatic', 'siahorizontalvelocity', 'writeresult']
 
 # on mesh get regularized tensor-valued deviatoric stress tau
 # and effective viscosity from the velocity solution
@@ -47,22 +48,6 @@ def surfaceelevation(mesh):
     # add halos for parallelizability of the interpolation
     hbase.dat.data_with_halos[:] = z.dat.data_with_halos[bc.nodes]
     return hbase
-
-# on extruded mesh extend a function f(x,y), already defined on the base mesh,
-# to the whole mesh using the 'R' constant-in-the-vertical space
-def extend(mesh,f):
-    if mesh._base_mesh.cell_dimension() == 2:
-        if mesh._base_mesh.ufl_cell() == quadrilateral:
-            Q1R = fd.FunctionSpace(mesh,'Q',1,vfamily='R',vdegree=0)
-        else:
-            Q1R = fd.FunctionSpace(mesh,'P',1,vfamily='R',vdegree=0)
-    elif mesh._base_mesh.cell_dimension() == 1:
-        Q1R = fd.FunctionSpace(mesh,'P',1,vfamily='R',vdegree=0)
-    else:
-        raise ValueError('base mesh of extruded input mesh must be 1D or 2D')
-    fextend = fd.Function(Q1R)
-    fextend.dat.data[:] = f.dat.data_ro[:]
-    return fextend
 
 # on extruded mesh compute hydrostatic pressure
 def phydrostatic(mesh):

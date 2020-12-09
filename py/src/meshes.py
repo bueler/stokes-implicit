@@ -2,7 +2,7 @@
 
 import firedrake as fd
 
-__all__ = ['basemesh', 'extrudedmesh', 'referencemesh']
+__all__ = ['basemesh', 'extrudedmesh', 'extend', 'referencemesh']
 
 def basemesh(L, mx, my=-1, quadrilateral=False):
     '''Set up base mesh of intervals on [-L,L] if my<0.  For 2D base mesh
@@ -29,6 +29,22 @@ def extrudedmesh(base_mesh, mz, refine=-1, temporary_height=1.0):
     else:
         mesh = fd.ExtrudedMesh(base_mesh, layers=mz, layer_height=temporary_height/mz)
         return mesh
+
+# on extruded mesh extend a function f(x,y), already defined on the base mesh,
+# to the whole mesh using the 'R' constant-in-the-vertical space
+def extend(mesh,f):
+    if mesh._base_mesh.cell_dimension() == 2:
+        if mesh._base_mesh.ufl_cell() == fd.quadrilateral:
+            Q1R = fd.FunctionSpace(mesh,'Q',1,vfamily='R',vdegree=0)
+        else:
+            Q1R = fd.FunctionSpace(mesh,'P',1,vfamily='R',vdegree=0)
+    elif mesh._base_mesh.cell_dimension() == 1:
+        Q1R = fd.FunctionSpace(mesh,'P',1,vfamily='R',vdegree=0)
+    else:
+        raise ValueError('base mesh of extruded input mesh must be 1D or 2D')
+    fextend = fd.Function(Q1R)
+    fextend.dat.data[:] = f.dat.data_ro[:]
+    return fextend
 
 def referencemesh(mesh, b, hinitial, Href):
     '''In-place modification of an extruded mesh to create the reference mesh.
