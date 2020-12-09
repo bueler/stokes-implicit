@@ -51,9 +51,7 @@ element Stokes matrix.  The default solver is symmetric multiplicative
 fieldsplit between the (u,p) block and the c blocks.  The (u,p) block is
 solved by Schur lower fieldsplit with selfp preconditioning on its Schur
 block.  By default the diagonal blocks are solved (preconditioned) by LU
-using MUMPS.''',
-                                 formatter_class=argparse.RawTextHelpFormatter,
-                                 add_help=False)
+using MUMPS.''',formatter_class=argparse.RawTextHelpFormatter,add_help=False)
 parser.add_argument('-dirichletsmb', action='store_true', default=False,
                     help='apply simplified SMB condition on top of reference domain')
 parser.add_argument('-dta', type=float, default=0.01, metavar='X',
@@ -96,7 +94,7 @@ if args.stokesihelp:
 # are we 3D or 2D
 ThreeD = args.my > 0
 
-# correct units to SI
+# convert units to SI
 Dtyp = args.Dtyp / secpera
 dt = args.dta * secpera
 
