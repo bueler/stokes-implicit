@@ -118,17 +118,16 @@ else:
                     % (-args.L/1000.0,args.L/1000.0))
     PETSc.Sys.Print('base mesh:           %d elements (intervals)' % args.mx)
 
-def referencefromhalfar(mesh):
-    '''Use initial shape to determine mesh for reference domain.
-    Currently this just uses the Halfar solution.'''
+def hhalfar(mesh):
+    '''Return a P1 Function, defined on base mesh, from the Halfar solution.'''
+    xbase = SpatialCoordinate(mesh._base_mesh)
+    # note halfar_Xd() returns a UFL expression
     if ThreeD:
-        x,y,_ = SpatialCoordinate(mesh)
-        Hinitial = halfar_3d(x,y,R0=args.R0,H0=args.H0)
+        hh = halfar_3d(xbase[0],xbase[1],R0=args.R0,H0=args.H0)
     else:
-        x,_ = SpatialCoordinate(mesh)
-        Hinitial = halfar_2d(x,R0=args.R0,H0=args.H0)
-    referencemesh(mesh,Constant(0.0),Hinitial,Href=args.Href)
-    return 0
+        hh = halfar_2d(xbase[0],R0=args.R0,H0=args.H0)
+    P1base = FunctionSpace(mesh._base_mesh, 'P', 1)
+    return Function(P1base).interpolate(hh)
 
 # FIXME need time-stepping loop, which will alter mesh at every step
 
@@ -137,13 +136,13 @@ def referencefromhalfar(mesh):
 if args.refine > 0:
     mesh, hierarchy = extrudedmesh(base_mesh, args.mz, refine=args.refine)
     for kmesh in hierarchy:
-        referencefromhalfar(kmesh)
+        referencemesh(kmesh,Constant(0.0),hhalfar(kmesh),Href=args.Href)
     mzfine = args.mz * 2**args.refine
     PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' \
                     % (args.mz,mzfine))
 else:
     mesh = extrudedmesh(base_mesh, args.mz)
-    referencefromhalfar(mesh)
+    referencemesh(mesh,Constant(0.0),hhalfar(mesh),Href=args.Href)
     mzfine = args.mz
 
 # extruded mesh coordinates
