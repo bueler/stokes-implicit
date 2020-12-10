@@ -22,7 +22,7 @@ from src.meshes import basemesh, extrudedmesh, referencemesh
 from src.spaces import vectorspaces
 from src.halfar import t0_2d, t0_3d, halfar_2d, halfar_3d
 from src.functionals import IceModel, IceModel2D
-from src.diagnostic import writereferenceresult
+from src.diagnostic import writereferenceresult, writesolutiongeometry
 
 parser = argparse.ArgumentParser(description='''
 Solve coupled Glen-Stokes equations plus the surface kinematical equation (SKE)
@@ -269,5 +269,6 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
 if args.oroot:
     if args.saveextra:
         writereferenceresult(args.oroot + '_%03d_ref.pvd' % 1,mesh,im,upc)
-    #writesolutiongeom(args.oroot + '%03d.pvd' % 1,mesh,im,upc)
+    # FIXME following almost works; see comments at implementation
+    #writesolutiongeometry(args.oroot + '%03d.pvd' % 1,mesh,mzfine,upc)
 

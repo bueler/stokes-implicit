@@ -2,11 +2,12 @@
 
 import firedrake as fd
 from .constants import g,rho,n,Bn,Gamma
-from .meshes import extend
+from .meshes import extend, extrudedmesh
+from .spaces import vectorspaces
 
 __all__ = ['stresses', 'jweight', 'surfaceelevation',
            'phydrostatic', 'siahorizontalvelocity',
-           'writereferenceresult']
+           'writereferenceresult', 'writesolutiongeometry']
 
 # on mesh get regularized tensor-valued deviatoric stress tau
 # and effective viscosity from the velocity solution
@@ -45,7 +46,7 @@ def _surfacevalue(mesh,f):
     bc = fd.DirichletBC(Q1,1.0,'top')
     # add halos for parallel interpolation
     fbase.dat.data_with_halos[:] = f.dat.data_with_halos[bc.nodes]
-    return fbase
+    return fbase, Q1base
 
 # on extruded mesh compute the surface elevation h(x,y), defined as a
 # P1 or Q1 function on the base mesh, from the top coordinate of the mesh
@@ -54,7 +55,7 @@ def surfaceelevation(mesh):
     # z itself is an 'Indexed' object, so use a Function with a .dat attribute
     Q1 = fd.FunctionSpace(mesh,'Q',1)
     z = fd.Function(Q1).interpolate(x[mesh._base_mesh.cell_dimension()])
-    hbase = _surfacevalue(mesh,z)
+    hbase,_ = _surfacevalue(mesh,z)
     return hbase
 
 # on extruded mesh compute hydrostatic pressure
@@ -102,6 +103,8 @@ def siahorizontalvelocity(mesh):
     return uv
 
 # save ParaView-readable file for reference domain
+# this file shows full computational context, and diagnostics, and could be
+# re-started from
 def writereferenceresult(filename,mesh,icemodel,upc):
     assert filename.split('.')[-1] == 'pvd'
     variables = 'u,p,c,tau,nu,phydrostatic,jweight,velocitySIA'
@@ -125,18 +128,45 @@ def writereferenceresult(filename,mesh,icemodel,upc):
         fd.File(filename).write(u,p,c,tau,nu,ph,jw,velocitySIA,rank)
     else:
         fd.File(filename).write(u,p,c,tau,nu,ph,jw,velocitySIA)
+    return 0
 
-# FIXME "how to do step 3 below?" was asked on slack
-#   1. from c in solution, compute new surface elevation by
-#        h(x,y) = lambda(x,y) + c(x,y,lambda(x,y))
-#   2. generate a new mesh by copying old and then using h to define vertical
-#      (which will be zero in ice-free regions)
-#   3. interpolate values of velocity u and pressure p to this new mesh
-#   4. write u,p on new mesh
-def writesolutiongeometry(filename,mesh,icemodel,upc):
-    lambase = surfacelevation(mesh)
-    _,_,c = upc.split()
-    cbase = _surfacevalue(mesh,c)
-    # FIXME
+# save Paraview-readable file with new solution geometry and u,p
+# (velocity,pressure) solution; note mesh is crushed in ice-free areas
+# FIXME currently writes inadmissible (i.e. negative) z values
+def writesolutiongeometry(filename,refmesh,mzfine,upc):
+    # get fields on reference mesh
+    u,p,c = upc.split()
+
+    # compute hbase as updated surface elevation
+    #   h(x,y) = lambda(x,y) + c(x,y,lambda(x,y))
+    lambase = surfaceelevation(refmesh)  # bounded below by Href; space Q1base
+    cbase, Q1base = _surfacevalue(refmesh,c)
+    hbase = fd.Function(Q1base).interpolate(lambase + cbase)
+
+    # duplicate fine mesh and change its coordinate to linear times h
+    mesh = extrudedmesh(refmesh._base_mesh,mzfine,refine=-1,temporary_height=1.0)
+    h = extend(mesh,hbase)
+    Vcoord = mesh.coordinates.function_space()
+    if mesh._base_mesh.cell_dimension() == 1:
+        x,z = fd.SpatialCoordinate(mesh)
+        Xnew = fd.Function(Vcoord).interpolate(fd.as_vector([x,h*z]))
+    elif mesh._base_mesh.cell_dimension() == 2:
+        x,y,z = fd.SpatialCoordinate(mesh)
+        Xnew = fd.Function(Vcoord).interpolate(fd.as_vector([x,y,h*z]))
+    else:
+        raise ValueError('applies only to 2D and 3D extruded meshes')
+    mesh.coordinates.assign(Xnew)
+
+    # interpolate velocity u and pressure p from refmesh onto mesh and write
+    Vu,Vp,_ = vectorspaces(mesh)
+    unew = fd.Function(Vu)
+    pnew = fd.Function(Vp)
+    unew.rename('velocity')
+    pnew.rename('pressure')
+    # note f.at() searches for element to evaluate (thanks L Mitchell)
+    print(Xnew.dat.data_ro)  # FIXME shows inadmissible z
+    unew.dat.data[:] = u.at(Xnew.dat.data_ro)
+    pnew.dat.data[:] = p.at(Xnew.dat.data_ro)
+    fd.File(filename).write(unew,pnew)
     return 0
 
