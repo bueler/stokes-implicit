@@ -28,10 +28,9 @@ def jweight(mesh,icemodel,c):
     jweight.rename('jweight')
     return jweight
 
-# on extruded mesh compute the surface elevation h(x,y), defined on the base
-# mesh, from the top coordinate of the mesh
-def surfaceelevation(mesh):
-    Q1 = fd.FunctionSpace(mesh,'Q',1)
+# on extruded mesh extract the value along the top surface as a P1 or Q1
+# function on the base mesh
+def _surfacevalue(mesh,f):
     if mesh._base_mesh.cell_dimension() == 2:
         if mesh._base_mesh.ufl_cell() == fd.quadrilateral:
             Q1base = fd.FunctionSpace(mesh._base_mesh,'Q',1)
@@ -41,13 +40,21 @@ def surfaceelevation(mesh):
         Q1base = fd.FunctionSpace(mesh._base_mesh,'P',1)
     else:
         raise ValueError('base mesh of extruded input mesh must be 1D or 2D')
-    hbase = fd.Function(Q1base)
+    fbase = fd.Function(Q1base)
+    Q1 = fd.FunctionSpace(mesh,'Q',1)
     bc = fd.DirichletBC(Q1,1.0,'top')
+    # add halos for parallel interpolation
+    fbase.dat.data_with_halos[:] = f.dat.data_with_halos[bc.nodes]
+    return fbase
+
+# on extruded mesh compute the surface elevation h(x,y), defined as a
+# P1 or Q1 function on the base mesh, from the top coordinate of the mesh
+def surfaceelevation(mesh):
     x = fd.SpatialCoordinate(mesh)
     # z itself is an 'Indexed' object, so use a Function with a .dat attribute
+    Q1 = fd.FunctionSpace(mesh,'Q',1)
     z = fd.Function(Q1).interpolate(x[mesh._base_mesh.cell_dimension()])
-    # add halos for parallelizability of the interpolation
-    hbase.dat.data_with_halos[:] = z.dat.data_with_halos[bc.nodes]
+    hbase = _surfacevalue(mesh,z)
     return hbase
 
 # on extruded mesh compute hydrostatic pressure
@@ -119,12 +126,17 @@ def writereferenceresult(filename,mesh,icemodel,upc):
     else:
         fd.File(filename).write(u,p,c,tau,nu,ph,jw,velocitySIA)
 
-# FIXME how to do step 3 below?
+# FIXME "how to do step 3 below?" was asked on slack
 #   1. from c in solution, compute new surface elevation by
 #        h(x,y) = lambda(x,y) + c(x,y,lambda(x,y))
 #   2. generate a new mesh by copying old and then using h to define vertical
 #      (which will be zero in ice-free regions)
 #   3. interpolate values of velocity u and pressure p to this new mesh
 #   4. write u,p on new mesh
-#def writesolutiongeometry(filename,mesh,icemodel,upc)
+def writesolutiongeometry(filename,mesh,icemodel,upc):
+    lambase = surfacelevation(mesh)
+    _,_,c = upc.split()
+    cbase = _surfacevalue(mesh,c)
+    # FIXME
+    return 0
 
