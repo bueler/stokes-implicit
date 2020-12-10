@@ -36,6 +36,9 @@ class IceModel(object):
                              [0.0,              0.0,              0.5 * u[1].dx(2)],
                              [0.5 * u[0].dx(2), 0.5 * u[1].dx(2), u[2].dx(2)      ]])
 
+    def _tangentu(self,u,z):  # 3D
+        return u[0] * z.dx(0) + u[1] * z.dx(1)
+
     def jweight(self,c):
         czeta = c.dx(self.k)
         return fd.max_value(1.0 + czeta, self.delta)
@@ -66,9 +69,6 @@ class IceModel(object):
         return (fd.inner(tau, Dv) - p * divv - divu * q - source ) \
                    * self.jweight(c) * fd.dx(degree=self.qdegree) \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
-
-    def _tangentu(self,u,z):  # 3D
-        return u[0] * z.dx(0) + u[1] * z.dx(1)
 
     def smbref(self,smb,dt,z):
         '''The surface mass balance value on the top of the reference domain.'''
