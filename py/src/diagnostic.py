@@ -5,7 +5,8 @@ from .constants import g,rho,n,Bn,Gamma
 from .meshes import extend
 
 __all__ = ['stresses', 'jweight', 'surfaceelevation',
-           'phydrostatic', 'siahorizontalvelocity', 'writeresult']
+           'phydrostatic', 'siahorizontalvelocity',
+           'writereferenceresult']
 
 # on mesh get regularized tensor-valued deviatoric stress tau
 # and effective viscosity from the velocity solution
@@ -93,37 +94,37 @@ def siahorizontalvelocity(mesh):
     uv.rename('velocitySIA')
     return uv
 
-# save ParaView-readable file
-def writeresult(filename,mesh,icemodel,upc,saveextra=False):
+# save ParaView-readable file for reference domain
+def writereferenceresult(filename,mesh,icemodel,upc):
     assert filename.split('.')[-1] == 'pvd'
-    variables = 'u,p,c'
+    variables = 'u,p,c,tau,nu,phydrostatic,jweight,velocitySIA'
     if mesh.comm.size > 1:
          variables += ',rank'
-    if saveextra:
-         variables += ',tau,nu,phydrostatic,jweight,velocitySIA'
     fd.PETSc.Sys.Print('writing variables (%s) to output file %s ... ' \
                        % (variables,filename))
     u,p,c = upc.split()
     u.rename('velocity')
     p.rename('pressure')
     c.rename('displacement')
-    if saveextra:
-        tau, nu = stresses(mesh,icemodel,u)
-        ph = phydrostatic(mesh)
-        jw = jweight(mesh,icemodel,c)
-        velocitySIA = siahorizontalvelocity(mesh)
+    tau, nu = stresses(mesh,icemodel,u)
+    ph = phydrostatic(mesh)
+    jw = jweight(mesh,icemodel,c)
+    velocitySIA = siahorizontalvelocity(mesh)
     if mesh.comm.size > 1:
         # integer-valued element-wise process rank
         rank = fd.Function(fd.FunctionSpace(mesh,'DG',0))
         rank.dat.data[:] = mesh.comm.rank
         rank.rename('rank')
-        if saveextra:
-            fd.File(filename).write(u,p,c,rank,tau,nu,ph,jw,velocitySIA)
-        else:
-            fd.File(filename).write(u,p,c,rank)
+        fd.File(filename).write(u,p,c,tau,nu,ph,jw,velocitySIA,rank)
     else:
-        if saveextra:
-            fd.File(filename).write(u,p,c,tau,nu,ph,jw,velocitySIA)
-        else:
-            fd.File(filename).write(u,p,c)
+        fd.File(filename).write(u,p,c,tau,nu,ph,jw,velocitySIA)
+
+# FIXME how to do step 3 below?
+#   1. from c in solution, compute new surface elevation by
+#        h(x,y) = lambda(x,y) + c(x,y,lambda(x,y))
+#   2. generate a new mesh by copying old and then using h to define vertical
+#      (which will be zero in ice-free regions)
+#   3. interpolate values of velocity u and pressure p to this new mesh
+#   4. write u,p on new mesh
+#def writesolutiongeometry(filename,mesh,icemodel,upc)
 

@@ -22,7 +22,7 @@ from src.meshes import basemesh, extrudedmesh, referencemesh
 from src.spaces import vectorspaces
 from src.halfar import t0_2d, t0_3d, halfar_2d, halfar_3d
 from src.functionals import IceModel, IceModel2D
-from src.diagnostic import writeresult
+from src.diagnostic import writereferenceresult
 
 parser = argparse.ArgumentParser(description='''
 Solve coupled Glen-Stokes equations plus the surface kinematical equation (SKE)
@@ -72,8 +72,8 @@ parser.add_argument('-my', type=int, default=-1, metavar='N',
                     help='3D solve if my>0: subintervals in y-direction (default=-1)')
 parser.add_argument('-mz', type=int, default=4, metavar='N',
                     help='number of layers in each vertical column (default=4)')
-parser.add_argument('-o', metavar='FILE.pvd', type=str, default='',
-                    help='save to output file name ending with .pvd')
+parser.add_argument('-oroot', metavar='FILE', type=str, default='',
+                    help='output filename root: save solutions to output files FILE[step].pvd')
 parser.add_argument('-pvert', type=int, default=0, metavar='N',
                     help='p-refinement level in vertical; use 0,1,2,3 only (default=0)')
 parser.add_argument('-quad', action='store_true', default=False,
@@ -83,7 +83,7 @@ parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
 parser.add_argument('-refine', type=int, default=-1, metavar='N',
                     help='number of vertical (z) mesh refinement levels')
 parser.add_argument('-saveextra', action='store_true', default=False,
-                    help='add stresses and SIA velocity to -o output file')
+                    help='use with -oroot; write various fields computed on reference domain into FILE[step]_ref.pvd')
 parser.add_argument('-stokesihelp', action='store_true', default=False,
                     help='print help for stokesi.py and quit')
 args, unknown = parser.parse_known_args()
@@ -267,6 +267,8 @@ solve(F == 0, upc, bcs=bcs, options_prefix = 's',
       solver_parameters=parameters)
 
 # save ParaView-readable file
-if args.o:
-    writeresult(args.o,mesh,im,upc,saveextra=args.saveextra)
+if args.oroot:
+    if args.saveextra:
+        writereferenceresult(args.oroot + '%03d_ref.pvd' % 1,mesh,im,upc)
+    #writesolutiongeom(args.oroot + '%03d.pvd' % 1,mesh,im,upc)
 
