@@ -1,13 +1,12 @@
-**** SUMMARY OF SETUP ****
-horizontal domain:   [-60.00,60.00] x [-60.00,60.00] km square
-base mesh:           4 x 4 elements (trianglesx2)
-initial condition:   3D Halfar, H0=3000.00 m, R0=50.000 km, t0=0.02990 a
-3D extruded mesh:    4 x 4 x 4 elements (prismsx2); limited at Href=200.00 m
-element dimensions:  dx=30000.00 m, dy=30000.00 m, dz_min=50.00 m
-max aspect ratios:   ratiox=600.0, ratioy=600.0
-vector space dims:   n_u=2187, n_p=125, n_c=125  -->  N=2437
-**** SOLVING ****
-    ... one time step dt=0.01000 a ...
+SUMMARY OF SETUP
+  horizontal domain:   [-60.00,60.00] x [-60.00,60.00] km square
+  base mesh:           4 x 4 trianglesx2
+  initial condition:   3D Halfar, H0=3000.00 m, R0=50.000 km, t0=0.02990 a
+  3D extruded mesh:    4 x 4 x 4 prismsx2; limited at Href=200.00 m
+  element dimensions:  dx=30000.00 m, dy=30000.00 m, dz_min=50.00 m
+  max aspect ratios:   ratiox=600.0, ratioy=600.0
+  vector space dims:   n_u=2187, n_p=125, n_c=125  -->  N=2437
+SOLVING ... one time step dt=0.01000 a ...
   Linear s_ solve converged due to CONVERGED_RTOL iterations 2
   Linear s_ solve converged due to CONVERGED_RTOL iterations 2
   Linear s_ solve converged due to CONVERGED_RTOL iterations 3

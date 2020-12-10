@@ -10,10 +10,10 @@
 #   * test nonlinear full MG cycle for semicoarsening (i.e. roll -snes_grid_sequence by hand) using (p - rho g depth)^2 penalty on coarser
 
 # serial 2D example: runs in about two minutes with 5/1 element ratio and N=8.2e4
-# tmpg -n 4 ./stokesi.py -dta 0.01 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -refine 1 -saveextra -o foo2.pvd
+# tmpg -n 4 ./stokesi.py -dta 0.01 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 960 -refine 1 -saveextra -oroot foo2
 
 # parallel 3D example: runs in about 6 minutes with 80/1 element ratio and N=1.1e5
-# tmpg -n 4 ./stokesi.py -dta 0.01 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 30 -my 30 -saveextra -o foo3.pvd
+# tmpg -n 4 ./stokesi.py -dta 0.01 -s_snes_converged_reason -s_ksp_converged_reason -s_snes_rtol 1.0e-4 -mx 30 -my 30 -saveextra -oroot foo3
 
 import sys,argparse
 from firedrake import *
@@ -104,17 +104,17 @@ if args.quad and not ThreeD:
 base_mesh = basemesh(L=args.L,mx=args.mx,my=args.my,quadrilateral=args.quad)
 
 # report on base mesh
-PETSc.Sys.Print('**** SUMMARY OF SETUP ****')
+PETSc.Sys.Print('SUMMARY OF SETUP')
 baseelements = 'quadrilaterals' if args.quad else 'trianglesx2'
 if ThreeD:
-    PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
+    PETSc.Sys.Print('  horizontal domain:   [%.2f,%.2f] x [%.2f,%.2f] km square'
                     % (-args.L/1000.0,args.L/1000.0,-args.L/1000.0,args.L/1000.0))
-    PETSc.Sys.Print('base mesh:           %d x %d elements (%s)'
+    PETSc.Sys.Print('  base mesh:           %d x %d %s'
                     % (args.mx,args.my,baseelements))
 else:
-    PETSc.Sys.Print('horizontal domain:   [%.2f,%.2f] km interval'
+    PETSc.Sys.Print('  horizontal domain:   [%.2f,%.2f] km interval'
                     % (-args.L/1000.0,args.L/1000.0))
-    PETSc.Sys.Print('base mesh:           %d elements (intervals)' % args.mx)
+    PETSc.Sys.Print('  base mesh:           %d intervals' % args.mx)
 
 def hhalfar(mesh):
     '''Return a P1 Function, defined on base mesh, from the Halfar solution.'''
@@ -136,7 +136,7 @@ if args.refine > 0:
     for kmesh in hierarchy:
         referencemesh(kmesh,Constant(0.0),hhalfar(kmesh),Href=args.Href)
     mzfine = args.mz * 2**args.refine
-    PETSc.Sys.Print('refined vertical:    %d coarse layers refined to %d fine layers' \
+    PETSc.Sys.Print('  refined vertical:    %d coarse layers refined to %d fine layers' \
                     % (args.mz,mzfine))
 else:
     mesh = extrudedmesh(base_mesh, args.mz)
@@ -156,22 +156,22 @@ dzrefelem = args.Href / mzfine
 elements = 'hexahedra' if args.quad else 'prismsx2'
 if ThreeD:
     dyelem = 2.0 * args.L / args.my
-    PETSc.Sys.Print('initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
+    PETSc.Sys.Print('  initial condition:   3D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0_3d(args.R0,args.H0)/secpera))
-    PETSc.Sys.Print('3D extruded mesh:    %d x %d x %d elements (%s); limited at Href=%.2f m'
+    PETSc.Sys.Print('  3D extruded mesh:    %d x %d x %d %s; limited at Href=%.2f m'
                     % (args.mx,args.my,mzfine,elements,args.Href))
-    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m'
+    PETSc.Sys.Print('  element dimensions:  dx=%.2f m, dy=%.2f m, dz_min=%.2f m'
                     % (dxelem,dyelem,dzrefelem))
-    PETSc.Sys.Print('max aspect ratios:   ratiox=%.1f, ratioy=%.1f'
+    PETSc.Sys.Print('  max aspect ratios:   ratiox=%.1f, ratioy=%.1f'
                     % (dxelem/dzrefelem,dyelem/dzrefelem))
 else:
-    PETSc.Sys.Print('initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
+    PETSc.Sys.Print('  initial condition:   2D Halfar, H0=%.2f m, R0=%.3f km, t0=%.5f a'
                     % (args.H0,args.R0/1000.0,t0_2d(args.R0,args.H0)/secpera))
-    PETSc.Sys.Print('2D extruded mesh:    %d x %d elements (quads); limited at Href=%.2f m'
+    PETSc.Sys.Print('  2D extruded mesh:    %d x %d quadrilaterals; limited at Href=%.2f m'
                     % (args.mx,mzfine,args.Href))
-    PETSc.Sys.Print('element dimensions:  dx=%.2f m, dz_min=%.2f m'
+    PETSc.Sys.Print('  element dimensions:  dx=%.2f m, dz_min=%.2f m'
                     % (dxelem,dzrefelem))
-    PETSc.Sys.Print('max aspect ratio:    ratio=%.1f'
+    PETSc.Sys.Print('  max aspect ratio:    ratio=%.1f'
                     % (dxelem/dzrefelem))
 
 # set up mixed finite element space
@@ -180,7 +180,7 @@ Z = Vu * Vp * Vc
 
 # report on vector spaces sizes
 n_u,n_p,n_c,N = Vu.dim(),Vp.dim(),Vc.dim(),Z.dim()
-PETSc.Sys.Print('vector space dims:   n_u=%d, n_p=%d, n_c=%d  -->  N=%d' \
+PETSc.Sys.Print('  vector space dims:   n_u=%d, n_p=%d, n_c=%d  -->  N=%d' \
                 % (n_u,n_p,n_c,N))
 
 # trial and test functions
@@ -261,14 +261,13 @@ if base_mesh.comm.size > 1:
     parameters['fieldsplit_1_pc_factor_mat_solver_type'] = 'mumps'
 
 # solve system as though it is nonlinear:  F(u) = 0
-PETSc.Sys.Print('**** SOLVING ****')
-PETSc.Sys.Print('    ... one time step dt=%.5f a ...' % args.dta)
+PETSc.Sys.Print('SOLVING ... one time step dt=%.5f a ...' % args.dta)
 solve(F == 0, upc, bcs=bcs, options_prefix = 's',
       solver_parameters=parameters)
 
 # save ParaView-readable file
 if args.oroot:
     if args.saveextra:
-        writereferenceresult(args.oroot + '%03d_ref.pvd' % 1,mesh,im,upc)
+        writereferenceresult(args.oroot + '_%03d_ref.pvd' % 1,mesh,im,upc)
     #writesolutiongeom(args.oroot + '%03d.pvd' % 1,mesh,im,upc)
 
