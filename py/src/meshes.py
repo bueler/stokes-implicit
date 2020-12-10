@@ -51,28 +51,16 @@ def _admissible(b, h):
 
 def referencemesh(mesh, b, hinitial, Href):
     '''In-place modification of an extruded mesh to create the reference mesh.
-    Changes the top surface to  lambda = b + max(Href,Hinitial - b).  Assumes
-    the input mesh is extruded 3D mesh with  0 <= z <= 1.  Assumes b,hinitial
-    are Functions defined on the base mesh.'''
+    Changes the top surface to  lambda = b + sqrt(Href^2 + (Hinitial - b)^2).
+    Assumes b,hinitial are Functions defined on the base mesh.  Assumes the
+    input mesh is extruded 3D mesh with  0 <= z <= 1.'''
 
     if not _admissible(b,hinitial):
         assert ValueError('input hinitial not admissible')
     P1base = fd.FunctionSpace(mesh._base_mesh,'P',1)
-    Hstart = fd.Function(P1base).interpolate(hinitial - b)
-
-    # FIXME  new form could be
-    #   lam = referencemesh(mesh,b,hinitial,Href,tau)
-    # which would do:
-    #   2) get mesh resolution:  hT = min(mesh.cell_sizes.dat.data)
-    #   3) set up k conditionally-stable time steps:
-    #        Deltat = hT^2 / 4
-    #        k = np.ceil(tau/Deltat)  # at least one; warn if >= 10
-    #        Deltat = tau/k
-    #   4) compute k steps of forward Euler heat equation  u_t = nabla^2 u
-    #      with  u(t=0) = Hstart  and time steps  Deltat  ... yields Hend
-    #   5) compute surface elevation of reference domain as at least Href:
-    #        lambase = b + sqrt(Hend^2 + Href^2)
-    lambase = fd.Function(P1base).interpolate(b + fd.max_value(Href, Hstart))
+    HH = fd.Function(P1base).interpolate(hinitial - b)
+    #lambase = fd.Function(P1base).interpolate(b + fd.max_value(Href, Hstart))
+    lambase = fd.Function(P1base).interpolate(b + fd.sqrt(HH**2 + Href**2))
 
     lam = extend(mesh,lambase)
     Vcoord = mesh.coordinates.function_space()
