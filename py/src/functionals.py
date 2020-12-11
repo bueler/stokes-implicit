@@ -41,7 +41,7 @@ class IceModel(object):
 
     def jweight(self,c):
         czeta = c.dx(self.k)
-        return fd.max_value(1.0 + czeta, self.delta)
+        return fd.max_value(1.0 + czeta, self.delta) # FIXME DEC20
 
     def _ell(self,c):
         return 1.0 / self.jweight(c)
