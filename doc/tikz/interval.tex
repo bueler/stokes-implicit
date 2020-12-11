@@ -2,9 +2,10 @@
 % inputs: \IX = x position
 %         \IY = y position of top
 %         \ILABEL = text to put below
-%         \MIDLABEL = text to put just left of middle
+%         \MIDLABEL = text to put just left of middle of interval
+%         \TOPLABEL = text to put just left of top of interval
 
-\draw[thick] (\IX,0.0) node[left] {$b$} -- (\IX,\IY) node[left] {\MIDLABEL};
+\draw[thick] (\IX,0.0) node[left] {$b$} -- node[left] {\MIDLABEL} (\IX,\IY) node[left] {\TOPLABEL};
 \draw[thick] (\IX-0.05,0.0) -- (\IX+0.05,0.0);
 \draw[thick] (\IX-0.05,\IY) -- (\IX+0.05,\IY);
 \node at (\IX,-0.2) {\ILABEL};

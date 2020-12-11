@@ -349,50 +349,60 @@ Determining $c(\bxi)$ on $\Lambda$ therefore determines $\Omega^n$.
 
 Since $c(\bxi)$ will solve an elliptic PDE (below), map \eqref{changecoords} will be smooth from $\Lambda$ to $\Omega^n$, but it is degenerate, i.e.~generally non-invertible.  In particular, the topological interior in \eqref{updateddomain} is generally necessary because the map will collapse ice-free locations to zero height, which are then outside $\Omega^n$.  (Here ``ice--free'' refers to the solution geometry.)
 
-The computed surface elevation $h(\xi,\eta)\approx h(t_n,\xi,\eta)$, including the upper boundary of $\Omega^n$, is defined on all of $R$.  Its value is defined to be the maximum mapped $z$ coordinate in each column:
+The computed surface elevation $h(\xi,\eta)\approx h(t_n,\xi,\eta)$, including the upper boundary of $\Omega^n$, will be defined on all of $R$.  Its value is defined to be the maximum mapped $z$ coordinate in each column:
 \begin{equation}
-h(\xi,\eta) = \lambda(\xi,\eta) + c(\xi,\eta,\lambda(\xi,\eta)). \label{maptoptotop}
+h(\xi,\eta) = \lambda(\xi,\eta) + c(\xi,\eta,\lambda(\xi,\eta)), \label{maptoptotop}
 \end{equation}
-Thus the top of the reference domain is sent to the top of the new ice domain.  Furthermore, because the map will also be differentiable, it follows from \eqref{mapbasetobase}, \eqref{maptoptotop}, monotonicity, and the requirement that $h$ be admissible ($h\ge b$) that
+which would follow if map \eqref{changecoords} is (non-strictly) monotonic in each column, including the possibility that an entire column is mapped to a single height, namely $b$.  Thus the top of the reference domain is sent to the top of the new ice domain.  Furthermore, because the map will be differentiable, it follows from \eqref{mapbasetobase}, \eqref{maptoptotop}, monotonicity, and the requirement that $h$ be admissible ($h\ge b$) that
 \begin{equation}
 1 + \frac{\partial c}{\partial \zeta}(\bxi) = \frac{\partial z}{\partial \zeta}(\bxi) \ge 0. \label{mapmonotonic}
 \end{equation}
-That is, the map is a nondecreasing function in each column.  (Though $c$ can have negative values, $z(\lambda) \ge z(b)$ always.)  In locations which are computed to be ice free we have
+That is, the map is a nondecreasing function in each column.
+
+Let $I=(b(\xi,\eta),\lambda(\xi,\eta))$ be the interval of a column.  In locations which are computed to be ice free we have
 \begin{equation}
-h(\xi,\eta)=b(\xi,\eta) = \zeta + c(\xi,\eta,\zeta) \text{ for all } \zeta \in I, \label{mapcrushes}
+h(\xi,\eta)=b(\xi,\eta) \quad \implies \quad b(\xi,\eta) = \zeta + c(\xi,\eta,\zeta) \text{ for all } \zeta \in I, \label{mapcrushes}
 \end{equation}
-that is, map \eqref{changecoords} sends the entire column to the bed elevation; $c$ is then fully-determined by a linear formula: $c(\xi,\eta,\zeta) = b(\xi,\eta) - \zeta$.  Possibilities are shown in Figure \ref{fig:mapI}.
+that is, map \eqref{changecoords} sends the entire column to the bed elevation; $c$ is then fully-determined by a linear formula: $c(\xi,\eta,\zeta) = b(\xi,\eta) - \zeta$ (Figure \ref{fig:mapI}).
 
 \begin{figure}[ht]
 \input{tikz/mapI.tex}
-\caption{The map $\bx:\Lambda \to \Omega^n$ in \eqref{changecoords} takes a column with surface elevation $\lambda$ to one of elevation $h$.  The column can grow (left), shrink (middle), or yield no ice (right) according to the top boundary value $c=c(\xi,\eta,\lambda(\xi,\eta))$ from \eqref{claplacetop}.}
+\caption{The map $\bx:\Lambda \to \Omega^n$ in \eqref{changecoords} takes a column $I$ with surface elevation $\lambda$ to one of elevation $h$.  The column can grow (left), shrink (middle), or yield no ice (right) according to the top boundary condition \eqref{claplacetop}, an equation in $c$ and $\bu$.}
 \label{fig:mapI}
 \end{figure}
 
-On the other hand, our purpose is to approximate the surface kinematical equation \eqref{surfacekinematical} with a backward Euler step.  We intend to solve this equation (among others) in the coupled system on $\Lambda$.  Where there is ice \emph{in the solution} we want the discretized form of \eqref{surfacekinematical} to apply:
+On the other hand, our purpose is to solve surface kinematical equation \eqref{surfacekinematical} with a backward Euler step.  We include this equation in the coupled system on $\Lambda$.  Where there is ice (\emph{in the solution}) we want the discretized form of \eqref{surfacekinematical} to apply:
 \begin{equation}
-h(\xi,\eta)>b(\xi,\eta) \quad \iff \quad h - h^{n-1} = \Delta t\left(a + \bu \cdot \bn\right). \label{backwardeulerske}
+h(\xi,\eta)>b(\xi,\eta) \quad \implies \quad h - h^{n-1} = \Delta t\left(a + \bu \cdot \bn\right). \label{backwardeulerskeearly}
 \end{equation}
-The quantities in the right-hand equation are evaluated at the \emph{solution} ice surface $\zeta=h(\xi,\eta)$, i.e.~on the top boundary of $\Omega^n$ at the new time $t_n$.  By \eqref{maptoptotop} the quantities $h$ and $\bn$, in particular, depend on the value $c(\xi,\eta,\lambda(\xi,\eta))$ of $c$ on the top surface of $\Lambda$.  As we are actually seeking to solve NCP \eqref{strongadmissibility}--\eqref{strongcomplementarity}, we emphasize that \eqref{backwardeulerske} applies only where ice is present in the solution geometry.
+The quantities in the right-hand equation are evaluated at the solution ice surface $\zeta=h(\xi,\eta)$, i.e.~on the top boundary of $\Omega^n$ at the new time $t_n$.  As we are actually seeking to solve NCP \eqref{strongadmissibility}--\eqref{strongcomplementarity}, we emphasize that \eqref{backwardeulerskeearly} applies only where ice is present in the solution geometry.
 
-We now have multiple requirements on the scalar function $c(\bxi)$, specifically equations \eqref{mapbasetobase}, \eqref{mapmonotonic}, \eqref{mapcrushes}, and \eqref{backwardeulerske}.  It is not clear that these requirements can all be satisfied.  The resulting function $c$ will, at least, have low regularity along the boundary of $\Lambda$ because, as one passes from an ice-free location \eqref{mapcrushes} to one with ice \eqref{backwardeulerske}, i.e.~across an ice margin, we should expect $c$ to change abruptly.
+The implicit surface kinematical equation \eqref{backwardeulerskeearly} will, by \eqref{maptoptotop}, be regarded as another condition on the displacement function $c$, which then determines map \eqref{changecoords}.  Analogous to how the normal boundary field on the undeformed reference configuration is used in the theory of elasticity, in particular as in the free-boundary Signorini problem \cite[sections 2.6 and 6.2]{Stewart2011}, we will approximate the normal direction in \eqref{backwardeulerskeearly} using the reference domain normal $\bn_\Lambda$ and not the normal on the computed domain $\Omega^n$.  Combined with \eqref{maptoptotop} this replaces \eqref{backwardeulerskeearly} with
+\begin{equation}
+h(\xi,\eta)>b(\xi,\eta) \quad \implies \quad c(\xi,\eta,\lambda(\xi,\eta)) = h^{n-1} + \Delta t\left(a + \bu \cdot \bn_\Lambda\right) - \lambda(\xi,\eta). \label{backwardeulerske}
+\end{equation}
 
-Our plan is to compute a well-defined function $c$ which satisfies the given requirements \eqref{mapbasetobase} and \eqref{backwardeulerske} along the boundary $\partial \Lambda$.  Furthermore this function will be smooth within the domain $\Lambda$.  However, within the domain we sacrifice conditions \eqref{mapmonotonic} and \eqref{mapcrushes}.  In locations where the solution has no ice, on the top boundary of $\Lambda$ we do set the value given by \eqref{mapcrushes}: $c=b-\lambda$.  Also, by substituting \eqref{maptoptotop} into \eqref{backwardeulerske}, in locations where the solution has ice, $c=h^{n-1} + \Delta t\left(a + \bu \cdot \bn\right) - \lambda$ will hold on the top boundary; observe that $c$ appears on both sides of this equation.
+We now have multiple requirements on the scalar function $c(\bxi)$, specifically equations \eqref{mapbasetobase}, \eqref{mapmonotonic}, \eqref{mapcrushes}, and \eqref{backwardeulerske}.  Generally these requirements cannot all be satisfied by a smooth function $c$ on $\Lambda$.  The function $c$ would, at least, necessarily have discontinuities along the boundary of $\Lambda$ because, as one passes from an ice-free location (equation \eqref{mapcrushes}) to one with ice (equation \eqref{backwardeulerske}), i.e.~across an ice margin, $c$ will generally jump.
 
-That is, in our scheme the vertical displacement $c(\bxi)$ solves a coupled Laplace equation boundary value problem on $\Lambda$:
+However, our plan is to compute a well-defined function $c$ which satisfies requirements \eqref{mapbasetobase} and \eqref{backwardeulerske} along the boundary $\partial \Lambda$.  Furthermore this function will be smooth in (the interior of) $\Lambda$.  In locations where the solution has no ice, on the top boundary of $\Lambda$ we set the value given by \eqref{mapcrushes}: $c=b-\lambda$.  However, within $\Lambda$ we sacrifice conditions \eqref{mapmonotonic} and \eqref{mapcrushes}.
+
+In our scheme the vertical displacement $c(\bxi)$ solves an anisotropic Laplace boundary value problem on $\Lambda$:
 \begin{align}
-        \grad^2 c &= 0 &&\text{in } \Lambda \label{claplace} \\
-                c &= b\, \mathbbm{1}_{\{h=b\}} + \left(h^{n-1} + \Delta t\left(a + \bu \cdot \bn\right)\right)\, \mathbbm{1}_{\{h>b\}} - \lambda &&\text{top: } \overline{\partial} \Lambda  \label{claplacetop} \\
+        \Div(M_\alpha \grad c) &= 0 &&\text{in } \Lambda \label{claplace} \\
+                c &= \begin{cases} b-\lambda, & h \le b + 0.1\Href \\
+                                   h^{n-1} + \Delta t\left(a + \bu \cdot \bn_\Lambda\right) - \lambda, & h>b+0.1\Href \end{cases} &&\text{top: } \overline{\partial} \Lambda  \label{claplacetop} \\
                 c &= 0 &&\text{base: } \underline{\partial} \Lambda,  \label{claplacebase} \\
- \grad c\cdot \bn &= 0 &&\text{sides: } \partial_{|} \Lambda.  \label{claplacesides}
+ \grad c\cdot \bn &= 0 &&\text{sides: } \partial_{|} \Lambda  \label{claplacesides}
 \end{align}
-In the top boundary condition \eqref{claplacetop} we use $\mathbbm{1}_S$ as the indicator function of a subset $S\subset \overline{\partial} \Lambda$.  The vertical sides of $\Lambda$, above $\partial R$, are denoted $\partial_{|} \Lambda$.  The Neumann boundary condition on these sides removes influences from outside of the computational domain.  Figure \ref{fig:claplaceproblem} sketches this problem.
+where
+    $$M_\alpha = \begin{bmatrix} \alpha & & \\ & \alpha & \\ & & 1 \end{bmatrix}$$
+and $0<\alpha\le 1$.  The top boundary condition \eqref{claplacetop}, which follows from \eqref{mapcrushes} and \eqref{backwardeulerske}.  The Neumann boundary condition on the vertical sides of $\Lambda$, above $\partial R$ and denoted $\partial_{|} \Lambda$, removes influences from outside of the computational domain.  Figure \ref{fig:claplaceproblem} sketches this problem.
 
 \begin{figure}[ht]
 \begin{center}
 \includegraphics[width=0.85\textwidth]{figs/claplaceproblem.pdf}
 \end{center}
-\caption{A sketch of reference domain $\Lambda$ and problem \eqref{claplace}--\eqref{claplacesides}.  See the text regarding the top boundary condition \eqref{claplacetop}.}
+\caption{Sketch of reference domain $\Lambda$ and problem \eqref{claplace}--\eqref{claplacesides}.  See the text regarding the top boundary condition \eqref{claplacetop}.}
 \label{fig:claplaceproblem}
 \end{figure}
 

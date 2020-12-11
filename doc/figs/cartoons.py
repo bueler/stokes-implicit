@@ -137,7 +137,7 @@ figsave('nexttime.pdf')
 # Laplace problem for c
 plt.figure(figsize=(10,4))
 genbasicfig(reference=True,dottedcurrent=True)
-plt.text(x[500]-0.5,b[500]+0.45*h[500],r'$\nabla^2 c = 0$',fontsize=fsize,color='k')
+plt.text(x[500]-1.0,b[500]+0.45*h[500],r'$\nabla\cdot(M_\alpha \nabla c) = 0$',fontsize=fsize,color='k')
 plt.annotate(r'top boundary condition',
              fontsize=smallfsize, xy=(x[600],h[600]), xytext=(x[600]-1.5,h[600]+0.7),
              arrowprops=dict(facecolor='black', width=0.5, headwidth=5.0, shrink=0.1))

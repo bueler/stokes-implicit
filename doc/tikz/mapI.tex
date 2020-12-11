@@ -1,16 +1,19 @@
 \begin{tikzpicture}[scale=2.5,font=\small]
 \newcommand{\ILABEL}{}
 \newcommand{\MIDLABEL}{}
+\newcommand{\TOPLABEL}{}
 \tikzstyle{grayarrow} = [thick,gray,->,shorten <=7,shorten >=12]
 
 \node[anchor=west] at (0.0,1.7) {\underline{$h \ge \lambda$}:};
 \pgfmathsetmacro{\IX}{0.0}
 \pgfmathsetmacro{\IY}{1.0}
-\renewcommand{\MIDLABEL}{$\lambda$}
+\renewcommand{\MIDLABEL}{$I$}
+\renewcommand{\TOPLABEL}{$\lambda$}
 \input{tikz/interval.tex}
 \pgfmathsetmacro{\IX}{1.0}
 \pgfmathsetmacro{\IY}{1.5}
-\renewcommand{\MIDLABEL}{$h$}
+\renewcommand{\MIDLABEL}{}
+\renewcommand{\TOPLABEL}{$h$}
 \input{tikz/interval.tex}
 \draw[decoration={brace,mirror,raise=7pt},decorate] (1.0,1.0) -- node[right=7pt] {$c\ge 0$} (1.0,1.5);
 \draw[style=grayarrow] (0.0,0.0) -- (1.0,0.0);
@@ -19,11 +22,13 @@
 \node[anchor=west] at (2.0,1.7) {\underline{$b < h < \lambda$}:};
 \pgfmathsetmacro{\IX}{2.0}
 \pgfmathsetmacro{\IY}{1.0}
-\renewcommand{\MIDLABEL}{$\lambda$}
+\renewcommand{\MIDLABEL}{$I$}
+\renewcommand{\TOPLABEL}{$\lambda$}
 \input{tikz/interval.tex}
 \pgfmathsetmacro{\IX}{3.0}
 \pgfmathsetmacro{\IY}{0.5}
-\renewcommand{\MIDLABEL}{$h$}
+\renewcommand{\MIDLABEL}{}
+\renewcommand{\TOPLABEL}{$h$}
 \input{tikz/interval.tex}
 \draw[decoration={brace,raise=7pt},decorate] (3.0,1.0) -- node[right=7pt] {$c<0$} (3.0,0.5);
 \draw[style=grayarrow] (2.0,0.0) -- (3.0,0.0);
@@ -32,11 +37,13 @@
 \node[anchor=west] at (4.0,1.7) {\underline{$h=b$}:};
 \pgfmathsetmacro{\IX}{4.0}
 \pgfmathsetmacro{\IY}{1.0}
-\renewcommand{\MIDLABEL}{$\lambda$}
+\renewcommand{\MIDLABEL}{$I$}
+\renewcommand{\TOPLABEL}{$\lambda$}
 \input{tikz/interval.tex}
 \pgfmathsetmacro{\IX}{5.0}
 \pgfmathsetmacro{\IY}{0.0}
 \renewcommand{\MIDLABEL}{}
+\renewcommand{\TOPLABEL}{}
 \input{tikz/interval.tex}
 \draw[decoration={brace,raise=7pt},decorate] (5.0,1.0) -- node[right=7pt] {$c=b-\lambda$} (5.0,0.0);
 \draw[style=grayarrow] (4.0,0.0) -- (5.0,0.0);
