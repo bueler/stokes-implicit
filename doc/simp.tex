@@ -406,25 +406,11 @@ and $0<\alpha\le 1$.  The top boundary condition \eqref{claplacetop}, which foll
 \label{fig:claplaceproblem}
 \end{figure}
 
-The value of ``$h$'' in the top boundary condition \eqref{claplacetop} is the new (solution) surface elevation, that is, the elevation of the top of the ice domain \emph{after} applying the map $\bxi\mapsto \bx$.  This value depends on $c$ through the definition \eqref{maptoptotop}, and in fact \eqref{claplacetop} is a generalization of a Robin boundary condition in this Laplace problem.  However, as one passes across the margin onto the glacier the \eqref{claplacetop} value changes discontinuously from its value given by \eqref{mapcrushes}, i.e.~$c=b-\lambda$, to the generalized-Robin condition \eqref{backwardeulerske}.  Looking ahead, condition \eqref{claplacetop} will be included into the coupled system as a boundary integral term in a mixed-space weak form (see section \ref{sec:finiteelement}).
+Regarding boundary condition \eqref{claplacetop}, note that if the glacier is in equilibrium with the climate then $\lambda \approx h^{n-1}$ and $a+\bu\cdot\bn=0$, thus this boundary condition says $c\approx 0$.  However, in ice free areas, because by construction the domain $\Lambda$ always has thickness at least $\Href$, we have $c=b-\lambda \le -\Href$.  For glaciers near equilibrium, and also for short time steps $\Delta t$, we thus expect $c$ to be around zero along the surface of the current ice but significantly negative in ice-free areas.
 
-In the $h>b$ case the quantities $a,\bu,\bn$ in \eqref{claplacetop} are evaluated along the top of $\Lambda$, i.e.~at $\zeta=\lambda(\xi,\eta)$, but these locations are mapped using $c$ to the surface of the solution ice, i.e.~the top boundary of $\Omega^n$.  In particular, as already noted, $\bn$ in \eqref{claplacetop} is the outward normal to $\Omega^n$, not $\Lambda$.  To evaluate $\bn=\left<-\frac{\partial h}{\partial\xi},-\frac{\partial h}{\partial\eta},1\right>$ we compute the two-dimensional gradient $\grad h$; applying the chain rule to \eqref{maptoptotop} reveals
-\begin{equation}
-\grad h = \left<\frac{\partial c}{\partial\xi},\frac{\partial c}{\partial\eta}\right> + \left(1+\frac{\partial c}{\partial\zeta}\right) \left<\frac{\partial \lambda}{\partial\xi},\frac{\partial \lambda}{\partial\eta}\right>. \label{hgradient}
-\end{equation}
-Thus in the $h>b$ case \eqref{claplacetop} says
-\begin{equation}
-c = \phi + \Delta t\,\left(- u\frac{\partial c}{\partial\xi} - v\frac{\partial c}{\partial\eta} + w\right) - \Delta t\,\left(1+\frac{\partial c}{\partial\zeta}\right)\left(u\frac{\partial \lambda}{\partial\xi} + v\frac{\partial \lambda}{\partial\eta}\right), \label{mappednormaldirection}
-\end{equation}
-where we denote denoting $\bu=\left<u,v,w\right>$.  The uninteresting part $\phi=h^{n-1} + \Delta t\,a - \lambda$ is expected to be at least continuous.
+The value of ``$h$'' in the top boundary condition \eqref{claplacetop} used in the two cases is the new (solution) surface elevation, that is, the elevation of the top of the ice domain \emph{after} applying the map $\bxi\mapsto \bx$.  This value depends on $c$ through equation \eqref{maptoptotop}.  (Looking ahead, condition \eqref{claplacetop} will be included into the coupled system as a boundary integral term in a mixed-space weak form (see section \ref{sec:finiteelement}).)  In the $h>b$ case the quantities $a,\bu,\bn_\Lambda$ in \eqref{claplacetop} are evaluated along the top of $\Lambda$, i.e.~at $\zeta=\lambda(\xi,\eta)$.  Note these locations are mapped using $c$ to the surface of the solution ice, i.e.~the top boundary of $\Omega^n$, while $\bn_\Lambda = \left<-\frac{\partial\lambda}{\partial\xi},-\frac{\partial\lambda}{\partial\eta},1\right>$ is not unit.
 
-In contrast to \eqref{mappednormaldirection}, a true Robin condition along $\overline{\partial} \Lambda$ would be $c=\beta-\alpha\,\grad c \cdot \bn_{\Lambda}$ for some positive function $\alpha>0$ \cite[p.~154]{Ockendonetal2003}, $\beta$ of either sign, and outward unit normal $\bn_{\Lambda}$.  Expanded using $\bn_{\Lambda} = \left<-\frac{\partial \lambda}{\partial\xi},-\frac{\partial \lambda}{\partial\eta},1\right>$ this says
-\begin{equation*}
-c=\beta - \alpha\,\left(-\frac{\partial \lambda}{\partial\xi}\frac{\partial c}{\partial\xi} -\frac{\partial \lambda}{\partial\eta}\frac{\partial c}{\partial\eta} + \frac{\partial c}{\partial\zeta}\right).
-\end{equation*}
-The actual condition \eqref{mappednormaldirection} is thus problematical for two reasons.  First, the directional derivative is not normal to $\partial\Lambda$, and indeed it depends on the direction of the ice velocity $\bu$ (which goes either way across the surface), and an integration by parts will not eliminate the derivatives of $c$ from the statement.  Secondly, $\lambda$ itself, defined in \eqref{definelambda}, will generally have low regularity.
-
-Intuitively, solving problem \eqref{claplace}--\eqref{claplacesides} yields a smooth 3D function $c$ which, in each vertical column of $\Lambda$, connects either the surface kinematical quantity \eqref{backwardeulerske} or the ice-free case \eqref{mapcrushes} as linearly as possible to zero at the base.  Mathematically, $c$ satisfies the maximum principle in $\Lambda$ \cite{Evans2010}, and the direction of $\grad c$ changes direction as little as possible (in the energy norm) while smoothly meeting the boundary data.
+Solving problem \eqref{claplace}--\eqref{claplacesides} yields a smooth 3D function $c$ which, in each vertical column of $\Lambda$, connects either the surface kinematical quantity \eqref{backwardeulerske} or the ice-free case \eqref{mapcrushes} as linearly as possible to zero at the base.  That is, $c$ satisfies a maximum principle in $\Lambda$ \cite{Evans2010}, and the direction of $\grad c$ changes direction as little as possible in the energy norm $\|v\|_\alpha^2 = \int_\Lambda \grad v \cdot M_\alpha \grad v\,d\bx$ while smoothly meeting the boundary data.  Use of the small parameter $\alpha>0$, e.g.~$\alpha=0.1$ used in computations, implies that variations in the vertical ($\zeta$) are more suppressed than variations in the horizontal ($\xi,\eta$).  As noted above, the various constraints on $c$ imply rapid variation in $c$ across the glacier margin position, but we nonetheless, by choosing $\alpha$ relatively small, we seek near-linearity of $c$ in eash column of $\Lambda$.
 
 The weak form of the coupled problem, stated in the next section, will require derivatives of coordinate transformation \eqref{changecoords}.  The Jacobian is
 \begin{equation}
@@ -434,9 +420,7 @@ with determinant $\det(J) = 1+\frac{\partial c}{\partial \zeta}$.  For a generic
 \begin{equation}
 \grad_{\bx} f = (J^\top)^{-1} \grad_{\bxi} \tilde f = \begin{pmatrix} \strut 1 & 0 & - \frac{\partial c}{\partial \xi} \hat\ell \\ \strut 0 & 1 & -\frac{\partial c}{\partial \eta} \hat\ell \\ \strut 0 & 0 & \hat\ell \end{pmatrix} \grad_{\bxi} \tilde f. \label{changegrad}
 \end{equation}
-where $\hat\ell(\bxi) = \left(1+\frac{\partial c}{\partial \zeta}\right)^{-1}=\det(J)^{-1}$.
-
-Regarding derivatives of vector fields, it follows from \eqref{changegrad} that for $\tilde \bu(\bxi) = \bu(\bx(\bxi)) = \left<\tilde u,\tilde v, \tilde w\right>$ we have
+where $\hat\ell(\bxi) = \left(1+\frac{\partial c}{\partial \zeta}\right)^{-1}=\det(J)^{-1}$.  Finally, regarding derivatives of vector fields, it follows from \eqref{changegrad} that for $\tilde \bu(\bxi) = \bu(\bx(\bxi)) = \left<\tilde u,\tilde v, \tilde w\right>$ we have
 \begin{equation}
 \grad_{\bx} \cdot \bu = \grad_{\bxi} \cdot \tilde\bu - \hat\ell \left(\frac{\partial c}{\partial \xi} \frac{\partial \tilde u}{\partial \zeta} + \frac{\partial c}{\partial \eta} \frac{\partial \tilde v}{\partial \zeta}\right) + (\hat\ell-1) \frac{\partial \tilde w}{\partial \zeta} \label{changediv}
 \end{equation}
@@ -448,14 +432,18 @@ D_{\bx}\bu = D_{\bxi} \tilde\bu
 \end{equation}
 where the squares indicate symmetric entries.
 
-Observe that the change of coordinates $\bxi \mapsto \bx$ is not locally invertible where $\frac{\partial c}{\partial \zeta}=-1$.  If $\Delta t$ is not too large and the glacier is nearly in equilibrium with its climate then we expect $|\partial c/\partial \zeta| \ll 1$, in which case local invertibility is not a concern.  Regarding boundary condition \eqref{claplacetop}, the observant reader will have noticed that in icy areas ($h>b$), if the glacier is in equilibrium with the climate then $h-h^{n-1}=0$ and $a+\bu\cdot\bn=0$, thus this boundary condition says $c=0$.  However, in ice free areas ($h=b$), because by construction the domain $\Lambda$ always has thickness at least $\Href$, we have $c=b-\lambda \le -\Href$.  For glaciers near equilibrium, and also for short time steps $\Delta t$, we thus expect $c$ to be around zero along the surface of the current ice but significantly negative in ice-free areas.
+Observe that the smooth change of coordinates $\bxi \mapsto \bx$ is not invertible where $\frac{\partial c}{\partial \zeta}=-1$.  In such a column the map \eqref{changecoords} will eliminate all the ice.  On the other hand, if $\Delta t$ is not too large and the glacier is nearly in equilibrium with its climate then we expect $\left|\frac{\partial c}{\partial \zeta}\right| \ll 1$, in which case invertibility is not a concern.
 
-Noting $c$ has dimensions of distance, when $\partial c/\partial \zeta$ has the dimensionless value of $-1$ then the map would eliminate all the ice in that column.  While we will allow for such a possibility, we also need to compute well-posed time steps over the reference domain $\Lambda$.  This is achieved via regularization.  Let $\delta > 0$ be a small number and define the (unhatted) functions
+As we need to compute well-posed time steps over the reference domain $\Lambda$, we regularize the computation of the Jacobian determinant as follows.  Let $\delta > 0$ be a small number and define the (unhatted) function
 \begin{equation}
-j(\bxi) = \max\left\{1+\frac{\partial c}{\partial \zeta}, \delta\right\} \qquad \text{and} \qquad \ell(\bxi) = j(\bxi)^{-1}. \label{definejell}
+j(\bxi) = \frac{1}{2} \left(1 + \frac{\partial c}{\partial \zeta} + \left[\left(1+\frac{\partial c}{\partial \zeta}\right)^2 + \delta^2\right]^{1/2}\right), \label{definej}
 \end{equation}
-
-Formulas \eqref{changediv} and \eqref{changeDu} will be used in stating the coupled weak form in the next section, with $\ell$ from \eqref{definejell} replacing $\hat\ell$.  In fact, functions $j$ and $\ell$ will appear as coefficients in the weak form integrals over $\Lambda$, and regularization \eqref{definejell} makes these integrals finite even in areas where ice is rapidly being removed, i.e.~even when $\partial c/\partial \zeta$ is negative and $O(1)$ or larger.  Such rapid removal will generate a mass conservation error, of a type not that different from errors forced by the free boundary nature of the problem \cite{Bueler2020}.
+% alternative:  j(\bxi) = \max\left\{1+\frac{\partial c}{\partial \zeta}, \delta\right\}
+so that $j(\bxi) > \max\left\{1+\frac{\partial c}{\partial \zeta}, 0\right\}$, and
+\begin{equation}
+\ell(\bxi) = j(\bxi)^{-1}. \label{defineell}
+\end{equation}
+Formulas \eqref{changediv} and \eqref{changeDu} will be used in stating the coupled weak form in the next section, and regularized functions $j$ and $\ell$ from \eqref{definej} and \eqref{defineell}, respectively, will appear as coefficients in the integrals.  This makes the integrals finite even in areas where ice is removed, i.e.~even when $\partial c/\partial \zeta$ is negative and $O(1)$ or larger.  Such removal will generate a mass conservation error; the error is forced by the free boundary nature of the problem \cite{Bueler2020}.
 
 
 \section{Weak forms} \label{sec:weakforms}
