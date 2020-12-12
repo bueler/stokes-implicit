@@ -1,6 +1,7 @@
 # generate and save diagnostic quantities on extruded meshes
 
 import firedrake as fd
+import numpy as np
 from .constants import g,rho,n,Bn,Gamma
 from .meshes import extend, extrudedmesh
 from .spaces import vectorspaces
@@ -132,20 +133,26 @@ def writereferenceresult(filename,mesh,icemodel,upc):
 
 # save Paraview-readable file with new solution geometry and u,p
 # (velocity,pressure) solution; note mesh is crushed in ice-free areas
-# FIXME currently writes inadmissible (i.e. negative) z values
+# FIXME currently writes inadmissible z values (too high)
+# FIXME this is not going to work without thought; want to push-forward
+#       functions u,p from Lambda to Omega^n but pull-back is what is defined
 def writesolutiongeometry(filename,refmesh,mzfine,upc):
     # get fields on reference mesh
     u,p,c = upc.split()
 
-    # compute hbase as updated surface elevation
+    # compute h on base mesh as updated surface elevation
     #   h(x,y) = lambda(x,y) + c(x,y,lambda(x,y))
     lambase = surfaceelevation(refmesh)  # bounded below by Href; space Q1base
     cbase, Q1base = _surfacevalue(refmesh,c)
-    hbase = fd.Function(Q1base).interpolate(lambase + cbase)
+    hbase0 = fd.Function(Q1base).interpolate(lambase + cbase)
+    hbase = fd.Function(Q1base)
+    hbase.interpolate(fd.conditional(hbase0 > 0.0, hbase0, 0.0))
 
-    # duplicate fine mesh and change its coordinate to linear times h
+    # duplicate fine mesh and extend h onto it
     mesh = extrudedmesh(refmesh._base_mesh,mzfine,refine=-1,temporary_height=1.0)
     h = extend(mesh,hbase)
+
+    # change mesh coordinate to linear times h
     Vcoord = mesh.coordinates.function_space()
     if mesh._base_mesh.cell_dimension() == 1:
         x,z = fd.SpatialCoordinate(mesh)
@@ -164,7 +171,7 @@ def writesolutiongeometry(filename,refmesh,mzfine,upc):
     unew.rename('velocity')
     pnew.rename('pressure')
     # note f.at() searches for element to evaluate (thanks L Mitchell)
-    print(Xnew.dat.data_ro)  # FIXME shows inadmissible z
+    print(Xnew.dat.data_ro)  # FIXME shows inadmissible z: too high
     unew.dat.data[:] = u.at(Xnew.dat.data_ro)
     pnew.dat.data[:] = p.at(Xnew.dat.data_ro)
     fd.File(filename).write(unew,pnew)
