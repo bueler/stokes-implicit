@@ -450,7 +450,7 @@ Formulas \eqref{changediv} and \eqref{changeDu} will be used in stating the coup
 
 Our FE method in section \ref{sec:finiteelement} will solve the weak form of the coupled system consisting of the velocity-pressure equations in section \ref{sec:strongform} plus the vertical displacement problem just described (section \ref{sec:implicitstep}).  We first recall the well-known weak form of the former system, that is, of the (decoupled) Glen-Stokes problem \eqref{regeffvisc}--\eqref{basebc}, separately from surface kinematical concerns.  This provides notation and a starting point from which to state the coupled weak form.
 
-Recall $r=(1/n) + 1>1$, and let $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ be the conjugate exponent; if $n=3$ then $r=4/3$ and $r'=4$.  The Sobolev space of velocity fields on $\Omega^t$ with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For fixed $t>0$ one seeks a solution from the following spaces:
+Let $r=(1/n) + 1>1$ and $r'=(1-r^{-1})^{-1}=r/(r-1)=n+1\ge 2$ (the conjugate exponent).  If $n=3$, as in computations, then $r=4/3$ and $r'=4$.  The Sobolev space of velocity fields on $\Omega^t$ with first derivatives in $L^r$ is denoted $W^{1,r}(\Omega^t)^d$ \cite{Evans2010}.  For fixed $t>0$ one seeks a solution from the following spaces:
 \begin{align*}
 \bu &\in \hat\bV = \left\{\bv \in W^{1,r}(\Omega^t)^d\,:\,\bv\big|_{\underline{\partial} \Omega^t}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Omega^t} = \bu_{\text{in}}\right\}, \\
 p &\in \hat Q = L^{r'}(\Omega^t).
@@ -459,9 +459,9 @@ p &\in \hat Q = L^{r'}(\Omega^t).
 
 To derive the weak form we multiply \eqref{stokes} by $\bv\in \hat\bV_0$ and the negative of \eqref{incompagain} by $q\in \hat Q$, then add these and integrate-by-parts in certain integrals.  Using $ds$ for the boundary measure this yields
 \begin{equation}
-\int_{\Omega^t} 2 \nu_\eps(|D\bu|) D\bu \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rhoi \mathbf{g} \cdot \bv \,d\bx -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds = 0. \label{nonfunctwo}
+\int_{\Omega^t} 2 \nu_\eps(|D\bu|) D\bu \,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rhoi \mathbf{g} \cdot \bv \,d\bx -\int_{\partial\Omega^t} (\sigma \hbn)\cdot \bv\,ds = 0 \label{nonfunctwo}
 \end{equation}
-Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ without derivatives.  Because $\bv\in \hat\bV_0$, portions of the boundary integral disappear and the stress-free surface condition \eqref{topbc} eliminates the remaining portions.  Thus we have the following functional which is nonlinear in $\bu$, linear in $p$, and linear in the test functions $\bv,q$:
+where $\hbn$ is the outward normal on $\partial\Omega^t$.  Note that $\bu,\bv$ now appear with at most first derivatives and $p,q$ without derivatives.  Because $\bv\in \hat\bV_0$, portions of the boundary integral disappear and the stress-free surface condition \eqref{topbc} eliminates the remaining portions.  Thus we have the following functional which is nonlinear in $\bu$, linear in $p$, and linear in the test functions $\bv,q$:
 \begin{equation}
 \hat F(\bu,p;\bv,q) = \int_{\Omega^t} 2 \nu_\eps(|D\bu|)\, D\bu\,:\,D\bv - p (\nabla \cdot \bv) - \left(\nabla \cdot \bu\right) q - \rhoi \mathbf{g} \cdot \bv \,d\bx. \label{definehatF}
 \end{equation}
@@ -478,46 +478,48 @@ B(c;e) = \int_\Lambda \grad c \cdot \grad e \,d\bxi + \int_{\overline{\partial} 
 \end{equation}
 where
 \begin{equation}
-\psi(c,\bu) = b\, \mathbbm{1}_{\{h=b\}} + \left(h^{n-1} + \Delta t\left(\bar a + \bu \cdot \bn\right)\right)\, \mathbbm{1}_{\{h>b\}} - \lambda \label{definepsi}
+\psi(c,\bu) = \begin{cases} b-\lambda, & h(c) \le b + 0.1\Href \\
+                            h^{n-1} + \Delta t\left(\bar a + \bu \cdot \bn_\Lambda\right) - \lambda, & h(c) >b+0.1\Href \end{cases} \label{definepsi}
 \end{equation}
 from \eqref{claplacetop}.
-% FIXME consider regularizing {h=b} --> {h-b\le \delta} and {h>b} --> {h-b>\delta}
-Note that $h$ and $\bn$ depend on $c$ via \eqref{maptoptotop} and \eqref{hgradient}; recall equation \eqref{mappednormaldirection}.  On the other hand, $b$, $h^{n-1}$, $\bar a$, and $\lambda$ are fixed data in this context.
 
-Given data $b$, $h^{n-1}$, $a$, $\bu$, and $h$ we say $c \in W_0^{1,2}(\Lambda)$ solves the decoupled weak form of the vertical displacement problem \eqref{claplace}--\eqref{claplacesides} if $B(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.  However, in the coupled weak form below $\bu$ and $h$ will be solution variables, not data.
+Note that in the coupled weak form below $\bu$ is a solution variable, not data.  Note that $h=h(c)$ is computed in \eqref{maptoptotop} and that $\bar a$ is defined by \eqref{smbaverage}.  (Functions $b$, $h^{n-1}$, $\bar a$, and $\lambda$ are fixed data in defining form $B$.)  We say $c \in W_0^{1,2}(\Lambda)$ solves the decoupled weak form of the vertical displacement problem \eqref{claplace}--\eqref{claplacesides} if $B(c;e)=0$ for all $e \in W_0^{1,2}(\Lambda)$.
 
-The change of variables defined in the last section allows us to approximate the integrals needed for the coupled weak form.  For a generic scalar-valued $L^1$ function $f(\bx)$ defined on $\Omega^n$, by the change of variables theorem and the definition of the regularized determinant $j(\bxi)$ in \eqref{definejell} we have
+The change of variables defined in the last section allows us to approximate the integrals needed for the coupled weak form.  For a generic, scalar $L^1$ function $f(\bx)$ defined on $\Omega^n$, by the change of variables theorem and definition \eqref{definej} of the regularized determinant $j(\bxi)$ we have
 \begin{equation}
 \int_{\Omega^n} f(\bx)\,d\bx = \int_\Lambda \tilde f(\bxi) \, \det(J(\bxi))\,d\bxi \approx \int_\Lambda \tilde f(\bxi) \, j(\bxi)\,d\bxi \label{changeintegral}
 \end{equation}
 where $\tilde f(\bxi) = f(\bx(\bxi))$.
 
-Now we can write the coupled weak form.  Recall from section \ref{sec:stronggeometry} that the central idea is to solve for velocity, pressure, and vertical displacement simultaneously on $\Lambda$ so as to determine the updated ice-filled domain $\Omega^n$ via map \eqref{changecoords}.  Thus the essence of our strategy is to add together functionals $\hat F$ from \eqref{definehatF} and $B$ from \eqref{defineB} to form a single coupled form, but all integrals must be over the reference domain $\Lambda$ so $\hat F$ needs modification.  Let
+Regarding the coupled weak form, recall that our central idea is to solve for velocity, pressure, and vertical displacement simultaneously on $\Lambda$ so as to determine the updated icy domain $\Omega^n$ via map \eqref{changecoords}.  Thus we add together functionals $\hat F$ from \eqref{definehatF} and $B$ from \eqref{defineB} to form a single coupled form with all integrals over the reference domain $\Lambda$.  Because the domain is different, $\hat F$ needs modification.
+
+Recalling $r = 1+1/n$, let
 \begin{align*}
 \bV &= \left\{\bv \in W^{1,r}(\Lambda)^d\,:\,\bv\big|_{\underline{\partial} \Lambda}=\bzero \text{ and } \bv\big|_{\partial_{\text{in}} \Lambda} = \bu_{\text{in}}\right\}, \\
 Q   &= L^{r'}(\Lambda), \\
 W   &= \left\{e \in W_0^{1,2}(\Lambda)\,:\,e\big|_{\underline{\partial} \Lambda} = 0\right\}.
 \end{align*}
-Let $\bV_0$ be the obvious modified space with $\bv\big|_{\partial_{\text{in}} \Lambda} = \bzero$ if an inflow boundary is present.
+Let $\bV_0$ be the usual test function space with $\bv\big|_{\partial_{\text{in}} \Lambda} = \bzero$ (if an inflow boundary is present).
 
 For $(\bu,p,c) \in \bV\times Q\times W$ and test functions $(\bv,q,e) \in \bV_0\times Q\times W$ let
 \begin{align}
 F(\bu,p,c;\bv,q,e) &= \int_{\Lambda} \Big[2 \nu_\eps(|D_\bx\bu|)\, D_\bx\bu\,:\,D_\bx\bv - p (\nabla_\bx \cdot \bv) - \left(\nabla_\bx \cdot \bu\right) q - \rho\, \mathbf{g} \cdot \bv\Big] j \,d\bxi \notag \\
-&\qquad + \int_\Lambda \grad c \cdot \grad e \,d\bxi \notag \\
-&\qquad + \int_{\overline{\partial} \Lambda} (c - \psi(c,\bu)) e\,d\sigma. \label{defineF}
+&\qquad + \int_\Lambda \grad c \cdot \grad e \,d\bxi + \int_{\overline{\partial} \Lambda} (c - \psi(c,\bu)) e\,d\sigma. \label{defineF}
 \end{align}
 % FIXME should \psi(c,\bu) be regularized?
-In this form the divergences $\grad_\bx \cdot\bu$, $\grad_\bx \cdot\bv$ and strain rate tensors $D_\bx\bu$, $D_\bx\bv$ in \eqref{defineF} are given by expressions \eqref{changediv} and \eqref{changeDu} with $\ell$ replacing $\hat\ell$.  The function $\ell$, and the density $j$ in the first integral in \eqref{defineF}, are defined by formulas \eqref{definejell}.
+In the first integral the density $j$ is defined by \eqref{definej}.  Divergences $\grad_\bx \cdot$ and strain rate tensors $D_\bx$ are given by expressions \eqref{changediv} and \eqref{changeDu} with $\ell$, defined by \eqref{defineell}, replacing $\hat\ell$.  Function $\psi$ is defined in \eqref{definepsi}.
 
-This definition of our coupled functional $F$ involves two regularizations.  The reader deserves a summary here as we must not lose, or sweep under the rug, these aspects of the implicit geometry update:
+This definition of our coupled functional $F$ involves multiple regularizations and modifications.  The reader deserves a summary; we must not sweep-under-the-rug the following aspects of the implicit geometry update:
 \begin{itemize}
 \item ``$+\eps D_0^2$'' in formula \eqref{regeffvisc} for the nonlinear viscosity, using $\eps>0$ and $D_0>0$,
-\item the cutoff in $j$ and $\ell$ in formula \eqref{definejell}, using parameter $\delta>0$, during rapid ice removal.
+\item the replacement of $x=1+\frac{\partial c}{\partial \zeta}$ by $\max\{x,0\}$ in defining $j$ in \eqref{definej},
+\item additionally ``$+\delta^2$'' in defining $j$ by \eqref{definej}, thus $\ell$ by \eqref{defineell},
+\item the normal direction $\hat n$ on the top boundary of the updated domain $\Omega^n$, in applying the (natural) stress-free condition, now uses $\bn_\Lambda$ instead, and
+\item the normal direction in the surface kinematical equation, inside \eqref{definepsi} defining $\psi$, also uses $\bn_\Lambda$ instead of the normal on $\Omega^n$.
 \end{itemize}
-% FIXME possibly in \psi(c,\bu)
-The first of these is well known, but the second is new to this work.  Critically, it removes a potential singularity from the first integral in \eqref{defineF}, one which corresponds to a local orientation reversal in the map \eqref{changecoords}.
+The first of these is well known, but the others are aspects of our (new) approach to implicit time steppping.  Collectively these regularizations remove singularities from the integrals in \eqref{defineF}.
 
-By definition, the solution of the coupled weak form is a list of three functions, the velocity $\bu \in \bV$, the pressure $p\in Q$, and the vertical displacement $c\in W$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all test functions $\bv$, $q$, $e$.  All of these functions are defined on the domain $\Lambda$ which is fixed for the duration of the time step; it is this domain which will be meshed in the FE method.  Assuming that $\Lambda$ is a well-behaved domain we expect this boundary-value problem to be well-posed, but this mathematical issue is definitely \emph{not} resolved in this paper, though supporting numerical evidence appears in sections \ref{sec:results} and \ref{sec:validation}.
+By definition, the solution of the coupled weak form is a list of three functions, the velocity $\bu \in \bV$, the pressure $p\in Q$, and the vertical displacement $c\in W$, such that $F(\bu,p,c;\bv,q,e) = 0$ for all test functions $\bv$, $q$, $e$ from the same spaces (modulo $\bV\to\bV_0$).  All of these functions are defined on the domain $\Lambda$ which is fixed for the duration of the time step; it is this domain which will be meshed in the FE method.  Assuming that $\Lambda$ is a well-behaved domain we expect this boundary-value problem to be well-posed, and supporting numerical evidence appears in sections \ref{sec:results} and \ref{sec:validation}, but this mathematical issue is definitely \emph{not} resolved in this paper.
 
 %FIXME:  perhaps we should be solving a variational inequality subject to \frac{\partial c}{\partial \zeta} \ge -1 *and* regularizing the weak form stretching factors to keep \ell bounded (which is done)
 
