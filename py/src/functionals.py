@@ -68,21 +68,26 @@ class IceModel(object):
         Du2 = 0.5 * fd.inner(Du, Du) + self.eps * self.Dtyp**2.0
         tau = Bn * Du2**(-1.0/n) * Du  # = 2 nu_e Du
         source = fd.inner(self._fbody(),v)
-        return (fd.inner(tau, Dv) - p * divv - divu * q - source ) \
+        return (fd.inner(tau, Dv) - p * divv - divu * q - source) \
                    * self.jweight(c) * fd.dx(degree=self.qdegree) \
                + fd.inner(fd.grad(c),fd.grad(e)) * fd.dx
 
-    def smbref(self,smb,dt,z):
-        '''The surface mass balance value on the top of the reference domain.'''
-        return fd.conditional(z > self.Href, dt * smb, dt * smb - self.Href)
-
-    def Fsmb(self,a,dt,u,c,e):
-        '''Return the weak form Fsmb(c;e) of the top boundary condition
-        for the displacement problem so we may apply the surface kinematical
-        equation weakly.  This weak form also depends on u.'''
+    def _psi(self,a,dt,u,c):
+        '''The top-surface boundary value for c.  Where ice is present this
+        is built using the surface mass balance value.'''
+        # FIXME only set up for b=0
+        # FIXME criteria for significant ice is lame: "h > 1.1 Href"
+        # FIXME assumes h^{n-1} = lambda (where there is significant ice)
         x = fd.SpatialCoordinate(self.mesh)
-        smb = a - self._tangentu(u,x[self.k]) + u[self.k]
-        return (c - self.smbref(smb,dt,x[self.k])) * e * fd.ds_t
+        h = x[self.k] + c;
+        dhdt = a - self._tangentu(u,x[self.k]) + u[self.k]
+        return fd.conditional(h > 1.1*self.Href, dt * dhdt, 0.0-x[self.k])
+
+    def B(self,a,dt,u,c,e):
+        '''Return the weak form of the top boundary condition
+        for the displacement problem: we apply the surface kinematical
+        equation weakly.'''
+        return (c - self._psi(a,dt,u,c)) * e * fd.ds_t
 
 
 class IceModel2D(IceModel):

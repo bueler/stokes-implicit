@@ -195,7 +195,7 @@ F = im.F(u,p,c,v,q,e)
 
 # apply surface kinematical equation by adding to weak form
 a = Constant(0.0) # FIXME only correct for Halfar
-F += im.Fsmb(a,dt,u,c,e)
+F += im.B(a,dt,u,c,e)
 
 # boundary conditions
 zerovelocity = Constant((0.0, 0.0, 0.0)) if ThreeD else Constant((0.0, 0.0))
