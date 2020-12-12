@@ -1,4 +1,5 @@
-# generate base and extruded meshes, including vertical stretching
+# generate base and extruded meshes, including vertical stretching to generate
+# the reference mesh
 
 import firedrake as fd
 
@@ -18,7 +19,7 @@ def basemesh(L, mx, my=-1, quadrilateral=False):
 
 def extrudedmesh(base_mesh, mz, refine=-1, temporary_height=1.0):
     '''Generate extruded mesh on draft reference domain.  Optional refinement
-    hierarchy (if refine>0).  Returned mesh has placeholder height.'''
+    hierarchy (if refine>0).  Result has placeholder height of one.'''
     if base_mesh.cell_dimension() not in {1,2}:
         raise ValueError('only 2D and 3D extruded meshes are generated')
     if refine > 0:
@@ -59,6 +60,7 @@ def referencemesh(mesh, b, hinitial, Href):
         assert ValueError('input hinitial not admissible')
     P1base = fd.FunctionSpace(mesh._base_mesh,'P',1)
     HH = fd.Function(P1base).interpolate(hinitial - b)
+    # alternative:
     #lambase = fd.Function(P1base).interpolate(b + fd.max_value(Href, Hstart))
     lambase = fd.Function(P1base).interpolate(b + fd.sqrt(HH**2 + Href**2))
 
@@ -66,12 +68,12 @@ def referencemesh(mesh, b, hinitial, Href):
     Vcoord = mesh.coordinates.function_space()
     if mesh._base_mesh.cell_dimension() == 1:
         x,z = fd.SpatialCoordinate(mesh)
-        f = fd.Function(Vcoord).interpolate(fd.as_vector([x,lam*z]))
+        XX = fd.Function(Vcoord).interpolate(fd.as_vector([x,lam*z]))
     elif mesh._base_mesh.cell_dimension() == 2:
         x,y,z = fd.SpatialCoordinate(mesh)
-        f = fd.Function(Vcoord).interpolate(fd.as_vector([x,y,lam*z]))
+        XX = fd.Function(Vcoord).interpolate(fd.as_vector([x,y,lam*z]))
     else:
-        raise ValueError('only 2D and 3D extruded meshes can be deformed')
-    mesh.coordinates.assign(f)
+        raise ValueError('only 2D and 3D reference meshes are generated')
+    mesh.coordinates.assign(XX)
     return 0
 
