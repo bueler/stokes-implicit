@@ -52,8 +52,6 @@ fieldsplit between the (u,p) block and the c blocks.  The (u,p) block is
 solved by Schur lower fieldsplit with selfp preconditioning on its Schur
 block.  By default the diagonal blocks are solved (preconditioned) by LU
 using MUMPS.''',formatter_class=argparse.RawTextHelpFormatter,add_help=False)
-parser.add_argument('-dirichletsmb', action='store_true', default=False,
-                    help='apply simplified SMB condition on top of reference domain')
 parser.add_argument('-dta', type=float, default=0.01, metavar='X',
                     help='length of time step in years (default=0.01 a)')
 parser.add_argument('-Dtyp', type=float, default=2.0, metavar='X',
@@ -197,8 +195,7 @@ F = im.F(u,p,c,v,q,e)
 
 # apply surface kinematical equation by adding to weak form
 a = Constant(0.0) # FIXME only correct for Halfar
-if not args.dirichletsmb:
-    F += im.Fsmb(a,dt,u,c,e)
+F += im.Fsmb(a,dt,u,c,e)
 
 # boundary conditions
 zerovelocity = Constant((0.0, 0.0, 0.0)) if ThreeD else Constant((0.0, 0.0))
@@ -206,9 +203,6 @@ sides = (1,2,3,4) if ThreeD else (1,2)
 bcs = [DirichletBC(Z.sub(0), zerovelocity, 'bottom'),
        DirichletBC(Z.sub(0), zerovelocity, sides),
        DirichletBC(Z.sub(2), Constant(0.0), 'bottom')]  # for displacement
-if args.dirichletsmb: # artificial, for testing
-    # set Dirichlet condition on top
-    bcs.append(DirichletBC(Z.sub(2), im.smbref(a,dt,z), 'top'))
 
 # solver parameters; some are defaults which are deliberately made explicit here
 # note 'lu' = mumps, both in serial and parallel (faster)
