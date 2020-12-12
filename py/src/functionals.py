@@ -40,8 +40,10 @@ class IceModel(object):
         return u[0] * z.dx(0) + u[1] * z.dx(1)
 
     def jweight(self,c):
-        czeta = c.dx(self.k)
-        return fd.max_value(1.0 + czeta, self.delta) # FIXME DEC20
+        xx = 1.0 + c.dx(self.k)
+        # alternative:
+        #return fd.max_value(xx, self.delta)
+        return 0.5 * (xx + fd.sqrt(xx**2 + self.delta**2))
 
     def _ell(self,c):
         return 1.0 / self.jweight(c)
