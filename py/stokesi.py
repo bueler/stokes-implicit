@@ -42,48 +42,50 @@ The third equation is Laplace's equation for c in the domain interior.  It
 is coupled to the first two through the top boundary condition which enforces
 the SKE and through weighting/stretching factors in the Glen-Stokes weak form.
 The mixed space consists of (u,p) in Q2 x Q1 for the Stokes problem and c in
-Q1 for displacement.  The 3x3 block Jacobian matrices have form
-      * * *
-  J = *   *
-      *   *
+Q1 for displacement.  The 3x3 block Jacobian matrices have nonzero block form
+      * * | *
+  J = *   | *
+      -------
+      *   | *
 where the upper-left 2x2 (u,p) block is a weighted version of the usual mixed
 element Stokes matrix.  The default solver is symmetric multiplicative
 fieldsplit between the (u,p) block and the c blocks.  The (u,p) block is
 solved by Schur lower fieldsplit with selfp preconditioning on its Schur
 block.  By default the diagonal blocks are solved (preconditioned) by LU
 using MUMPS.''',formatter_class=argparse.RawTextHelpFormatter,add_help=False)
-parser.add_argument('-dta', type=float, default=0.01, metavar='X',
-                    help='length of time step in years (default=0.01 a)')
-parser.add_argument('-Dtyp', type=float, default=2.0, metavar='X',
-                    help='typical strain rate in "+(eps Dtyp)^2" (default=2.0 a-1)')
-parser.add_argument('-eps', type=float, default=0.0001, metavar='X',
-                    help='to regularize viscosity by "+eps Dtyp^2" (default=0.0001)')
-parser.add_argument('-H0', type=float, default=3000.0, metavar='X',
-                    help='center height in m of initial ice sheet (default=3000)')
-parser.add_argument('-Href', type=float, default=200.0, metavar='X',
-                    help='minimum thickness in m of reference domain (default=200)')
-parser.add_argument('-L', type=float, default=60.0e3, metavar='X',
-                    help='half-width in m of computational domain (default=60e3)')
-parser.add_argument('-mx', type=int, default=30, metavar='N',
-                    help='number of equal subintervals in x-direction (default=30)')
-parser.add_argument('-my', type=int, default=-1, metavar='N',
-                    help='3D solve if my>0: subintervals in y-direction (default=-1)')
-parser.add_argument('-mz', type=int, default=4, metavar='N',
-                    help='number of layers in each vertical column (default=4)')
-parser.add_argument('-oroot', metavar='FILE', type=str, default='',
-                    help='output filename root: save solutions to output files FILE[step].pvd')
-parser.add_argument('-pvert', type=int, default=0, metavar='N',
-                    help='p-refinement level in vertical; use 0,1,2,3 only (default=0)')
-parser.add_argument('-quad', action='store_true', default=False,
-                    help='quadrilaterals instead of triangles in base mesh; requires my>0')
-parser.add_argument('-R0', type=float, default=50.0e3, metavar='X',
-                    help='half-width in m of initial ice sheet (default=50e3)')
-parser.add_argument('-refine', type=int, default=-1, metavar='N',
-                    help='number of vertical (z) mesh refinement levels')
-parser.add_argument('-saveextra', action='store_true', default=False,
-                    help='use with -oroot; write various fields computed on reference domain into FILE[step]_ref.pvd')
-parser.add_argument('-stokesihelp', action='store_true', default=False,
-                    help='print help for stokesi.py and quit')
+addarg = parser.add_argument
+addarg('-dta', type=float, default=0.01, metavar='X',
+       help='length of time step in years (default=0.01 a)')
+addarg('-Dtyp', type=float, default=2.0, metavar='X',
+       help='typical strain rate in "+(eps Dtyp)^2" (default=2.0 a-1)')
+addarg('-eps', type=float, default=0.0001, metavar='X',
+       help='regularize viscosity by "+eps Dtyp^2" (default=0.0001)')
+addarg('-H0', type=float, default=3000.0, metavar='X',
+       help='center height in m of initial ice sheet (default=3000)')
+addarg('-Href', type=float, default=200.0, metavar='X',
+       help='minimum thickness in m of reference domain (default=200)')
+addarg('-L', type=float, default=60.0e3, metavar='X',
+       help='half-width in m of computational domain (default=60e3)')
+addarg('-mx', type=int, default=30, metavar='N',
+       help='number of equal subintervals in x-direction (default=30)')
+addarg('-my', type=int, default=-1, metavar='N',
+       help='3D solve if my>0: subintervals in y-direction (default=-1)')
+addarg('-mz', type=int, default=4, metavar='N',
+       help='number of layers in each vertical column (default=4)')
+addarg('-oroot', metavar='FILE', type=str, default='',
+       help='output filename root; saves solutions to FILE[step].pvd')
+addarg('-pvert', type=int, default=0, metavar='N',
+       help='p-refinement level in vertical; use 0,1,2,3 only (default=0)')
+addarg('-quad', action='store_true', default=False,
+       help='quadrilaterals instead of triangles in base mesh; requires my>0')
+addarg('-R0', type=float, default=50.0e3, metavar='X',
+       help='half-width in m of initial ice sheet (default=50e3)')
+addarg('-refine', type=int, default=-1, metavar='N',
+       help='number of vertical (z) mesh refinement levels')
+addarg('-saveextra', action='store_true', default=False,
+       help='use with -oroot; write fields on reference domain to FILE[step]_ref.pvd')
+addarg('-stokesihelp', action='store_true', default=False,
+       help='print help for stokesi.py and quit')
 args, unknown = parser.parse_known_args()
 if args.stokesihelp:
     parser.print_help()
