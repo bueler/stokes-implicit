@@ -8,4 +8,4 @@ The programs in [`py/`](py/) use [Firedrake](https://www.firedrakeproject.org/),
 
 ## old version
 
-I started a different strategy, with fake ice and a Laplace equation domain stretching, in 2020.  There are some ideas there about surface perturbations, and about multilevel solver performance, which I should not lose.  See [`old/`](old/).
+I started a different strategy, with fake ice and a Laplace equation domain stretching, in 2020.  That extended to 2021 only, and now it is abandoned.  The old material includes some ideas about surface perturbations and multilevel solver performance which I should not lose.  See [`old/`](old/).
