@@ -20,9 +20,10 @@
 #    does not change; it is the old geometry.
 # 2. Seems to run in parallel, but not at e.g. P=6 or higher processes.
 #    (Some processes own no ice?)
-# 3. TODO wrap in a Picard iteration to make fully coupled
-# 4. TODO re-calculate the weak form to use the geometry determined
-#         by b,s in the Stokes parts 3,4 of the weak form
+
+# TODO?
+# I could wrap this in a Picard iteration to make fully coupled, but I
+# think it would be a dog compared to the intention for step.py.
 
 from sys import argv, path
 path.append('../')
@@ -95,13 +96,6 @@ printpar(f'dimensions: n_s = {P1R.dim()}, n_omega = {P0VR.dim()}, n_u = {P2V.dim
 
 # initialize s; note sold is admissible
 soup.subfunctions[0].interpolate(sold)
-
-# for reference: these seem to be how "grad()" and "div()" are implemented
-#   by UFL, because replacing in the weak form F below does not change values
-#def mygrad(u):
-#    return as_matrix([[u[0].dx(0), u[0].dx(1)], [u[1].dx(0), u[1].dx(1)]])
-#def mydiv(u):
-#    return u[0].dx(0) + u[1].dx(1)
 
 # helper UFL expressions for weak form
 def _D(u):
