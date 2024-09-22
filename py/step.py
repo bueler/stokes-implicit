@@ -132,12 +132,12 @@ F -= (p * div(v) + inner(f_body, v)) * dx
 F -= div(u) * q * dx                                                     # term 4 with q
 
 # conditions; the pinch conditions should be updated in coupled problem
-conditions = [ DirichletBC(Z.sub(0), b, (1,2)),                         # s=b at ends
-               DirichletBC(Z.sub(2), Constant((0.0, 0.0)), (1,2)),      # u=0 at ends
-               DirichletBC(Z.sub(2), Constant((0.0, 0.0)), 'bottom') ]  # u=0 at base (no sliding)
+conds = [ DirichletBC(Z.sub(0), b, (1,2)),                         # s=b at ends
+          DirichletBC(Z.sub(2), Constant((0.0, 0.0)), (1,2)),      # u=0 at ends
+          DirichletBC(Z.sub(2), Constant((0.0, 0.0)), 'bottom') ]  # u=0 at base (no sliding)
 pinchU = _PinchColumnVelocity(Z.sub(2), b, sold, htol=1.0, dim=2)
 pinchP = _PinchColumnPressure(Z.sub(3), b, sold, htol=1.0)
-conditions += [ pinchU, pinchP ]
+conds += [ pinchU, pinchP ]
 
 # bounds for VI solver
 boundINF  = 1.0e100   # versus PETSc.INFINITY = 4.5e307 which causes overflow inside numpy
@@ -179,7 +179,7 @@ if False:
     # >> spy(A)
 
 # set up solver
-problem = NonlinearVariationalProblem(F, soup, bcs=conditions)
+problem = NonlinearVariationalProblem(F, soup, bcs=conds)
 solver = NonlinearVariationalSolver(problem,
                                     options_prefix='coupled',
                                     solver_parameters=par)

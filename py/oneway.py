@@ -1,29 +1,42 @@
 # Compute one-way coupled implicit step of SKE + Stokes problem for
-# a 2D glacier, i.e. in (x,z).  The problem has mixed space
+# a 2D glacier, in (x,z).  This is a first demonstration of 3
+# important concepts:
+#   1. weak evaluation of surface trace of velocity
+#   2. use of the Firedrake extruded mesh 'R' space for z-independent
+#      quantities of interest in the glacier problem, namely b,s,u|_s
+#   3. VI constraint on s variable within an otherwise un-constrained
+#      coupled system
+# The problem has mixed space
 #   P1 x DG0^2 x P2^2 x P1
 #   (s,  omega,  u,     p)
 # where
-#   s(x) is surface elevation
-#   omega(x) is surface velocity
+#   s(x) is surface elevation (using 'R')
+#   omega(x) is surface velocity (using 'R')
 #   u(x,z) is velocity
 #   p(x,z) is pressure
 # The weak form consists of four parts:
 #   1 SKE for updated s
-#   2 weakly-enforce omega=u|_s; omega is surface trace of velocity
+#   2 weakly-enforce omega=u|_s (surface trace of velocity)
 #   3 stress balance part of Stokes
 #   4 incompressibility part of Stokes
 # Run as e.g.:
 #   $ python3 onestep.py 100 20
 
-# ISSUES
+# CAVEATS/ISSUES
 # 1. This is *not* the full problem because the geometry seen by Stokes
-#    does not change; it is the old geometry.
-# 2. Seems to run in parallel, but not at e.g. P=6 or higher processes.
+#    does not change; it is the old geometry.  Two things are needed for
+#    the full and coupled problem: i) s value in current iterate affects
+#    the Stokes weak form integral, and ii) s value in current iterate
+#    determines which columns are pinched.
+# 2. This transforms the mesh using the old geometry.  It does not
+#    test my idea of changing the integrals in the weak form using the
+#    surface elevation as a transformation, and keeping the
+#    rectangular mesh geometry.
+# 3. Seems to run in parallel, but not at e.g. P=6 or higher processes.
 #    (Some processes own no ice?)
-
-# TODO?
-# I could wrap this in a Picard iteration to make fully coupled, but I
-# think it would be a dog compared to the intention for step.py.
+# 4. I could wrap this in a Picard iteration to make fully coupled, but
+#    I think it would be a dog.
+# My intention for step.py is to address 1 (partially), 2, and 4.
 
 from sys import argv, path
 path.append('../')
@@ -120,19 +133,19 @@ F += inner(B3 * Du2**(qq / 2.0) * _D(u), _D(v)) * dx(degree=3)           # term 
 F -= (p * div(v) + inner(f_body, v)) * dx
 F -= div(u) * q * dx                                                     # term 4 with q
 
-# conditions; the pinch conditions should be updated in coupled problem
-conditions = [ DirichletBC(Z.sub(0), b, (1,2)),                         # s=b at ends
-               DirichletBC(Z.sub(2), Constant((0.0, 0.0)), (1,2)),      # u=0 at ends
-               DirichletBC(Z.sub(2), Constant((0.0, 0.0)), 'bottom') ]  # u=0 at base (no sliding)
+# conds; the pinch conditions should be updated in coupled problem
+conds = [ DirichletBC(Z.sub(0), b, (1,2)),                         # s=b at ends
+          DirichletBC(Z.sub(2), Constant((0.0, 0.0)), (1,2)),      # u=0 at ends
+          DirichletBC(Z.sub(2), Constant((0.0, 0.0)), 'bottom') ]  # u=0 at base (no sliding)
 pinchU = _PinchColumnVelocity(Z.sub(2), b, sold, htol=1.0, dim=2)
 pinchP = _PinchColumnPressure(Z.sub(3), b, sold, htol=1.0)
-conditions += [ pinchU, pinchP ]
+conds += [ pinchU, pinchP ]
 
 # bounds for VI solver
 boundINF  = 1.0e100   # versus PETSc.INFINITY = 4.5e307 which causes overflow inside numpy
 infU  = as_vector([boundINF, boundINF])
 soupl = Function(Z)
-soupl.subfunctions[0].interpolate(b)          # the nontrivial one!
+soupl.subfunctions[0].interpolate(b)          # the only nontrivial one!
 soupl.subfunctions[1].interpolate(-infU)
 soupl.subfunctions[2].interpolate(-infU)
 soupl.subfunctions[3].interpolate(-boundINF)
@@ -168,7 +181,7 @@ if False:
     # >> spy(A)
 
 # set up solver
-problem = NonlinearVariationalProblem(F, soup, bcs=conditions)
+problem = NonlinearVariationalProblem(F, soup, bcs=conds)
 solver = NonlinearVariationalSolver(problem,
                                     options_prefix='coupled',
                                     solver_parameters=par)
