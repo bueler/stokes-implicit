@@ -1,0 +1,8 @@
+speaker:
+Ed Bueler
+
+title:
+A fully-implicit numerical glacier model with Stokes dynamics
+
+abstract:
+Numerical glacier and ice sheet models compute evolving ice geometry and velocity fields using a very-viscous stress-balance approximation, coupled with mass conservation at the ice surface.  At high spatial resolution, with horizontal mesh resolutions of a few kilometers or smaller, current models require time steps which are much shorter than climate-coupling time scales because they update ice geometry after the stress-balance solution.  High-resolution performance is thus degraded by the stability limitations of explicit time-stepping.  We describe and demonstrate an evolving-geometry Stokes model for glaciers which overcomes such limitations by taking fully-implicit time steps, each of which solves the free-boundary problem for glacier geometry based on a simultaneous Stokes velocity at the new surface.  The high-level design of such a solver, which is quite different from that of an explicit scheme, will be sketched.  The serial and parallel scaling (complexity) of the solver will be quantified, and compared to explicit schemes.
