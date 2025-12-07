@@ -32,12 +32,13 @@ mx = int(argv[1])              # number of elements in x direction
 mz = int(argv[2])              # number of elements in z (vertical) direction
 
 from firedrake import *
-from firedrake.output import VTKFile
 
 # TODO move in local versions of the _PinchColumn... objects, unless
 # I decide to upgrade StokesExtrude to much-enhanced capability
 from stokesextrude import _PinchColumnVelocity, _PinchColumnPressure, printpar
 from geometry import secpera, g, rho, nglen, A3, B3, t0, halfargeometry
+
+import numpy as np
 
 # parameters
 L = 100.0e3             # domain is (-L,L)
@@ -81,7 +82,6 @@ f_body = Constant((0.0, - rho * g))  # UFL expression only
 
 # old surface elevation must be admissible
 sold = Function(P1R, name='s_old (m)')
-import numpy as np
 sold.dat.data[:] = np.maximum(s_initial_np, b_np)
 
 # TODO *don't* do this, except post-solution for viewing
