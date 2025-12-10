@@ -1,3 +1,6 @@
+# Almost dimension-independent code to set up the Stokes problem and
+# associated constructions.
+
 import firedrake as fd
 from stokesextrude import extend_p1_from_basemesh
 
@@ -21,12 +24,18 @@ def form_stokes(se, sR, pp=(1.0/nglen)+1.0, mu0=0.0, fssa=True, theta_fssa=1.0, 
     F -= (p * fd.div(v) + fd.div(u) * q) * fd.dx
     source = fd.inner(se.f_body, v) * fd.dx
     if fssa:
-        # see section 4.2 in Lofgren et al
-        nsR = fd.as_vector([-sR.dx(0), fd.Constant(1.0)])
-        nunit = nsR / fd.sqrt(sR.dx(0)**2 + 1.0)
+        # see section 4.2 in Lofgren et al (2022)
+        assert se.dim in [2, 3]
+        if se.dim == 2:
+            nsR = fd.as_vector([-sR.dx(0), fd.Constant(1.0)])
+            nunit = nsR / fd.sqrt(sR.dx(0)**2 + 1.0)
+            zvec = fd.Constant(fd.as_vector([0.0, 1.0]))
+        else:
+            nsR = fd.as_vector([-sR.dx(0), -sR.dx(1), fd.Constant(1.0)])
+            nunit = nsR / fd.sqrt(sR.dx(0)**2 + sR.dx(1)**2 + 1.0)
+            zvec = fd.Constant(fd.as_vector([0.0, 0.0, 1.0]))
         F -= theta_fssa * dt_fssa * fd.inner(u, nunit) * fd.inner(se.f_body, v) * fd.ds_t
         aR = extend_p1_from_basemesh(se.mesh, smb_fssa)
-        zvec = fd.Constant(fd.as_vector([0.0, 1.0]))
         source += theta_fssa * dt_fssa * aR * fd.inner(zvec, nunit) * fd.inner(se.f_body, v) * fd.ds_t
     F -= source
     return F
@@ -55,7 +64,11 @@ def p_hydrostatic(se, sR, P1):
 # Compute the surface motion operator Phi = - <u,w>|_s . n_s.
 # This function returns a UFL expression, so q can be a TestFunction
 # or a Function.
-def Phi(s, us, q, H0=1000.0):
-    ns = fd.as_vector([-s.dx(0), fd.Constant(1.0 - eps)])
+def Phi(se, s, us, q, H0=1000.0):
+    assert se.dim in [2, 3]
+    if se.dim == 2:
+        ns = fd.as_vector([-s.dx(0), fd.Constant(1.0 - eps)])  # FIXME where is eps from?
+    else:
+        ns = fd.as_vector([-s.dx(0), -s.dx(1), fd.Constant(1.0 - eps)])
     Phi = - fd.dot(us, ns) * q
     return Phi
