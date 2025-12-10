@@ -4,29 +4,16 @@ from firedrake import *
 
 from stokesextrude import StokesExtrude, SolverParams, trace_vector_to_p2, printpar
 from physics import secpera, g, rho, nglen, form_stokes, effective_viscosity, p_hydrostatic, Phi
-from geometryinit import bedtypes, t0, generategeometry
-from figures import mkdir, livefigure, snapsfigure
-from measure import geometryreport, sampleratios
+from geometryinit import _t0_halfar, _1d_generategeometry, _2d_generategeometry
 
 # parameters set at runtime
-mx = int(argv[1])              # number of elements in x direction
+mx = int(argv[1])              # number of elements in x and y directions
 mz = int(argv[2])              # number of elements in z (vertical) direction
-Nsteps = int(argv[3])          # number of time steps
-dt = float(argv[4]) * secpera  # dt in years, converted to seconds
-bed = argv[5]                  # 'flat', 'smooth', 'rough'
-ratiosfile = argv[6]           # at the end, append a pair of ratios into this file
-writepng = (len(argv) > 7)
-if writepng:
-    dirroot = argv[7]
-writepvd = (len(argv) > 8)
-if writepvd:
-    pvdroot = argv[8]
+dt = float(argv[3]) * secpera  # dt in years, converted to seconds
+bdim = int(argv[4])            # dimension of base mesh
 
 # experiment parameters
-L = 100.0e3                       # domain is (-L,L)
-SMBlist = [0.0, -2.5e-7, 1.0e-7]  # m s-1; values of aconst used in experiments
-aposfrac = 0.75                   # fraction of domain on which positive SMB is applied
-Nsamples = 1000                   # number of samples when evaluating minimal ratios
+L = 100.0e3                    # domain is (-L,L) or (-L,L)x(-L,L)
 
 # solution method
 zeroheight = 'indices'  # how should StokesExtrude handle zero-height columns;
@@ -39,13 +26,20 @@ pp = (1.0 / nglen) + 1.0
 Dtyp = 1.0 / secpera      # = 1 a-1; strain rate scale
 mu0 = 0.0001 * Dtyp**2.0  # viscosity regularization
 
+FIXME  need to redesign so formulas in geometryinit.m use Firedrake functions not numpy arrays
+this is needed to make it work with 2D base meshes
+
 # set up bm = basemesh once
-bm = IntervalMesh(mx, -L, L)
+assert bdim in [1,2]
+if bdim == 1:
+    bm = IntervalMesh(mx, -L, L)
+    xbm = bm.coordinates.dat.data_ro
+else:
+    FIXME
 P1bm = FunctionSpace(bm, 'P', 1)
-xbm = bm.coordinates.dat.data_ro
 
 # bed and initial geometry
-assert bed in bedtypes
+t0 = _t0_halfar(bdim)
 print(f"Halfar t0 = {t0 / secpera:.3f} a")
 b_np, s_initial_np = generategeometry(xbm, t=t0, bed=bed)  # get numpy arrays
 b = Function(P1bm, name='bed elevation (m)')
@@ -184,50 +178,5 @@ for aconst in SMBlist:
         sisolver.solve(bounds=(b, siub))
         t += dt
 
-        # end of step reporting
-        geometryreport(bm, n + 1, t, s, b, Lsc=L)
-        if writepng:
-            tfilename = f'{outdirname}t{t/secpera:010.3f}.png'
-            wh = (bed == 'flat' and aconst == 0.0 and n + 1 == Nsteps)
-            livefigure(bm, b, s, t, fname=tfilename, writehalfar=wh)
-            if n + 1 == int(round(0.7 * Nsteps)): # reliable if Nsteps is divisible by 10
-                snaps.append(s.copy(deepcopy=True))
-
-    if writepng:
-        printpar(f'  finished writing to {outdirname}')
     if writepvd:
         printpar(f'  finished writing to {pvdfilename}')
-
-if writepng:
-    snapsname = dirroot + 'snaps.png'
-    snapsfigure(bm, b, snaps, fname=snapsname)
-    printpar(f'  finished writing to {snapsname}')
-
-# process _slist from all three SMB cases, with and without regularization
-# writes .csv files with data which allows reconstruction of ratios
-eps = [0.0, 0.1]
-epsstr = ['NOREG', 'REG__']
-for j in range(2):
-    root = dirroot + epsstr[j] + '/'
-    mkdir(root)
-    dfilename = root + 'data.csv'
-    maxcont, rats = sampleratios(dfilename, _slist, bm, b, N=Nsamples, Lsc=L, epsreg=eps[j])
-    if j == 0:
-        printpar(f'  max continuity ratio:               {maxcont:.3e}')
-    pos = rats[rats > 0.0]
-    assert len(pos) > 0
-    pmin = min(pos)
-    pmed = np.median(pos)
-    printpar(f'  pos coercivity ratio {epsstr[j]} min:           {pmin:.3e}')
-    printpar(f'                       {epsstr[j]} median:        {pmed:.3e}')
-    nonpos = rats[rats <= 0.0]
-    if len(nonpos) > 0:
-        npmin, npmed, npf = min(nonpos), np.median(nonpos), len(nonpos) / len(rats)
-        printpar(f'  non-pos coercivity ratio {epsstr[j]} min:       {npmin:.3e}')
-        printpar(f'                           {epsstr[j]} median:    {npmed:.3e}')
-        printpar(f'                           {epsstr[j]} fraction:  {npf:.4f}')
-        with open(ratiosfile, 'a') as rfile:
-            rfile.write(f'{epsstr[j]}: {maxcont:.3e}, {pmin:.3e}, {pmed:.3e}, {npmin:.3e}, {npmed:.3e}, {npf:.4f}\n')
-    else:
-        with open(ratiosfile, 'a') as rfile:
-            rfile.write(f'{epsstr[j]}: {maxcont:.3e}, {pmin:.3e}, {pmed:.3e}, N/A, N/A, 0.0000\n')
