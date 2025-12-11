@@ -1,10 +1,9 @@
 from sys import argv
-import numpy as np
 from firedrake import *
 
 from stokesextrude import StokesExtrude, SolverParams, trace_vector_to_p2, printpar
 from physics import secpera, g, rho, nglen, form_stokes, effective_viscosity, p_hydrostatic, Phi
-from geometryinit import _t0_halfar, _1d_generategeometry, _2d_generategeometry
+from geometryinit import generategeometry
 
 # parameters set at runtime
 mx = int(argv[1])              # number of elements in x and y directions
@@ -26,8 +25,7 @@ pp = (1.0 / nglen) + 1.0
 Dtyp = 1.0 / secpera      # = 1 a-1; strain rate scale
 mu0 = 0.0001 * Dtyp**2.0  # viscosity regularization
 
-FIXME  need to redesign so formulas in geometryinit.m use Firedrake functions not numpy arrays
-this is needed to make it work with 2D base meshes
+FIXME from here
 
 # set up bm = basemesh once
 assert bdim in [1,2]
