@@ -1,5 +1,6 @@
 from firedrake import *
-from geometryinit import R0, H0,generategeometry
+from geometryinit import R0, H0, generategeometry
+
 
 def test_geometryinit():
     L = 1.3 * R0
@@ -12,6 +13,7 @@ def test_geometryinit():
         smin = sv.min()[1]
     assert smax == H0
     assert smin < -100.0
+
 
 if __name__ == "__main__":
     pass
