@@ -14,6 +14,15 @@ $ cd stokes-extrude/
 $ pip install -e .
 ```
 
-## basic usage on short single case
+## basic usage on single step
+
+3D glacier (2D horizontal) with 1 year time step:
+
+    $ python3 case.py 20 10 1 2
+
+2D glacier (1D horizontal) with 1 year time step:
+
+    $ python3 case.py 80 20 1 1
 
 FIXME
+

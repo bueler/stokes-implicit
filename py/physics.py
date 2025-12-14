@@ -20,16 +20,15 @@ def _D(w):
 def form_stokes(
     se,
     sR,
-    pp=(1.0 / nglen) + 1.0,
     mu0=0.0,
     fssa=True,
-    theta_fssa=1.0,
     dt_fssa=0.0,
     smb_fssa=None,
 ):
     u, p = fd.split(se.up)
     v, q = fd.TestFunctions(se.Z)
     Du2 = 0.5 * fd.inner(_D(u), _D(u)) + mu0
+    pp = (1.0 / nglen) + 1.0
     qqq = (pp - 2.0) / 2.0
     F = fd.inner(B3 * Du2 ** qqq * _D(u), _D(v)) * fd.dx(
         degree=4
@@ -41,31 +40,25 @@ def form_stokes(
         assert se.dim in [2, 3]
         if se.dim == 2:
             nsR = fd.as_vector([-sR.dx(0), fd.Constant(1.0)])
-            nunit = nsR / fd.sqrt(sR.dx(0) ** 2 + 1.0)
-            zvec = fd.Constant(fd.as_vector([0.0, 1.0]))
+            n = nsR / fd.sqrt(sR.dx(0) ** 2 + 1.0)
+            z = fd.Constant(fd.as_vector([0.0, 1.0]))
         else:
             nsR = fd.as_vector([-sR.dx(0), -sR.dx(1), fd.Constant(1.0)])
-            nunit = nsR / fd.sqrt(sR.dx(0) ** 2 + sR.dx(1) ** 2 + 1.0)
-            zvec = fd.Constant(fd.as_vector([0.0, 0.0, 1.0]))
-        F -= (
-            theta_fssa * dt_fssa * fd.inner(u, nunit) * fd.inner(se.f_body, v) * fd.ds_t
-        )
+            n = nsR / fd.sqrt(sR.dx(0) ** 2 + sR.dx(1) ** 2 + 1.0)
+            z = fd.Constant(fd.as_vector([0.0, 0.0, 1.0]))
+        theta_fssa = 1.0
+        C = theta_fssa * dt_fssa
+        F -= C * fd.inner(u, n) * fd.inner(se.f_body, v) * fd.ds_t
         aR = extend_p1_from_basemesh(se.mesh, smb_fssa)
-        source += (
-            theta_fssa
-            * dt_fssa
-            * aR
-            * fd.inner(zvec, nunit)
-            * fd.inner(se.f_body, v)
-            * fd.ds_t
-        )
+        source += C * aR * fd.inner(z, n) * fd.inner(se.f_body, v) * fd.ds_t
     F -= source
     return F
 
 
 # diagnostic: effective viscosity nu from the velocity solution
-def effective_viscosity(u, P1, pp=(1.0 / nglen) + 1.0, mu0=0.0):
+def effective_viscosity(u, P1, mu0=0.0):
     Du2 = 0.5 * fd.inner(_D(u), _D(u))
+    pp = (1.0 / nglen) + 1.0
     qqq = (pp - 2.0) / 2.0
     nu = fd.Function(P1).interpolate(0.5 * B3 * Du2 ** qqq)  # vs paper: nu_p = 0.5 B3
     nu.rename("nu (unregularized; Pa s)")
@@ -77,8 +70,8 @@ def effective_viscosity(u, P1, pp=(1.0 / nglen) + 1.0, mu0=0.0):
 
 # diagnostic: hydrostatic pressure
 def p_hydrostatic(se, sR, P1):
-    _, z = fd.SpatialCoordinate(se.mesh)
-    phydro = fd.Function(P1).interpolate(rho * g * (sR - z))
+    x = fd.SpatialCoordinate(se.mesh)
+    phydro = fd.Function(P1).interpolate(rho * g * (sR - x[se.dim - 1]))
     phydro.rename("p_hydro (Pa)")
     return phydro
 
@@ -86,13 +79,11 @@ def p_hydrostatic(se, sR, P1):
 # Compute the surface motion operator Phi = - <u,w>|_s . n_s.
 # This function returns a UFL expression, so q can be a TestFunction
 # or a Function.
-def Phi(se, s, us, q, H0=1000.0):
-    assert se.dim in [2, 3]
-    if se.dim == 2:
-        ns = fd.as_vector(
-            [-s.dx(0), fd.Constant(1.0 - eps)]
-        )  # FIXME where is eps from?
+def Phi(dim, s, us, q, H0=1000.0):
+    assert dim in [2, 3]
+    if dim == 2:
+        ns = fd.as_vector([-s.dx(0), fd.Constant(1.0)])
     else:
-        ns = fd.as_vector([-s.dx(0), -s.dx(1), fd.Constant(1.0 - eps)])
+        ns = fd.as_vector([-s.dx(0), -s.dx(1), fd.Constant(1.0)])
     Phi = -fd.dot(us, ns) * q
     return Phi

@@ -30,7 +30,7 @@ def _t0_halfar(bdim=2):
 # Only for nglen=3.0.  See formula (9) for t0 in 2D, with f=0 for no isostasy.
 # The returned s is a UFL expression.  It is invalid outside of the ice, and
 # it generally needs a max() operation with a bed map; see generategeometry().
-def _s_2d_halfar(V, x, y, t=None):
+def _s_2d_halfar(x, y, t=None):
     _alpha = 1.0 / 9.0
     _beta = 1.0 / 18.0
     t0 = _t0_halfar(2)
@@ -64,8 +64,8 @@ def _s_1d_halfar(x, t=None):
     s0 = (t / t0) ** _beta * R0  # margin position at time t
     xsc = (t / t0) ** (-_beta) * x / R0
     s = fd.conditional(
-        fd.abs(x) < s0,
-        H0 * (t / t0) ** (-_alpha) * (1.0 - fd.abs(xsc) ** pp) ** rr,
+        abs(x) < s0,  # fd.abs() not working ...
+        H0 * (t / t0) ** (-_alpha) * (1.0 - abs(xsc) ** pp) ** rr,
         fd.Constant(-10000.0),
     )
     return s
@@ -83,14 +83,12 @@ def generategeometry(V, x, t=None, bdim=2):
     b_ufl = 0.0
     if bdim == 1:
         for k in range(4):
-            off = fd.Constant(_off[k])
-            b_ufl += _amp[k] * fd.sin(2 * fd.pi * (x + off) / _len[k])
-        sh = _s_1d_halfar(V, x, t=t)
+            b_ufl += _amp[k] * fd.sin(2 * fd.pi * (x[0] + _off[k]) / _len[k])
+        sh = _s_1d_halfar(x[0], t=t)
     else:
         for k in range(4):
-            # off = fd.Constant(_off[k])
             b_ufl += _amp[k] * fd.sin(2 * fd.pi * (x[0] + _off[k]) / _len[k])
-        sh = _s_2d_halfar(V, x[0], x[1], t=t)
+        sh = _s_2d_halfar(x[0], x[1], t=t)
     b = fd.Function(V, name="bed elevation").interpolate(b_ufl)
     s_ufl = fd.conditional(sh > b, sh, b)
     s = fd.Function(V, name="surface elevation").interpolate(s_ufl)
