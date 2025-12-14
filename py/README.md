@@ -24,5 +24,16 @@ $ pip install -e .
 
     $ python3 case.py 80 20 1 1
 
+These run in parallel too, e.g.
+
+    $ mpiexec -n 4 python3 case.py 20 10 1 2
+
 FIXME
 
+## regarding performance
+
+See `solverparams.py` in stokes-extrude
+
+See https://www.firedrakeproject.org/demos/stokes.py.html
+
+See https://www.firedrakeproject.org/petsc-interface.html

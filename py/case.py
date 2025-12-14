@@ -6,7 +6,6 @@ from physics import (
     secpera,
     g,
     rho,
-    nglen,
     form_stokes,
     effective_viscosity,
     p_hydrostatic,
@@ -69,6 +68,7 @@ params.update({"snes_monitor": None})
 params.update({"snes_converged_reason": None})
 params.update({"snes_atol": 1.0e-2})
 params.update({"snes_linesearch_type": "bt"})  # helps with non-flat beds, it seems
+#params.update({"snes_view": None})
 
 # set up for semi-implicit method, documented in paper, using old velocity in weak form
 if bdim == 1:
