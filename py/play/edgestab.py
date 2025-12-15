@@ -17,6 +17,9 @@
 # PDE which we solve with a Picard iteration.  It does not work.
 
 from firedrake import *
+from firedrake.petsc import PETSc
+
+printpar = PETSc.Sys.Print
 
 stab = "es"  # default to linear edge stabilization
 case = 3  # see below for cases
@@ -104,10 +107,10 @@ elif stab == "wes":
         F += J
 
 oname = "result.pvd"
-print("saving solution to %s ..." % oname)
+printpar("saving solution to %s ..." % oname)
 u.rename("u")
 if case == 1:
-    print(f"m = {m}: |u-uexact|_L2 = {errornorm(uexact, u, 'L2'):.3e}")
+    printpar(f"m = {m}: |u-uexact|_L2 = {errornorm(uexact, u, 'L2'):.3e}")
     udiff = Function(V, name="u - uexact").interpolate(u - uexact)
     VTKFile(oname).write(u, uexact, udiff)
 else:

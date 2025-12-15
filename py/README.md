@@ -30,6 +30,14 @@ These run in parallel too, e.g.
 
 FIXME
 
+## FSSA, symmetric FSSA, and edge stabilization
+
+For classical FSSA:
+
+    $ python3 case.py 200 20 1 1    # 1 year run is visually stable
+
+    $ python3 case.py 200 20 3 1    # 3 year run has obvious wiggles
+
 ## regarding performance
 
 See `solverparams.py` in stokes-extrude

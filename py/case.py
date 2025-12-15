@@ -103,7 +103,10 @@ sisolver = NonlinearVariationalSolver(
 siub = Function(P1bm).interpolate(Constant(PETSc.INFINITY))
 
 printpar(f"doing step of dt = {dt/secpera:.3f} a")
-printpar(f"  solving {se.dim}D Stokes + SKE on {mx} x {mx} x {mz} extruded mesh ...")
+if se.dim == 2:
+    printpar(f"  solving Stokes + SKE on {mx} x {mz} extruded {se.dim}D mesh ...")
+else:
+    printpar(f"  solving Stokes + SKE on {mx} x {mx} x {mz} extruded {se.dim}D mesh ...")
 printpar(f"  dimensions: n_u = {se.V.dim()}, n_p = {se.W.dim()}, n_s = {P1bm.dim()}")
 
 # time-stepping loop
@@ -150,10 +153,32 @@ for n in range(Nsteps):
     siubm.dat.data[:] = ubm.dat.data_ro
     sisolver.solve(bounds=(b, siub))
 
-    # write .pvd with 2D fields
     sdiff = Function(P1bm, name="sdiff = s - s_old").interpolate(s - sisold)
-    filesurface.write(s, b, sdiff)  # FIXME write time (and rank in parallel)
-    printpar(f"  writing 2D fields to {namesurface} ...")
+    if bdim == 1 and bm.comm.size == 1:  # .png figure better than paraview
+        import matplotlib.pyplot as plt
+        xx = bm.coordinates.dat.data_ro
+        fig, (ax1, ax2) = plt.subplots(2, 1)
+        ax1.plot(xx / 1.0e3, s.dat.data_ro, color='C1', label='s')
+        ax1.plot(xx / 1.0e3, b.dat.data_ro, color='k', label='s')
+        ax1.legend(loc='upper left')
+        ax1.set_xticklabels([])
+        ax1.grid(visible=True)
+        ax1.set_ylabel('elevation (m)')
+        ax2.plot(xx / 1.0e3, sdiff.dat.data_ro, '.', color='C2', label=r'$s - s_{old}$')
+        ax2.legend(loc='upper right')
+        ax2.set_ylabel(r'm')
+        ax2.grid(visible=True)
+        plt.xlabel('x (km)')
+        plt.show()
+    else:  # write .pvd with 2D fields   FIXME write time
+        printpar(f"  writing 2D fields to {namesurface} ...")
+        if bm.comm.size > 1:
+            rankbm = Function(FunctionSpace(bm,'DG',0))
+            rankbm.dat.data[:] = bm.comm.rank
+            rankbm.rename('rank')
+            filesurface.write(s, b, sdiff, rank)
+        else:
+            filesurface.write(s, b, sdiff)
 
     # for next step
     t += dt
