@@ -32,7 +32,7 @@ FIXME
 
 ## FSSA, symmetric FSSA, and edge stabilization
 
-For classical FSSA:
+For classical (2022) FSSA:
 
     $ python3 case.py 200 20 1 1    # 1 year run is visually stable
 

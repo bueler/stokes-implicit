@@ -19,6 +19,8 @@ mz = int(argv[2])  # number of elements in z (vertical) direction
 dt = float(argv[3]) * secpera  # dt in years, converted to seconds
 bdim = int(argv[4])  # dimension of base (map-plane) mesh
 
+save_true_stokes = False  # if True, save Stokes solution for start-of-step geometry
+
 # experiment parameters
 L = 100.0e3  # map-plane domain is (-L,L) or (-L,L)x(-L,L)
 
@@ -116,8 +118,6 @@ namestokes = f"result{se.dim}d.pvd"
 namesurface = f"result{bdim}d.pvd"
 filestokes = VTKFile(namestokes)
 filesurface = VTKFile(namesurface)
-save_true_stokes = True  # if True, save Stokes solution for current geometry,
-                         #    (not FSSA Stokes solution)
 for n in range(Nsteps):
     # set geometry (z coordinate) of extruded mesh
     se.reset_elevations(b, s)
@@ -170,13 +170,13 @@ for n in range(Nsteps):
         ax2.grid(visible=True)
         plt.xlabel('x (km)')
         plt.show()
-    else:  # write .pvd with 2D fields   FIXME write time
-        printpar(f"  writing 2D fields to {namesurface} ...")
+    else:  # write .pvd with map-plane fields   FIXME write time
+        printpar(f"  writing {bdim}D fields to {namesurface} ...")
         if bm.comm.size > 1:
             rankbm = Function(FunctionSpace(bm,'DG',0))
             rankbm.dat.data[:] = bm.comm.rank
             rankbm.rename('rank')
-            filesurface.write(s, b, sdiff, rank)
+            filesurface.write(s, b, sdiff, rankbm)
         else:
             filesurface.write(s, b, sdiff)
 
