@@ -70,9 +70,9 @@ params.update({"snes_monitor": None})
 params.update({"snes_converged_reason": None})
 params.update({"snes_atol": 1.0e-2})
 params.update({"snes_linesearch_type": "bt"})  # helps with non-flat beds, it seems
-#params.update({"snes_view": None})
+# params.update({"snes_view": None})
 
-# set up for semi-implicit method, documented in paper, using old velocity in weak form
+# weak form for semi-implicit method, documented in paper, using old velocity in weak form
 if bdim == 1:
     sibcs = [DirichletBC(P1bm, b, (1, 2))]  # s = b at lateral boundary
 else:
@@ -81,6 +81,9 @@ siq = TestFunction(P1bm)
 sisold = Function(P1bm, name="s_old")
 siP2Vbm = VectorFunctionSpace(bm, "CG", 2, dim=bdim + 1)
 siubm = Function(siP2Vbm)  # surface velocity
+siF = dt * Phi(se.dim, s, siubm, siq) * dx + inner(s - (sisold + dt * a), siq) * dx
+
+# solver for semi-implicit method
 siparams = {
     "snes_monitor": None,
     "snes_converged_reason": None,
@@ -95,20 +98,20 @@ siparams = {
     "pc_type": "lu",
     "pc_factor_mat_solver_type": "mumps",
 }
-
-# weak form for semi-implicit
-siF = dt * Phi(se.dim, s, siubm, siq) * dx + inner(s - (sisold + dt * a), siq) * dx
 siproblem = NonlinearVariationalProblem(siF, s, sibcs)
 sisolver = NonlinearVariationalSolver(
     siproblem, solver_parameters=siparams, options_prefix="step"
 )
 siub = Function(P1bm).interpolate(Constant(PETSc.INFINITY))
 
+# start the solution process
 printpar(f"doing step of dt = {dt/secpera:.3f} a")
 if se.dim == 2:
     printpar(f"  solving Stokes + SKE on {mx} x {mz} extruded {se.dim}D mesh ...")
 else:
-    printpar(f"  solving Stokes + SKE on {mx} x {mx} x {mz} extruded {se.dim}D mesh ...")
+    printpar(
+        f"  solving Stokes + SKE on {mx} x {mx} x {mz} extruded {se.dim}D mesh ..."
+    )
 printpar(f"  dimensions: n_u = {se.V.dim()}, n_p = {se.W.dim()}, n_s = {P1bm.dim()}")
 
 # time-stepping loop
@@ -126,21 +129,23 @@ for n in range(Nsteps):
     sR.dat.data[:] = s.dat.data_ro  # FIXME with halos?
 
     if save_true_stokes:
-        # for saving with current geometry: solve Stokes on extruded mesh and extract surface trace
+        # solve Stokes over current geometry
         stokesF = form_stokes(se, sR, mu0=mu0, fssa=False)
         u, p = se.solve(F=stokesF, par=params, zeroheight=zeroheight)
         ubm = trace_vector_to_p2(bm, se.mesh, u, dim=se.dim)  # surface velocity (m s-1)
 
         # write .pvd with 3D fields
+        printpar(f"  writing 3D fields to {namestokes} ...")
         u.rename("velocity (m s-1)")
         p.rename("pressure (Pa)")
         P1 = FunctionSpace(se.mesh, "CG", 1)
         nu, nueps = effective_viscosity(u, P1, mu0=mu0)
         phydro = p_hydrostatic(se, sR, P1)
-        pdiff = Function(P1).interpolate(p - phydro)
+        pdiff = Function(P1).interpolate(phydro - p)
         pdiff.rename("pdiff = phydro - p (Pa)")
-        filestokes.write(u, p, nu, nueps, pdiff) # FIXME write time (and rank in parallel)
-        printpar(f"  writing 3D fields to {namestokes} ...")
+        filestokes.write(
+            u, p, nu, nueps, pdiff
+        )  # FIXME write time (and rank in parallel)
 
     # for semi-implicit step, solve Stokes on extruded mesh *WITH FSSA* and extract surface trace
     stokesF = form_stokes(se, sR, mu0=mu0, fssa=fssa, dt_fssa=dt, smb_fssa=a)
@@ -153,29 +158,32 @@ for n in range(Nsteps):
     siubm.dat.data[:] = ubm.dat.data_ro
     sisolver.solve(bounds=(b, siub))
 
+    # write map-plane fields
     sdiff = Function(P1bm, name="sdiff = s - s_old").interpolate(s - sisold)
-    if bdim == 1 and bm.comm.size == 1:  # .png figure better than paraview
+    if bdim == 1 and bm.comm.size == 1:  # figure better than paraview
+        printpar(f"  generating Matplotlib figure with {bdim}D fields ...")
         import matplotlib.pyplot as plt
+
         xx = bm.coordinates.dat.data_ro
         fig, (ax1, ax2) = plt.subplots(2, 1)
-        ax1.plot(xx / 1.0e3, s.dat.data_ro, color='C1', label='s')
-        ax1.plot(xx / 1.0e3, b.dat.data_ro, color='k', label='s')
-        ax1.legend(loc='upper left')
+        ax1.plot(xx / 1.0e3, s.dat.data_ro, color="C1", label=r"$s$")
+        ax1.plot(xx / 1.0e3, b.dat.data_ro, color="k", label=r"$b$")
+        ax1.legend(loc="upper left")
         ax1.set_xticklabels([])
         ax1.grid(visible=True)
-        ax1.set_ylabel('elevation (m)')
-        ax2.plot(xx / 1.0e3, sdiff.dat.data_ro, '.', color='C2', label=r'$s - s_{old}$')
-        ax2.legend(loc='upper right')
-        ax2.set_ylabel(r'm')
+        ax1.set_ylabel("elevation (m)")
+        ax2.plot(xx / 1.0e3, sdiff.dat.data_ro, ".", color="C2", label=r"$s - s_{old}$")
+        ax2.legend(loc="upper right")
+        ax2.set_ylabel(r"m")
         ax2.grid(visible=True)
-        plt.xlabel('x (km)')
+        plt.xlabel("x (km)")
         plt.show()
-    else:  # write .pvd with map-plane fields   FIXME write time
+    else:  # write .pvd generally  FIXME write time
         printpar(f"  writing {bdim}D fields to {namesurface} ...")
         if bm.comm.size > 1:
-            rankbm = Function(FunctionSpace(bm,'DG',0))
+            rankbm = Function(FunctionSpace(bm, "DG", 0))
             rankbm.dat.data[:] = bm.comm.rank
-            rankbm.rename('rank')
+            rankbm.rename("rank")
             filesurface.write(s, b, sdiff, rankbm)
         else:
             filesurface.write(s, b, sdiff)
