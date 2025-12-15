@@ -14,19 +14,23 @@ $ cd stokes-extrude/
 $ pip install -e .
 ```
 
-## basic usage on single step
+## running the Stokes + SKE solver
 
-3D glacier (2D horizontal) with 1 year time step:
+    $ python3 case.py BDIM MX MZ NSTEPS DTYEAR
 
-    $ python3 case.py 20 10 1 2
+## basic usage
+
+3D glacier (2D horizontal) with single 1 year time step:
+
+    $ python3 case.py 2 20 10 1 1.0
 
 2D glacier (1D horizontal) with 1 year time step:
 
-    $ python3 case.py 80 20 1 1
+    $ python3 case.py 1 80 20 1 1.0
 
-These run in parallel too, e.g.
+These run in parallel, e.g.
 
-    $ mpiexec -n 4 python3 case.py 20 10 1 2
+    $ mpiexec -n 4 python3 case.py 2 20 10 1 1.0
 
 FIXME
 
@@ -34,9 +38,9 @@ FIXME
 
 For classical (2022) FSSA:
 
-    $ python3 case.py 200 20 1 1    # 1 year run is visually stable
+    $ python3 case.py 1 200 20 1 1.0    # 1 year run is visually stable
 
-    $ python3 case.py 200 20 3 1    # 3 year run has obvious wiggles
+    $ python3 case.py 1 200 20 1 3.0    # 3 year run has obvious wiggles
 
 ## regarding performance
 
