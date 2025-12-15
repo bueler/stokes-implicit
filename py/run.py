@@ -20,6 +20,7 @@ mz = int(argv[3])  # number of elements in z (vertical) direction
 Nsteps = int(argv[4])  # number of time steps
 dt = float(argv[5]) * secpera  # dt in years, converted to seconds
 
+show_fig_2D = True  # if True, show final geometry solution (serial only)
 save_true_stokes = False  # if True, save Stokes solution for final geometry
 
 # experiment parameters
@@ -150,10 +151,19 @@ namemap = f"result_map.pvd"
 filemap = VTKFile(namemap)
 dstotal = Function(P1bm, name="ds_total = s - s^{0}").interpolate(s - s_initial)
 dslast = Function(P1bm, name="ds_last = s - s^{n-1}").interpolate(s - sisold)
-if bdim == 1 and bm.comm.size == 1:  # figure better than paraview
+printpar(f"  writing {bdim}D fields to {namemap} ...")
+if bm.comm.size > 1:
+    rankbm = Function(FunctionSpace(bm, "DG", 0))
+    rankbm.dat.data[:] = bm.comm.rank
+    rankbm.rename("rank")
+    filemap.write(s, b, s_initial, dstotal, dslast, rankbm, time=t)
+else:
+    filemap.write(s, b, s_initial, dstotal, dslast, time=t)
+
+# optionally show a figure if appropriate (better than paraview!)
+if show_fig_2D and bdim == 1 and bm.comm.size == 1:
     printpar(f"  generating Matplotlib figure with {bdim}D fields ...")
     import matplotlib.pyplot as plt
-
     xx = bm.coordinates.dat.data_ro
     fig, (ax1, ax2) = plt.subplots(2, 1)
     ax1.plot(xx / 1.0e3, s.dat.data_ro, color="C1", label=r"$s$")
@@ -170,15 +180,6 @@ if bdim == 1 and bm.comm.size == 1:  # figure better than paraview
     ax2.grid(visible=True)
     plt.xlabel("x (km)")
     plt.show()
-else:  # write .pvd usually
-    printpar(f"  writing {bdim}D fields to {namemap} ...")
-    if bm.comm.size > 1:
-        rankbm = Function(FunctionSpace(bm, "DG", 0))
-        rankbm.dat.data[:] = bm.comm.rank
-        rankbm.rename("rank")
-        filemap.write(s, b, s_initial, dstotal, dslast, rankbm, time=t)
-    else:
-        filemap.write(s, b, s_initial, dstotal, dslast, time=t)
 
 if save_true_stokes and n == Nsteps - 1:
     # solve Stokes over current geometry
