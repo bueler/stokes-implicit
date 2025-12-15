@@ -1,7 +1,6 @@
 from sys import argv
 from firedrake import *
 
-from stokesextrude import StokesExtrude, SolverParams, trace_vector_to_p2, printpar
 from physics import (
     secpera,
     g,
@@ -11,6 +10,7 @@ from physics import (
     p_hydrostatic,
     Phi,
 )
+from stokesextrude import StokesExtrude, SolverParams, trace_vector_to_p2, printpar
 from geometryinit import generategeometry
 
 # parameters set at runtime
@@ -28,7 +28,7 @@ L = 100.0e3  # map-plane domain is (-L,L) or (-L,L)x(-L,L)
 # solution method
 zeroheight = "indices"  # how StokesExtrude handles zero-height columns
 fssa = True  # use Lofgren et al (2022) FSSA technique in Stokes solve
-# FIXME option to add edge stabilization
+edgestab = True  # use Tominec et al (2025; manuscript) edge stabilization in surface solve
 
 # Stokes parameters
 Dtyp = 1.0 / secpera  # = 1 a-1; strain rate scale
@@ -85,6 +85,13 @@ siP2Vbm = VectorFunctionSpace(bm, "CG", 2, dim=bdim + 1)
 siubm = Function(siP2Vbm)  # surface velocity
 s = Function(P1bm, name="s")  # solution surface
 siF = dt * Phi(se.dim, s, siubm, siq) * dx + inner(s - (sisold + dt * a), siq) * dx
+
+if edgestab:
+    # equation (4.1) in Tominec et al (2025) manuscript
+    n = FacetNormal(bm)
+    h = CellSize(bm)
+    gamma = 0.5 * avg( h**2 * sqrt(dot(siubm, siubm)) )  # equation (4.1) not clear!
+    siF += dt * gamma * jump(grad(s), n) * jump(grad(siq), n) * dS
 
 # solver for semi-implicit method
 siparams = {
