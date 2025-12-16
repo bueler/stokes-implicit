@@ -69,8 +69,10 @@ else:
 # set up Stokes solver
 params = SolverParams["newton"]
 params.update(SolverParams["mumps"])
+#params.update(SolverParams["schur_nonscalable_pinch"])
 params.update({"snes_monitor": None})
 params.update({"snes_converged_reason": None})
+params.update({"ksp_converged_reason": None})
 params.update({"snes_atol": 1.0e-2})
 params.update({"snes_linesearch_type": "bt"})  # helps with non-flat beds, it seems
 # params.update({"snes_view": None})
