@@ -12,6 +12,7 @@ from physics import (
 )
 from stokesextrude import StokesExtrude, SolverParams, trace_vector_to_p2, printpar
 from geometryinit import generategeometry
+from viamr import VIAMR
 
 # parameters set at runtime
 bdim = int(argv[1])  # dimension of base (map-plane) mesh
@@ -22,6 +23,7 @@ dt = float(argv[5]) * secpera  # dt in years, converted to seconds
 
 show_fig_2D = True  # if True, show final geometry solution (serial only)
 save_true_stokes = False  # if True, save Stokes solution for final geometry
+use_AVM = False  # if True, use AVM method from VIAMR to adapt mesh
 
 # experiment parameters
 L = 100.0e3  # map-plane domain is (-L,L) or (-L,L)x(-L,L)
@@ -147,6 +149,9 @@ for n in range(Nsteps):
     # update time
     t += dt
     printpar(f"t = {t/secpera:.3f} a done")
+
+    # adapt mesh with AVM
+    # FIXME
 
 # at final time, write map-plane fields
 namemap = f"result_map.pvd"
