@@ -1,19 +1,11 @@
 from sys import argv
 from firedrake import *
 
-from physics import (
-    secpera,
-    g,
-    rho,
-    form_stokes,
-    effective_viscosity,
-    p_hydrostatic,
-    Phi,
-)
+from physics import secpera, g, rho, form_stokes, effective_viscosity, Phi
 from stokesextrude import StokesExtrude, SolverParams, trace_vector_to_p2, printpar
 from geometryinit import generategeometry
 
-# FIXME consider this: from viamr import VIAMR
+# FIXME consider this later: from viamr import VIAMR
 
 # parameters set at runtime
 bdim = int(argv[1])  # dimension of base (map-plane) mesh
@@ -71,7 +63,7 @@ else:
 # set up Stokes solver
 params = SolverParams["newton"]
 params.update(SolverParams["mumps"])
-#params.update(SolverParams["schur_nonscalable_pinch"])
+# params.update(SolverParams["schur_nonscalable_pinch"])
 params.update({"snes_monitor": None})
 params.update({"snes_converged_reason": None})
 params.update({"ksp_converged_reason": None})
@@ -191,7 +183,6 @@ if save_true_stokes and n == Nsteps - 1:
     stokesF = form_stokes(se, sR, mu0=mu0, fssa=False)
     u, p = se.solve(F=stokesF, par=params, zeroheight=zeroheight)
     ubm = trace_vector_to_p2(bm, se.mesh, u, dim=se.dim)  # surface velocity (m s-1)
-
     # write .pvd with 3D fields
     namestokes = f"result_stokes.pvd"
     filestokes = VTKFile(namestokes)
@@ -200,7 +191,4 @@ if save_true_stokes and n == Nsteps - 1:
     p.rename("pressure (Pa)")
     P1 = FunctionSpace(se.mesh, "CG", 1)
     nu, nueps = effective_viscosity(u, P1, mu0=mu0)
-    phydro = p_hydrostatic(se, sR, P1)
-    pdiff = Function(P1).interpolate(phydro - p)
-    pdiff.rename("pdiff = phydro - p (Pa)")
-    filestokes.write(u, p, nu, nueps, pdiff, time=t)
+    filestokes.write(u, p, nu, nueps, time=t)
