@@ -8,22 +8,34 @@ from geometryinit import generategeometry
 # FIXME consider this later: from viamr import VIAMR
 
 # parameters set at runtime
+assert len(argv) >= 6  # 0 is "run.py", plus next five
 bdim = int(argv[1])  # dimension of base (map-plane) mesh
 mx = int(argv[2])  # number of elements in x (*and* y if bdim > 1) directions
 mz = int(argv[3])  # number of elements in z (vertical) direction
 Nsteps = int(argv[4])  # number of time steps
 dt = float(argv[5]) * secpera  # dt in years, converted to seconds
 
+# method string is length 3:
+#   000  explicit scheme with no extrapolations, stabilizations, or semi-implicitness
+#   F    classic FSSA extrapolation in body force (Lofgren 2022)
+#   S    symmetrized FSSA (Tominec et al 2025)  FIXME not implemented yet
+#    E   implicit edge stabilization as written (Tominec et al 2025)
+#    H   implicit edge stabilization but with horizontal velocity in coefficient
+#     S  implicit surface in surface-motion term ("semi-implicit" since velocity is old)
+if len(argv) > 6:
+    method = argv[6]  # it is a string
+    assert len(method) == 3
+    assert method[0] in ["0", "F", "S"]
+    assert method[1] in ["0", "E", "H"]
+    assert method[2] in ["0", "S"]
+else:
+    method = "FES"  # current default
+
 show_fig_2D = True  # if True, show final geometry solution (serial only)
 save_true_stokes = False  # if True, save Stokes solution for final geometry
 
 # experiment parameters
 L = 100.0e3  # map-plane domain is (-L,L) or (-L,L)x(-L,L)
-
-# solution method
-zeroheight = "indices"  # how StokesExtrude handles zero-height columns
-fssa = True  # use Lofgren et al (2022) FSSA technique in Stokes solve
-edgestab = True  # use Tominec et al (2025; manuscript) edge stabilization in surface solve
 
 # Stokes parameters
 Dtyp = 1.0 / secpera  # = 1 a-1; strain rate scale
@@ -81,13 +93,33 @@ sisold = Function(P1bm, name="s_old")
 siP2Vbm = VectorFunctionSpace(bm, "CG", 2, dim=bdim + 1)
 siubm = Function(siP2Vbm)  # surface velocity
 s = Function(P1bm, name="s")  # solution surface
-siF = dt * Phi(se.dim, s, siubm, siq) * dx + inner(s - (sisold + dt * a), siq) * dx
+siF = inner(s - (sisold + dt * a), siq) * dx
 
-if edgestab:
+# explicit or semi-implicit for surface motion
+if method[2] == "0":
+    siF += dt * Phi(se.dim, sisold, siubm, siq) * dx
+elif method[2] == "S":
+    siF += dt * Phi(se.dim, s, siubm, siq) * dx
+
+# edge stabilization
+n = FacetNormal(bm)
+h = CellSize(bm)
+if method[1] == "0":
+    # no edge stabilization
+    pass
+elif method[1] == "E":
     # equation (4.1) in Tominec et al (2025) manuscript
-    n = FacetNormal(bm)
-    h = CellSize(bm)
-    gamma = 0.5 * avg( h**2 * sqrt(dot(siubm, siubm)) )  # equation (4.1) not clear!
+    gamma = 0.5 * avg(h ** 2 * sqrt(dot(siubm, siubm)))
+    siF += dt * gamma * jump(grad(s), n) * jump(grad(siq), n) * dS
+elif method[1] == "H":
+    # equation (4.1) in Tominec et al (2025) manuscript, but with
+    #   horizontal velocity in scaling
+    if bdim == 1:
+        magHOR = sqrt(siubm[0] * siubm[0])
+    else:
+        uHOR = as_vector([siubm[0], siubm[1]])
+        magHOR = sqrt(dot(uHOR, uHOR))
+    gamma = 0.5 * avg(h ** 2 * magHOR)
     siF += dt * gamma * jump(grad(s), n) * jump(grad(siq), n) * dS
 
 # solver for semi-implicit method
@@ -127,13 +159,20 @@ for n in range(Nsteps):
     sR = Function(P1R)
     sR.dat.data_with_halos[:] = s.dat.data_ro_with_halos
 
-    # for semi-implicit step, solve Stokes on extruded mesh *WITH FSSA* and extract surface trace
-    stokesF = form_stokes(se, sR, mu0=mu0, fssa=fssa, dt_fssa=dt, smb_fssa=a)
-    u, p = se.solve(F=stokesF, par=params, zeroheight=zeroheight)
-    ubm = trace_vector_to_p2(bm, se.mesh, u, dim=se.dim)  # surface velocity (m s-1)
+    # solve Stokes on extruded mesh with some type of extrapolation in the body force
+    if method[0] == "0":
+        stokesF = form_stokes(se, sR, mu0=mu0, fssa=False)
+    elif method[0] == "F":
+        stokesF = form_stokes(se, sR, mu0=mu0, fssa=True, dt_fssa=dt, smb_fssa=a)
+    elif method[0] == "S":
+        raise NotImplementedError
+    u, p = se.solve(F=stokesF, par=params, zeroheight="indices")
 
-    # time step of semi-implicit free-boundary problem for surface elevation
-    #   (uses surface velocity from old surface elevation)
+    # extract surface velocity (trace) in m s-1
+    ubm = trace_vector_to_p2(bm, se.mesh, u, dim=se.dim)
+
+    # time step of free-boundary problem for surface elevation
+    #   using surface velocity from old surface elevation
     sisold.dat.data[:] = s.dat.data_ro
     siubm.dat.data[:] = ubm.dat.data_ro
     sisolver.solve(bounds=(b, siINF))
@@ -177,13 +216,12 @@ if show_fig_2D and bdim == 1 and bm.comm.size == 1:
     plt.xlabel("x (km)")
     plt.show()
 
-if save_true_stokes and n == Nsteps - 1:
-    # solve Stokes over current geometry
+# if desired, solve Stokes over final geometry, and write 3D fields into .pvd
+if save_true_stokes:
     printpar(f"  solving Stokes equations for final geometry (diagnostic) ...")
     stokesF = form_stokes(se, sR, mu0=mu0, fssa=False)
-    u, p = se.solve(F=stokesF, par=params, zeroheight=zeroheight)
-    ubm = trace_vector_to_p2(bm, se.mesh, u, dim=se.dim)  # surface velocity (m s-1)
-    # write .pvd with 3D fields
+    u, p = se.solve(F=stokesF, par=params, zeroheight="indices")
+    ubm = trace_vector_to_p2(bm, se.mesh, u, dim=se.dim)
     namestokes = f"result_stokes.pvd"
     filestokes = VTKFile(namestokes)
     printpar(f"  writing {se.dim}D fields to {namestokes} ...")
