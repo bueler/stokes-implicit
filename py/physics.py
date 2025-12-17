@@ -16,41 +16,48 @@ def _D(w):
     return 0.5 * (fd.grad(w) + fd.grad(w).T)
 
 
-# weak form for the Stokes problem; se is a StokesExtrude object
+# weak form for the Stokes problem
 def form_stokes(
-    se,
-    sR,
-    mu0=0.0,
-    fssa=True,
-    dt_fssa=0.0,
-    smb_fssa=None,
+    se,  # StokesExtrude object
+    sR,  # surface elevation s in the R space
+    mu0=0.0,  # Glen law regularization
+    qdegree=4,  # quadrature degree
+    stab=None,  # stabilization type: None, "fssa", "sym"
+    dt_stab=0.0,
+    smb_stab=None,
 ):
     u, p = fd.split(se.up)
     v, q = fd.TestFunctions(se.Z)
     Du2 = 0.5 * fd.inner(_D(u), _D(u)) + mu0
     pp = (1.0 / nglen) + 1.0
     qqq = (pp - 2.0) / 2.0
-    F = fd.inner(B3 * Du2 ** qqq * _D(u), _D(v)) * fd.dx(
-        degree=4
-    )  # correspondence with paper: nu_p = 0.5 B3
+    # correspondence with paper: nu_p = 0.5 B3
+    F = B3 * Du2 ** qqq * fd.inner(_D(u), _D(v)) * fd.dx(degree=qdegree)
     F -= (p * fd.div(v) + fd.div(u) * q) * fd.dx
-    source = fd.inner(se.f_body, v) * fd.dx
-    if fssa:
-        # see section 4.2 in Lofgren et al (2022)
-        assert se.dim in [2, 3]
+    assert se.dim in [2, 3]
+    if se.dim == 2:
+        z = fd.Constant(fd.as_vector([0.0, 1.0]))
+    else:
+        z = fd.Constant(fd.as_vector([0.0, 0.0, 1.0]))
+    source = -rho * g * fd.inner(z, v) * fd.dx
+    if stab is not None:
+        assert stab in ["fssa", "sym"]
         if se.dim == 2:
             nsR = fd.as_vector([-sR.dx(0), fd.Constant(1.0)])
-            n = nsR / fd.sqrt(sR.dx(0) ** 2 + 1.0)
-            z = fd.Constant(fd.as_vector([0.0, 1.0]))
+            omega = fd.sqrt(sR.dx(0) ** 2 + 1.0)
         else:
             nsR = fd.as_vector([-sR.dx(0), -sR.dx(1), fd.Constant(1.0)])
-            n = nsR / fd.sqrt(sR.dx(0) ** 2 + sR.dx(1) ** 2 + 1.0)
-            z = fd.Constant(fd.as_vector([0.0, 0.0, 1.0]))
-        theta_fssa = 1.0
-        C = theta_fssa * dt_fssa
-        F -= C * fd.inner(u, n) * fd.inner(se.f_body, v) * fd.ds_t
-        aR = extend_p1_from_basemesh(se.mesh, smb_fssa)
-        source += C * aR * fd.inner(z, n) * fd.inner(se.f_body, v) * fd.ds_t
+            omega = fd.sqrt(sR.dx(0) ** 2 + sR.dx(1) ** 2 + 1.0)
+        n = nsR / omega
+        aR = extend_p1_from_basemesh(se.mesh, smb_stab)
+        if stab == "fssa":
+            # see section 4.2 in Lofgren et al (2022); using theta = 1.0
+            F += rho * g * dt_stab * fd.inner(u, n) * fd.inner(v, z) * fd.ds_t
+            source -= rho * g * dt_stab * aR * fd.inner(z, n) * fd.inner(v, z) * fd.ds_t  # FIXME correct?
+        elif stab == "sym":
+            # see section (4.26) in Tominec et al (2025)
+            F += 0.5 * rho * g * dt_stab * omega * fd.inner(u, n) * fd.inner(v, n) * fd.ds_t
+            source -= rho * g * dt_stab * aR * fd.inner(v, n) * fd.ds_t  # FIXME correct?
     F -= source
     return F
 

@@ -64,11 +64,9 @@ x = SpatialCoordinate(se.mesh)
 # set up Stokes problem: elements and boundary conditions
 se.mixed_TaylorHood()
 if bdim == 1:
-    se.body_force(Constant((0.0, -rho * g)))
     se.dirichlet((1, 2), Constant((0.0, 0.0)))  # lateral velocity
     se.dirichlet(("bottom",), Constant((0.0, 0.0)))
 else:
-    se.body_force(Constant((0.0, 0.0, -rho * g)))
     se.dirichlet((1, 2, 3, 4), Constant((0.0, 0.0, 0.0)))  # lateral velocity
     se.dirichlet(("bottom",), Constant((0.0, 0.0, 0.0)))
 
@@ -161,11 +159,11 @@ for n in range(Nsteps):
 
     # solve Stokes on extruded mesh with some type of extrapolation in the body force
     if method[0] == "0":
-        stokesF = form_stokes(se, sR, mu0=mu0, fssa=False)
+        stokesF = form_stokes(se, sR, mu0=mu0)
     elif method[0] == "F":
-        stokesF = form_stokes(se, sR, mu0=mu0, fssa=True, dt_fssa=dt, smb_fssa=a)
+        stokesF = form_stokes(se, sR, mu0=mu0, stab="fssa", dt_stab=dt, smb_stab=a)
     elif method[0] == "S":
-        raise NotImplementedError
+        stokesF = form_stokes(se, sR, mu0=mu0, stab="sym", dt_stab=dt, smb_stab=a)
     u, p = se.solve(F=stokesF, par=params, zeroheight="indices")
 
     # extract surface velocity (trace) in m s-1
