@@ -164,7 +164,7 @@ for n in range(Nsteps):
         stokesF = form_stokes(se, sR, mu0=mu0, stab="fssa", dt_stab=dt, smb_stab=a)
     elif method[0] == "S":
         stokesF = form_stokes(se, sR, mu0=mu0, stab="sym", dt_stab=dt, smb_stab=a)
-    u, p = se.solve(F=stokesF, par=params, zeroheight="indices")
+    u, p = se.solve(F=stokesF, par=params)
 
     # extract surface velocity (trace) in m s-1
     ubm = trace_vector_to_p2(bm, se.mesh, u, dim=se.dim)
@@ -226,5 +226,5 @@ if save_true_stokes:
     u.rename("velocity (m s-1)")
     p.rename("pressure (Pa)")
     P1 = FunctionSpace(se.mesh, "CG", 1)
-    nu, nueps = effective_viscosity(u, P1, mu0=mu0)
+    nu, nueps = effective_viscosity(se, u, P1, mu0=mu0)
     filestokes.write(u, p, nu, nueps, time=t)

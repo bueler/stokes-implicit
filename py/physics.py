@@ -12,10 +12,6 @@ A3 = 3.1689e-24  # Pa-3 s-1; EISMINT I value of ice softness
 B3 = A3 ** (-1.0 / 3.0)  # Pa s(1/3);  ice hardness
 
 
-def _D(w):
-    return 0.5 * (fd.grad(w) + fd.grad(w).T)
-
-
 # weak form for the Stokes problem
 def form_stokes(
     se,  # StokesExtrude object
@@ -28,11 +24,11 @@ def form_stokes(
 ):
     u, p = fd.split(se.up)
     v, q = fd.TestFunctions(se.Z)
-    Du2 = 0.5 * fd.inner(_D(u), _D(u)) + mu0
+    Du2 = 0.5 * fd.inner(se.D(u), se.D(u)) + mu0
     pp = (1.0 / nglen) + 1.0
     qqq = (pp - 2.0) / 2.0
     # correspondence with paper: nu_p = 0.5 B3
-    F = B3 * Du2 ** qqq * fd.inner(_D(u), _D(v)) * fd.dx(degree=qdegree)
+    F = B3 * Du2 ** qqq * fd.inner(se.D(u), se.D(v)) * fd.dx(degree=qdegree)
     F -= (p * fd.div(v) + fd.div(u) * q) * fd.dx
     assert se.dim in [2, 3]
     if se.dim == 2:
@@ -63,8 +59,8 @@ def form_stokes(
 
 
 # diagnostic: effective viscosity nu from the velocity solution
-def effective_viscosity(u, P1, mu0=0.0):
-    Du2 = 0.5 * fd.inner(_D(u), _D(u))
+def effective_viscosity(se, u, P1, mu0=0.0):
+    Du2 = 0.5 * fd.inner(se.D(u), se.D(u))
     pp = (1.0 / nglen) + 1.0
     qqq = (pp - 2.0) / 2.0
     nu = fd.Function(P1).interpolate(0.5 * B3 * Du2 ** qqq)  # vs paper: nu_p = 0.5 B3
